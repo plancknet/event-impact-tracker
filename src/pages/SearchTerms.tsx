@@ -1,16 +1,30 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, Plus } from "lucide-react";
+import { SortableTableHead, SortDirection } from "@/components/SortableTableHead";
+import { format } from "date-fns";
+
+type StoredTerm = {
+  id: string;
+  term: string;
+  created_at: string;
+};
 
 export default function SearchTerms() {
   const { toast } = useToast();
-  const [terms, setTerms] = useState("");
+  const [newTerms, setNewTerms] = useState("");
+  const [storedTerms, setStoredTerms] = useState<StoredTerm[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [sort, setSort] = useState<{ key: string; direction: SortDirection }>({
+    key: "created_at",
+    direction: "asc",
+  });
 
   useEffect(() => {
     loadTerms();
@@ -21,12 +35,12 @@ export default function SearchTerms() {
     try {
       const { data, error } = await supabase
         .from("search_terms")
-        .select("term")
+        .select("id, term, created_at")
         .order("created_at", { ascending: true });
 
       if (error) throw error;
 
-      setTerms(data?.map((t) => t.term).join("\n") || "");
+      setStoredTerms(data || []);
     } catch (error) {
       console.error("Error loading terms:", error);
       toast({
@@ -39,30 +53,58 @@ export default function SearchTerms() {
     }
   }
 
+  function handleSort(key: string) {
+    setSort((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  }
+
+  const sortedTerms = useMemo(() => {
+    if (!sort.direction) return storedTerms;
+
+    return [...storedTerms].sort((a, b) => {
+      let aVal: string | number = "";
+      let bVal: string | number = "";
+
+      if (sort.key === "term") {
+        aVal = a.term.toLowerCase();
+        bVal = b.term.toLowerCase();
+      } else if (sort.key === "created_at") {
+        aVal = new Date(a.created_at).getTime();
+        bVal = new Date(b.created_at).getTime();
+      }
+
+      if (aVal < bVal) return sort.direction === "asc" ? -1 : 1;
+      if (aVal > bVal) return sort.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [storedTerms, sort]);
+
   async function handleSave() {
     setIsSaving(true);
     try {
-      // Parse new terms from textarea
-      const newTermsList = terms
+      const newTermsList = newTerms
         .split("\n")
         .map((t) => t.trim())
         .filter((t) => t.length > 0);
 
-      // Get existing terms to avoid duplicates
-      const { data: existingTerms, error: fetchError } = await supabase
-        .from("search_terms")
-        .select("term");
+      if (newTermsList.length === 0) {
+        toast({
+          title: "Atenção",
+          description: "Digite pelo menos um termo.",
+          variant: "destructive",
+        });
+        setIsSaving(false);
+        return;
+      }
 
-      if (fetchError) throw fetchError;
+      const existingSet = new Set(storedTerms.map((t) => t.term.toLowerCase()));
 
-      const existingSet = new Set(existingTerms?.map((t) => t.term.toLowerCase()) || []);
-      
-      // Filter only truly new terms (case-insensitive)
       const termsToInsert = newTermsList.filter(
         (t) => !existingSet.has(t.toLowerCase())
       );
 
-      // Insert only new terms
       if (termsToInsert.length > 0) {
         const { error: insertError } = await supabase
           .from("search_terms")
@@ -77,9 +119,8 @@ export default function SearchTerms() {
         description: `${termsToInsert.length} novo(s) termo(s) adicionado(s)${skipped > 0 ? `, ${skipped} já existente(s)` : ""}.`,
       });
 
-      // Reload and clear textarea
       await loadTerms();
-      setTerms("");
+      setNewTerms("");
     } catch (error) {
       console.error("Error saving terms:", error);
       toast({
@@ -93,43 +134,86 @@ export default function SearchTerms() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-4xl mx-auto space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span className="text-primary">Passo 1</span> — Termos de Busca
+            <span className="text-primary">Passo 1</span> — Adicionar Termos
           </CardTitle>
           <CardDescription>
-            Digite os termos de busca, um por linha. Estes termos serão usados para consultar o Google Alerts.
+            Digite os novos termos de busca, um por linha.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Textarea
+            placeholder={`bitcoin\nfed\nfomc\ninflation\netf bitcoin`}
+            value={newTerms}
+            onChange={(e) => setNewTerms(e.target.value)}
+            className="min-h-[150px] font-mono text-sm bg-input"
+          />
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {newTerms.split("\n").filter((t) => t.trim()).length} termo(s) para adicionar
+            </p>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4 mr-2" />
+              )}
+              Adicionar termos
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Termos Cadastrados</CardTitle>
+          <CardDescription>
+            {storedTerms.length} termo(s) cadastrado(s)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
+          ) : storedTerms.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              Nenhum termo cadastrado ainda.
+            </p>
           ) : (
-            <>
-              <Textarea
-                placeholder={`bitcoin\nfed\nfomc\ninflation\netf bitcoin`}
-                value={terms}
-                onChange={(e) => setTerms(e.target.value)}
-                className="min-h-[300px] font-mono text-sm bg-input"
-              />
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  {terms.split("\n").filter((t) => t.trim()).length} termo(s)
-                </p>
-                <Button onClick={handleSave} disabled={isSaving}>
-                  {isSaving ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4 mr-2" />
-                  )}
-                  Salvar termos
-                </Button>
-              </div>
-            </>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <SortableTableHead
+                    sortKey="term"
+                    currentSort={sort}
+                    onSort={handleSort}
+                  >
+                    Termo
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="created_at"
+                    currentSort={sort}
+                    onSort={handleSort}
+                  >
+                    Data de Cadastro
+                  </SortableTableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedTerms.map((term) => (
+                  <TableRow key={term.id}>
+                    <TableCell className="font-mono">{term.term}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {format(new Date(term.created_at), "dd/MM/yyyy HH:mm")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
