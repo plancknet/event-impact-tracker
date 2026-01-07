@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addDays } from "date-fns";
+import { format, addDays, parse, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,8 @@ import {
   ReferenceLine,
 } from "recharts";
 import { WordCloud } from "@/components/WordCloud";
+import { DateFilter } from "@/components/DateFilter";
+import { TermFilter } from "@/components/TermFilter";
 
 // Constants for tail calculations (easily adjustable)
 const LAMBDA1 = 0.15; // Fast shock decay
@@ -51,6 +53,7 @@ interface NewsWithAnalysis {
   impact_direction: string | null;
   confidence_score: number | null;
   model_variables_json: string | null;
+  term: string;
 }
 
 interface ModelVariables {
@@ -330,6 +333,8 @@ export default function ImpactTails() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [titleFilter, setTitleFilter] = useState("");
   const [wordCloudFilter, setWordCloudFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [termFilter, setTermFilter] = useState("all");
 
   const { data: newsItems, isLoading } = useQuery({
     queryKey: ["news-with-analysis-for-tails"],
@@ -343,24 +348,59 @@ export default function ImpactTails() {
           impact_direction,
           confidence_score,
           model_variables_json,
-          alert_news_results!inner(title, link_url, created_at)
+          alert_news_results!inner(
+            id,
+            title, 
+            link_url, 
+            created_at,
+            is_duplicate,
+            alert_query_results!inner (
+              search_terms!inner (
+                term
+              )
+            )
+          )
         `)
         .eq("selected_for_model", true)
         .order("analyzed_at", { ascending: false });
 
       if (error) throw error;
 
-      return (data || []).map((item: any) => ({
-        id: item.id,
-        news_id: item.news_id,
-        title: item.alert_news_results?.title,
-        link_url: item.alert_news_results?.link_url,
-        created_at: item.alert_news_results?.created_at,
-        categories: item.categories,
-        impact_direction: item.impact_direction,
-        confidence_score: item.confidence_score,
-        model_variables_json: item.model_variables_json,
-      })) as NewsWithAnalysis[];
+      // Filter duplicates - keep smallest id
+      const uniqueMap = new Map<string, NewsWithAnalysis>();
+      
+      for (const item of data || []) {
+        if (!item.alert_news_results) continue;
+        if (item.alert_news_results.is_duplicate) continue;
+
+        const news = item.alert_news_results as {
+          id: string;
+          title: string | null;
+          link_url: string | null;
+          created_at: string;
+          alert_query_results: { search_terms: { term: string } };
+        };
+        
+        const key = `${(news.title || "").toLowerCase().trim()}|${(news.link_url || "").toLowerCase().trim()}`;
+        const existing = uniqueMap.get(key);
+        
+        if (!existing || news.id < existing.id) {
+          uniqueMap.set(key, {
+            id: item.id,
+            news_id: item.news_id,
+            title: news.title,
+            link_url: news.link_url,
+            created_at: news.created_at,
+            categories: item.categories,
+            impact_direction: item.impact_direction,
+            confidence_score: item.confidence_score,
+            model_variables_json: item.model_variables_json,
+            term: news.alert_query_results?.search_terms?.term || "—",
+          });
+        }
+      }
+
+      return Array.from(uniqueMap.values());
     },
   });
 
@@ -398,13 +438,44 @@ export default function ImpactTails() {
     setTitleFilter(word);
   };
 
+  const parseFilterDate = (dateStr: string): Date | null => {
+    if (dateStr.length !== 10) return null;
+    const parsed = parse(dateStr, "dd/MM/yyyy", new Date());
+    return isValid(parsed) ? parsed : null;
+  };
+
   const filteredNewsItems = useMemo(() => {
     if (!newsItems) return [];
-    if (!titleFilter.trim()) return newsItems;
-    return newsItems.filter((n) =>
-      (n.title || "").toLowerCase().includes(titleFilter.toLowerCase().trim())
-    );
-  }, [newsItems, titleFilter]);
+    
+    let filtered = newsItems;
+
+    // Filter by term
+    if (termFilter && termFilter !== "all") {
+      filtered = filtered.filter((n) => n.term.toLowerCase() === termFilter.toLowerCase());
+    }
+
+    // Filter by title
+    if (titleFilter.trim()) {
+      filtered = filtered.filter((n) =>
+        (n.title || "").toLowerCase().includes(titleFilter.toLowerCase().trim())
+      );
+    }
+
+    // Filter by date
+    const filterDate = parseFilterDate(dateFilter);
+    if (filterDate) {
+      filtered = filtered.filter((n) => {
+        const newsDate = new Date(n.created_at);
+        return (
+          newsDate.getDate() === filterDate.getDate() &&
+          newsDate.getMonth() === filterDate.getMonth() &&
+          newsDate.getFullYear() === filterDate.getFullYear()
+        );
+      });
+    }
+
+    return filtered;
+  }, [newsItems, titleFilter, dateFilter, termFilter]);
 
   const handleThumbnailClick = (newsId: string) => {
     const tail = tailsMap.get(newsId);
@@ -439,6 +510,10 @@ export default function ImpactTails() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="flex items-center gap-4 mb-4">
+            <TermFilter value={termFilter} onChange={setTermFilter} />
+          </div>
+
           <div className="mb-4">
             <p className="text-xs text-muted-foreground mb-2">Clique em uma palavra para filtrar:</p>
             <WordCloud
@@ -448,7 +523,12 @@ export default function ImpactTails() {
             />
           </div>
 
-          <div className="flex items-center justify-end mb-4">
+          <div className="flex items-center justify-end mb-4 gap-2">
+            <DateFilter
+              value={dateFilter}
+              onChange={setDateFilter}
+              placeholder="dd/mm/aaaa"
+            />
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -468,6 +548,7 @@ export default function ImpactTails() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[100px]">Data</TableHead>
                   <TableHead>Título</TableHead>
                   <TableHead className="w-40">Categorias</TableHead>
                   <TableHead className="w-28">Direção</TableHead>
@@ -478,8 +559,8 @@ export default function ImpactTails() {
               <TableBody>
                 {filteredNewsItems.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      {titleFilter ? `Nenhuma notícia encontrada para "${titleFilter}"` : "Nenhuma notícia analisada com selected_for_model = true"}
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      {titleFilter || dateFilter ? "Nenhuma notícia encontrada" : "Nenhuma notícia analisada com selected_for_model = true"}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -489,6 +570,9 @@ export default function ImpactTails() {
                     
                     return (
                       <TableRow key={item.id}>
+                        <TableCell className="font-mono text-xs whitespace-nowrap">
+                          {format(new Date(item.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                        </TableCell>
                         <TableCell>
                           <div className="font-medium line-clamp-2">
                             {item.title || "Sem título"}
@@ -504,28 +588,26 @@ export default function ImpactTails() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {tail && (
-                            <div className="flex items-center gap-1">
-                              {icon}
-                              <span className="text-sm capitalize">
-                                {tail.calculatedDirection}
-                              </span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1">
+                            {icon}
+                            <span className="text-sm capitalize">
+                              {tail?.calculatedDirection || "—"}
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm">
-                            {item.confidence_score
+                          <Badge variant="outline">
+                            {item.confidence_score !== null
                               ? `${(item.confidence_score * 100).toFixed(0)}%`
-                              : "-"}
-                          </span>
+                              : "N/A"}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           {tail && (
                             <div onClick={() => handleThumbnailClick(item.id)}>
-                              <MiniTailChart 
-                                data={tail.chartData} 
-                                direction={tail.calculatedDirection} 
+                              <MiniTailChart
+                                data={tail.chartData}
+                                direction={tail.calculatedDirection}
                               />
                             </div>
                           )}
@@ -540,10 +622,10 @@ export default function ImpactTails() {
         </CardContent>
       </Card>
 
-      <FullChartDialog 
-        tail={selectedTail} 
-        open={dialogOpen} 
-        onOpenChange={setDialogOpen} 
+      <FullChartDialog
+        tail={selectedTail}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
       />
     </div>
   );

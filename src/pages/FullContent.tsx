@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -23,10 +23,14 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SortableTableHead, type SortDirection } from "@/components/SortableTableHead";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle2, XCircle, ExternalLink, Eye, AlertCircle, ClipboardPaste, RefreshCw, Search } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, ExternalLink, Eye, AlertCircle, ClipboardPaste, RefreshCw, Search, Copy } from "lucide-react";
 import { WordCloud } from "@/components/WordCloud";
+import { DateFilter } from "@/components/DateFilter";
+import { TermFilter } from "@/components/TermFilter";
+import { format, parse, isValid } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-type SortField = "title" | "status";
+type SortField = "title" | "status" | "created_at";
 
 type FullContent = {
   id: string;
@@ -44,6 +48,8 @@ type NewsResult = {
   snippet: string | null;
   link_url: string | null;
   is_duplicate: boolean;
+  created_at: string;
+  term: string;
   fullContent?: FullContent | null;
 };
 
@@ -52,19 +58,21 @@ export default function FullContent() {
   const queryClient = useQueryClient();
   const [selectedNews, setSelectedNews] = useState<Set<string>>(new Set());
   const [currentSort, setCurrentSort] = useState<{ key: string; direction: SortDirection }>({
-    key: "title",
-    direction: "asc",
+    key: "created_at",
+    direction: "desc",
   });
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
-  const [deduplicationDone, setDeduplicationDone] = useState(false);
   const [viewingContent, setViewingContent] = useState<NewsResult | null>(null);
   const [viewingError, setViewingError] = useState<NewsResult | null>(null);
   const [manualInputNews, setManualInputNews] = useState<NewsResult | null>(null);
   const [manualContent, setManualContent] = useState("");
   const [titleFilter, setTitleFilter] = useState("");
   const [wordCloudFilter, setWordCloudFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [termFilter, setTermFilter] = useState("all");
+  const [isDeduplicating, setIsDeduplicating] = useState(false);
 
-  // Run deduplication on mount
+  // Deduplication mutation - now triggered by button
   const deduplicationMutation = useMutation({
     mutationFn: async () => {
       const { data: allNews, error } = await supabase
@@ -72,12 +80,15 @@ export default function FullContent() {
         .select("id, title, link_url");
 
       if (error) throw error;
-      if (!allNews || allNews.length === 0) return;
+      if (!allNews || allNews.length === 0) return 0;
+
+      // Sort by id to ensure we keep the smallest PK
+      const sortedNews = [...allNews].sort((a, b) => a.id.localeCompare(b.id));
 
       const seen = new Map<string, string>();
       const duplicateIds: string[] = [];
 
-      for (const news of allNews) {
+      for (const news of sortedNews) {
         const key = (news.title?.toLowerCase().trim() || "") + "|" + (news.link_url?.toLowerCase().trim() || "");
         
         if (seen.has(key)) {
@@ -104,13 +115,11 @@ export default function FullContent() {
       return duplicateIds.length;
     },
     onSuccess: (count) => {
-      setDeduplicationDone(true);
-      if (count && count > 0) {
-        toast({
-          title: "Deduplicação concluída",
-          description: `${count} notícias duplicadas identificadas.`,
-        });
-      }
+      setIsDeduplicating(false);
+      toast({
+        title: "Deduplicação concluída",
+        description: `${count || 0} notícias duplicadas identificadas.`,
+      });
       queryClient.invalidateQueries({ queryKey: ["unique-news"] });
     },
     onError: (error) => {
@@ -120,15 +129,14 @@ export default function FullContent() {
         description: "Não foi possível processar duplicatas.",
         variant: "destructive",
       });
-      setDeduplicationDone(true);
+      setIsDeduplicating(false);
     },
   });
 
-  useEffect(() => {
-    if (!deduplicationDone) {
-      deduplicationMutation.mutate();
-    }
-  }, []);
+  const handleDeduplicate = () => {
+    setIsDeduplicating(true);
+    deduplicationMutation.mutate();
+  };
 
   // Fetch unique news with full content status
   const { data: newsResults = [], isLoading } = useQuery({
@@ -136,8 +144,21 @@ export default function FullContent() {
     queryFn: async () => {
       const { data: news, error } = await supabase
         .from("alert_news_results")
-        .select("id, title, snippet, link_url, is_duplicate")
-        .eq("is_duplicate", false);
+        .select(`
+          id, 
+          title, 
+          snippet, 
+          link_url, 
+          is_duplicate, 
+          created_at,
+          alert_query_results!inner (
+            search_terms!inner (
+              term
+            )
+          )
+        `)
+        .eq("is_duplicate", false)
+        .order("id", { ascending: true });
 
       if (error) throw error;
 
@@ -149,12 +170,27 @@ export default function FullContent() {
         fullContents?.map((fc) => [fc.news_id, fc]) || []
       );
 
-      return (news || []).map((n) => ({
-        ...n,
-        fullContent: contentMap.get(n.id) || null,
-      })) as NewsResult[];
+      // Group by title+link_url and keep only the one with smallest id
+      const uniqueMap = new Map<string, NewsResult>();
+      for (const n of news || []) {
+        const key = `${(n.title || "").toLowerCase().trim()}|${(n.link_url || "").toLowerCase().trim()}`;
+        const existing = uniqueMap.get(key);
+        if (!existing || n.id < existing.id) {
+          uniqueMap.set(key, {
+            id: n.id,
+            title: n.title,
+            snippet: n.snippet,
+            link_url: n.link_url,
+            is_duplicate: n.is_duplicate,
+            created_at: n.created_at,
+            term: n.alert_query_results?.search_terms?.term || "—",
+            fullContent: contentMap.get(n.id) || null,
+          });
+        }
+      }
+
+      return Array.from(uniqueMap.values());
     },
-    enabled: deduplicationDone,
   });
 
   const fetchContentMutation = useMutation({
@@ -287,10 +323,10 @@ export default function FullContent() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedNews.size === newsResults.length) {
+    if (selectedNews.size === filteredAndSortedNews.length) {
       setSelectedNews(new Set());
     } else {
-      setSelectedNews(new Set(newsResults.map((n) => n.id)));
+      setSelectedNews(new Set(filteredAndSortedNews.map((n) => n.id)));
     }
   };
 
@@ -306,13 +342,39 @@ export default function FullContent() {
     setTitleFilter(word);
   };
 
+  const parseFilterDate = (dateStr: string): Date | null => {
+    if (dateStr.length !== 10) return null;
+    const parsed = parse(dateStr, "dd/MM/yyyy", new Date());
+    return isValid(parsed) ? parsed : null;
+  };
+
   const filteredAndSortedNews = useMemo(() => {
+    let filtered = newsResults;
+
+    // Filter by term
+    if (termFilter && termFilter !== "all") {
+      filtered = filtered.filter((n) => n.term.toLowerCase() === termFilter.toLowerCase());
+    }
+
     // Filter by title
-    const filtered = titleFilter.trim()
-      ? newsResults.filter((n) =>
-          (n.title || "").toLowerCase().includes(titleFilter.toLowerCase().trim())
-        )
-      : newsResults;
+    if (titleFilter.trim()) {
+      filtered = filtered.filter((n) =>
+        (n.title || "").toLowerCase().includes(titleFilter.toLowerCase().trim())
+      );
+    }
+
+    // Filter by date
+    const filterDate = parseFilterDate(dateFilter);
+    if (filterDate) {
+      filtered = filtered.filter((n) => {
+        const newsDate = new Date(n.created_at);
+        return (
+          newsDate.getDate() === filterDate.getDate() &&
+          newsDate.getMonth() === filterDate.getMonth() &&
+          newsDate.getFullYear() === filterDate.getFullYear()
+        );
+      });
+    }
 
     // Sort
     return [...filtered].sort((a, b) => {
@@ -322,6 +384,9 @@ export default function FullContent() {
       if (currentSort.key === "status") {
         aVal = a.fullContent?.status || "pending";
         bVal = b.fullContent?.status || "pending";
+      } else if (currentSort.key === "created_at") {
+        aVal = a.created_at;
+        bVal = b.created_at;
       } else {
         aVal = (a.title || "").toLowerCase();
         bVal = (b.title || "").toLowerCase();
@@ -332,7 +397,7 @@ export default function FullContent() {
       }
       return bVal.localeCompare(aVal);
     });
-  }, [newsResults, currentSort, titleFilter]);
+  }, [newsResults, currentSort, titleFilter, dateFilter, termFilter]);
 
   const getStatusIcon = (news: NewsResult) => {
     if (processingIds.has(news.id)) {
@@ -347,39 +412,46 @@ export default function FullContent() {
     return <span className="text-muted-foreground text-sm">—</span>;
   };
 
-  if (!deduplicationDone || deduplicationMutation.isPending) {
-    return (
-      <div className="container mx-auto py-8">
-        <h1 className="text-2xl font-bold mb-6">Passo 5 — Conteúdo Completo</h1>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Executando deduplicação...</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto py-8 space-y-4">
       <h1 className="text-2xl font-bold">Passo 5 — Conteúdo Completo</h1>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <p className="text-muted-foreground">
           {filteredAndSortedNews.length} de {newsResults.length} notícias únicas
         </p>
-        <Button
-          onClick={handleFetchSelected}
-          disabled={selectedNews.size === 0 || processingIds.size > 0}
-        >
-          {processingIds.size > 0 ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Processando ({processingIds.size} restantes)
-            </>
-          ) : (
-            `Buscar conteúdo (${selectedNews.size})`
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleDeduplicate}
+            disabled={isDeduplicating || deduplicationMutation.isPending}
+          >
+            {isDeduplicating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Deduplicando...
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4 mr-2" />
+                Executar Deduplicação
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={handleFetchSelected}
+            disabled={selectedNews.size === 0 || processingIds.size > 0}
+          >
+            {processingIds.size > 0 ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processando ({processingIds.size} restantes)
+              </>
+            ) : (
+              `Buscar conteúdo (${selectedNews.size})`
+            )}
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -392,6 +464,10 @@ export default function FullContent() {
         </p>
       ) : (
         <>
+          <div className="flex items-center gap-4">
+            <TermFilter value={termFilter} onChange={setTermFilter} />
+          </div>
+
           <div>
             <p className="text-xs text-muted-foreground mb-2">Clique em uma palavra para filtrar:</p>
             <WordCloud
@@ -401,7 +477,12 @@ export default function FullContent() {
             />
           </div>
 
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-end gap-2">
+            <DateFilter
+              value={dateFilter}
+              onChange={setDateFilter}
+              placeholder="dd/mm/aaaa"
+            />
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -428,6 +509,14 @@ export default function FullContent() {
                     />
                   </TableHead>
                   <SortableTableHead
+                    sortKey="created_at"
+                    currentSort={currentSort}
+                    onSort={handleSort}
+                    className="w-[100px]"
+                  >
+                    Data
+                  </SortableTableHead>
+                  <SortableTableHead
                     sortKey="title"
                     currentSort={currentSort}
                     onSort={handleSort}
@@ -448,8 +537,8 @@ export default function FullContent() {
               <TableBody>
                 {filteredAndSortedNews.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      Nenhuma notícia encontrada para "{titleFilter}"
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      Nenhuma notícia encontrada
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -460,6 +549,9 @@ export default function FullContent() {
                           checked={selectedNews.has(news.id)}
                           onCheckedChange={() => toggleSelection(news.id)}
                         />
+                      </TableCell>
+                      <TableCell className="font-mono text-xs whitespace-nowrap">
+                        {format(new Date(news.created_at), "dd/MM/yyyy", { locale: ptBR })}
                       </TableCell>
                       <TableCell className="max-w-[400px] truncate font-medium">
                         {news.title || "—"}
@@ -502,7 +594,7 @@ export default function FullContent() {
                               <AlertCircle className="h-4 w-4 text-red-500" />
                             </Button>
                           )}
-                          {news.fullContent && (
+                          {(news.fullContent?.status === "error" || news.fullContent?.status === "success") && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -510,7 +602,7 @@ export default function FullContent() {
                               disabled={processingIds.has(news.id)}
                               title="Reprocessar"
                             >
-                              <RefreshCw className={`h-4 w-4 ${processingIds.has(news.id) ? "animate-spin" : ""}`} />
+                              <RefreshCw className="h-4 w-4" />
                             </Button>
                           )}
                           <Button
@@ -520,7 +612,7 @@ export default function FullContent() {
                               setManualInputNews(news);
                               setManualContent(news.fullContent?.content_full || "");
                             }}
-                            title="Colar conteúdo manualmente"
+                            title="Inserir manualmente"
                           >
                             <ClipboardPaste className="h-4 w-4" />
                           </Button>
@@ -539,30 +631,11 @@ export default function FullContent() {
       <Dialog open={!!viewingContent} onOpenChange={() => setViewingContent(null)}>
         <DialogContent className="max-w-3xl max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle className="pr-8">{viewingContent?.title || "Conteúdo"}</DialogTitle>
+            <DialogTitle>{viewingContent?.title}</DialogTitle>
           </DialogHeader>
-          <div className="text-xs text-muted-foreground mb-2 space-y-1">
-            {viewingContent?.fullContent?.final_url && (
-              <p>
-                URL final:{" "}
-                <a
-                  href={viewingContent.fullContent.final_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline"
-                >
-                  {viewingContent.fullContent.final_url}
-                </a>
-              </p>
-            )}
-            <p>
-              Extrator: {viewingContent?.fullContent?.extractor || "—"} |{" "}
-              {viewingContent?.fullContent?.content_full?.length?.toLocaleString() || 0} caracteres
-            </p>
-          </div>
-          <ScrollArea className="h-[55vh] pr-4">
+          <ScrollArea className="h-[60vh]">
             <div className="whitespace-pre-wrap text-sm">
-              {viewingContent?.fullContent?.content_full || "Sem conteúdo disponível."}
+              {viewingContent?.fullContent?.content_full}
             </div>
           </ScrollArea>
         </DialogContent>
@@ -570,102 +643,48 @@ export default function FullContent() {
 
       {/* View Error Dialog */}
       <Dialog open={!!viewingError} onOpenChange={() => setViewingError(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="pr-8 text-red-600">Erro na extração</DialogTitle>
+            <DialogTitle>Erro ao extrair conteúdo</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 text-sm">
-            <div>
-              <span className="font-medium">Título:</span>{" "}
-              {viewingError?.title || "—"}
-            </div>
-            <div>
-              <span className="font-medium">URL original:</span>{" "}
-              <a
-                href={viewingError?.fullContent?.source_url || viewingError?.link_url || "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:underline break-all"
-              >
-                {viewingError?.fullContent?.source_url || viewingError?.link_url || "—"}
-              </a>
-            </div>
-            {viewingError?.fullContent?.final_url && (
-              <div>
-                <span className="font-medium">URL final:</span>{" "}
-                <a
-                  href={viewingError.fullContent.final_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline break-all"
-                >
-                  {viewingError.fullContent.final_url}
-                </a>
-              </div>
-            )}
-            <div>
-              <span className="font-medium">Extrator usado:</span>{" "}
-              {viewingError?.fullContent?.extractor || "—"}
-            </div>
-            <div className="bg-red-50 dark:bg-red-950 p-3 rounded border border-red-200 dark:border-red-800">
-              <span className="font-medium text-red-700 dark:text-red-400">Erro:</span>{" "}
-              <span className="text-red-600 dark:text-red-300">
-                {viewingError?.fullContent?.error_message || "Erro desconhecido"}
-              </span>
-            </div>
+          <div className="text-sm text-red-600">
+            {viewingError?.fullContent?.error_message || "Erro desconhecido"}
           </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setViewingError(null);
-                if (viewingError) {
-                  setManualInputNews(viewingError);
-                  setManualContent("");
-                }
-              }}
-            >
-              <ClipboardPaste className="h-4 w-4 mr-2" />
-              Colar conteúdo manualmente
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Manual Input Dialog */}
-      <Dialog open={!!manualInputNews} onOpenChange={() => { setManualInputNews(null); setManualContent(""); }}>
-        <DialogContent className="max-w-3xl max-h-[80vh]">
+      <Dialog open={!!manualInputNews} onOpenChange={() => setManualInputNews(null)}>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle className="pr-8">Colar conteúdo manualmente</DialogTitle>
+            <DialogTitle>Inserir conteúdo manualmente</DialogTitle>
           </DialogHeader>
-          <div className="text-sm text-muted-foreground mb-2">
-            <p className="font-medium">{manualInputNews?.title}</p>
-            <p className="text-xs mt-1">
-              Cole abaixo o texto completo do artigo (útil para sites com paywall).
-            </p>
-          </div>
+          <p className="text-sm text-muted-foreground mb-2">{manualInputNews?.title}</p>
           <Textarea
             value={manualContent}
             onChange={(e) => setManualContent(e.target.value)}
-            placeholder="Cole o conteúdo completo do artigo aqui..."
-            className="h-[45vh] resize-none"
+            placeholder="Cole o conteúdo da notícia aqui..."
+            className="min-h-[300px]"
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setManualInputNews(null); setManualContent(""); }}>
+            <Button variant="outline" onClick={() => setManualInputNews(null)}>
               Cancelar
             </Button>
             <Button
               onClick={() => {
                 if (manualInputNews && manualContent.trim()) {
-                  saveManualContentMutation.mutate({ newsId: manualInputNews.id, content: manualContent.trim() });
+                  saveManualContentMutation.mutate({
+                    newsId: manualInputNews.id,
+                    content: manualContent.trim(),
+                  });
                 }
               }}
               disabled={!manualContent.trim() || saveManualContentMutation.isPending}
             >
               {saveManualContentMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : null}
-              Salvar conteúdo
+              Salvar
             </Button>
           </DialogFooter>
         </DialogContent>

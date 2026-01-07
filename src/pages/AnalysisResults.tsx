@@ -22,6 +22,10 @@ import {
 import { toast } from "sonner";
 import { Brain, ChevronDown, ChevronRight, ExternalLink, Loader2, CheckCircle, XCircle, Search } from "lucide-react";
 import { WordCloud } from "@/components/WordCloud";
+import { DateFilter } from "@/components/DateFilter";
+import { TermFilter } from "@/components/TermFilter";
+import { format, parse, isValid } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface NewsWithContent {
   id: string;
@@ -31,6 +35,8 @@ interface NewsWithContent {
   full_content_id: string;
   content_full: string | null;
   has_analysis: boolean;
+  created_at: string;
+  term: string;
   analysis?: {
     id: string;
     summary: string | null;
@@ -52,6 +58,8 @@ export default function AnalysisResults() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [titleFilter, setTitleFilter] = useState("");
   const [wordCloudFilter, setWordCloudFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [termFilter, setTermFilter] = useState("all");
   const queryClient = useQueryClient();
 
   // Fetch news with successful content and analysis status
@@ -65,11 +73,18 @@ export default function AnalysisResults() {
           id,
           news_id,
           content_full,
-          alert_news_results (
+          alert_news_results!inner (
             id,
             title,
             snippet,
-            link_url
+            link_url,
+            created_at,
+            is_duplicate,
+            alert_query_results!inner (
+              search_terms!inner (
+                term
+              )
+            )
           )
         `)
         .eq("status", "success")
@@ -86,19 +101,29 @@ export default function AnalysisResults() {
 
       const analysisMap = new Map(analyses?.map((a) => [a.news_id, a]) || []);
 
-      // Transform data
-      const items: NewsWithContent[] = (fullContent || [])
-        .filter((fc) => fc.alert_news_results)
-        .map((fc) => {
-          const news = fc.alert_news_results as {
-            id: string;
-            title: string | null;
-            snippet: string | null;
-            link_url: string | null;
-          };
+      // Transform data and filter duplicates - keep smallest id
+      const uniqueMap = new Map<string, NewsWithContent>();
+      
+      for (const fc of fullContent || []) {
+        if (!fc.alert_news_results) continue;
+        if (fc.alert_news_results.is_duplicate) continue;
+
+        const news = fc.alert_news_results as {
+          id: string;
+          title: string | null;
+          snippet: string | null;
+          link_url: string | null;
+          created_at: string;
+          alert_query_results: { search_terms: { term: string } };
+        };
+        
+        const key = `${(news.title || "").toLowerCase().trim()}|${(news.link_url || "").toLowerCase().trim()}`;
+        const existing = uniqueMap.get(key);
+        
+        if (!existing || news.id < existing.id) {
           const analysis = analysisMap.get(news.id);
           
-          return {
+          uniqueMap.set(key, {
             id: news.id,
             title: news.title,
             snippet: news.snippet,
@@ -106,6 +131,8 @@ export default function AnalysisResults() {
             full_content_id: fc.id,
             content_full: fc.content_full,
             has_analysis: !!analysis,
+            created_at: news.created_at,
+            term: news.alert_query_results?.search_terms?.term || "—",
             analysis: analysis ? {
               id: analysis.id,
               summary: analysis.summary,
@@ -120,10 +147,11 @@ export default function AnalysisResults() {
               analyzed_at: analysis.analyzed_at,
               ai_model: analysis.ai_model,
             } : undefined,
-          };
-        });
+          });
+        }
+      }
 
-      return items;
+      return Array.from(uniqueMap.values());
     },
   });
 
@@ -183,8 +211,8 @@ export default function AnalysisResults() {
   };
 
   const selectAll = () => {
-    if (!newsItems) return;
-    const notAnalyzed = newsItems.filter((n) => !n.has_analysis);
+    if (!filteredNewsItems) return;
+    const notAnalyzed = filteredNewsItems.filter((n) => !n.has_analysis);
     setSelectedIds(new Set(notAnalyzed.map((n) => n.id)));
   };
 
@@ -216,13 +244,44 @@ export default function AnalysisResults() {
     setTitleFilter(word);
   };
 
+  const parseFilterDate = (dateStr: string): Date | null => {
+    if (dateStr.length !== 10) return null;
+    const parsed = parse(dateStr, "dd/MM/yyyy", new Date());
+    return isValid(parsed) ? parsed : null;
+  };
+
   const filteredNewsItems = useMemo(() => {
     if (!newsItems) return [];
-    if (!titleFilter.trim()) return newsItems;
-    return newsItems.filter((n) =>
-      (n.title || "").toLowerCase().includes(titleFilter.toLowerCase().trim())
-    );
-  }, [newsItems, titleFilter]);
+    
+    let filtered = newsItems;
+
+    // Filter by term
+    if (termFilter && termFilter !== "all") {
+      filtered = filtered.filter((n) => n.term.toLowerCase() === termFilter.toLowerCase());
+    }
+
+    // Filter by title
+    if (titleFilter.trim()) {
+      filtered = filtered.filter((n) =>
+        (n.title || "").toLowerCase().includes(titleFilter.toLowerCase().trim())
+      );
+    }
+
+    // Filter by date
+    const filterDate = parseFilterDate(dateFilter);
+    if (filterDate) {
+      filtered = filtered.filter((n) => {
+        const newsDate = new Date(n.created_at);
+        return (
+          newsDate.getDate() === filterDate.getDate() &&
+          newsDate.getMonth() === filterDate.getMonth() &&
+          newsDate.getFullYear() === filterDate.getFullYear()
+        );
+      });
+    }
+
+    return filtered;
+  }, [newsItems, titleFilter, dateFilter, termFilter]);
 
   const notAnalyzedCount = filteredNewsItems.filter((n) => !n.has_analysis).length;
   const analyzedCount = filteredNewsItems.filter((n) => n.has_analysis).length;
@@ -304,6 +363,10 @@ export default function AnalysisResults() {
             </div>
           ) : (
             <>
+              <div className="flex items-center gap-4 mb-4">
+                <TermFilter value={termFilter} onChange={setTermFilter} />
+              </div>
+
               <div className="mb-4">
                 <p className="text-xs text-muted-foreground mb-2">Clique em uma palavra para filtrar:</p>
                 <WordCloud
@@ -313,22 +376,29 @@ export default function AnalysisResults() {
                 />
               </div>
 
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-4 gap-4">
                 <p className="text-sm text-muted-foreground">
                   {filteredNewsItems.length} de {newsItems.length} notícias
                 </p>
-                <div className="relative w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Filtrar por título..."
-                    value={titleFilter}
-                    onChange={(e) => {
-                      setTitleFilter(e.target.value);
-                      setWordCloudFilter("");
-                    }}
-                    className="pl-9"
-                    maxLength={100}
+                <div className="flex items-center gap-2">
+                  <DateFilter
+                    value={dateFilter}
+                    onChange={setDateFilter}
+                    placeholder="dd/mm/aaaa"
                   />
+                  <div className="relative w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Filtrar por título..."
+                      value={titleFilter}
+                      onChange={(e) => {
+                        setTitleFilter(e.target.value);
+                        setWordCloudFilter("");
+                      }}
+                      className="pl-9"
+                      maxLength={100}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -336,6 +406,7 @@ export default function AnalysisResults() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12"></TableHead>
+                    <TableHead className="w-[100px]">Data</TableHead>
                     <TableHead>Título</TableHead>
                     <TableHead className="w-32">Status</TableHead>
                     <TableHead className="w-24">Detalhes</TableHead>
@@ -344,8 +415,8 @@ export default function AnalysisResults() {
                 <TableBody>
                   {filteredNewsItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                        Nenhuma notícia encontrada para "{titleFilter}"
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        Nenhuma notícia encontrada
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -359,6 +430,9 @@ export default function AnalysisResults() {
                             onCheckedChange={() => toggleSelect(item.id)}
                             disabled={analyzeMutation.isPending}
                           />
+                        </TableCell>
+                        <TableCell className="font-mono text-xs whitespace-nowrap">
+                          {format(new Date(item.created_at), "dd/MM/yyyy", { locale: ptBR })}
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
@@ -410,7 +484,7 @@ export default function AnalysisResults() {
                       {item.has_analysis && item.analysis && (
                         <CollapsibleContent asChild>
                           <TableRow className="bg-muted/30">
-                            <TableCell colSpan={4} className="p-4">
+                            <TableCell colSpan={5} className="p-4">
                               <AnalysisDetail analysis={item.analysis} />
                             </TableCell>
                           </TableRow>
@@ -477,32 +551,34 @@ function AnalysisDetail({ analysis }: { analysis: NonNullable<NewsWithContent["a
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Região:</span>
-            <span className="text-sm">{analysis.region || "N/A"}</span>
+            <span className="text-sm text-muted-foreground">{analysis.region || "N/A"}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Classe de Ativo:</span>
-            <span className="text-sm">{analysis.impact_asset_class || "N/A"}</span>
+            <span className="text-sm text-muted-foreground">{analysis.impact_asset_class || "N/A"}</span>
           </div>
         </div>
       </div>
 
-      <div>
-        <h4 className="font-semibold mb-2">Categorias</h4>
-        <div className="flex flex-wrap gap-1">
-          {analysis.categories?.split(",").map((cat, i) => (
-            <Badge key={i} variant="outline" className="text-xs">
-              {cat.trim()}
-            </Badge>
-          )) || <span className="text-sm text-muted-foreground">N/A</span>}
+      {analysis.categories && (
+        <div>
+          <h4 className="font-semibold mb-2">Categorias</h4>
+          <div className="flex flex-wrap gap-1">
+            {analysis.categories.split(",").map((cat, idx) => (
+              <Badge key={idx} variant="secondary" className="text-xs">
+                {cat.trim()}
+              </Badge>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {modelVars && (
         <div>
-          <h4 className="font-semibold mb-2">Variáveis do Modelo (Passos 9 e 10)</h4>
-          <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
+          <h4 className="font-semibold mb-2">Variáveis do Modelo (Passo 9)</h4>
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
             {Object.entries(modelVars).map(([key, value]) => (
-              <div key={key} className="text-center p-2 bg-background rounded border">
+              <div key={key} className="text-center p-2 bg-muted rounded">
                 <div className="text-xs text-muted-foreground">{key}</div>
                 <div className="font-mono text-sm">{typeof value === "number" ? value.toFixed(2) : value}</div>
               </div>
@@ -511,20 +587,17 @@ function AnalysisDetail({ analysis }: { analysis: NonNullable<NewsWithContent["a
         </div>
       )}
 
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>Modelo: {analysis.ai_model}</span>
-        <span>Analisado em: {new Date(analysis.analyzed_at).toLocaleString("pt-BR")}</span>
-      </div>
-
       <div>
-        <Button variant="ghost" size="sm" onClick={() => setShowRawJson(!showRawJson)}>
-          {showRawJson ? "Ocultar" : "Ver"} JSON bruto
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowRawJson(!showRawJson)}
+        >
+          {showRawJson ? "Ocultar" : "Mostrar"} resposta bruta da IA
         </Button>
         {showRawJson && (
-          <pre className="mt-2 p-3 bg-background rounded border text-xs overflow-auto max-h-60">
-            {analysis.raw_ai_response 
-              ? JSON.stringify(JSON.parse(analysis.raw_ai_response), null, 2)
-              : "N/A"}
+          <pre className="mt-2 p-4 bg-muted rounded text-xs overflow-auto max-h-64">
+            {analysis.raw_ai_response}
           </pre>
         )}
       </div>
