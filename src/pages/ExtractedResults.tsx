@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { FileSearch, Loader2, ExternalLink } from "lucide-react";
+import { SortableTableHead, SortDirection } from "@/components/SortableTableHead";
 
 type NewsResult = {
   id: string;
@@ -19,6 +20,10 @@ export default function ExtractedResults() {
   const [results, setResults] = useState<NewsResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [sort, setSort] = useState<{ key: string; direction: SortDirection }>({
+    key: "term",
+    direction: "asc",
+  });
 
   useEffect(() => {
     loadResults();
@@ -64,6 +69,37 @@ export default function ExtractedResults() {
       setIsLoading(false);
     }
   }
+
+  function handleSort(key: string) {
+    setSort((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  }
+
+  const sortedResults = useMemo(() => {
+    if (!sort.direction) return results;
+
+    return [...results].sort((a, b) => {
+      let aVal = "";
+      let bVal = "";
+
+      if (sort.key === "term") {
+        aVal = a.term.toLowerCase();
+        bVal = b.term.toLowerCase();
+      } else if (sort.key === "title") {
+        aVal = (a.title || "").toLowerCase();
+        bVal = (b.title || "").toLowerCase();
+      } else if (sort.key === "snippet") {
+        aVal = (a.snippet || "").toLowerCase();
+        bVal = (b.snippet || "").toLowerCase();
+      }
+
+      if (aVal < bVal) return sort.direction === "asc" ? -1 : 1;
+      if (aVal > bVal) return sort.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [results, sort]);
 
   async function handleExtract() {
     setIsExtracting(true);
@@ -131,33 +167,52 @@ export default function ExtractedResults() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[120px]">Termo</TableHead>
-                      <TableHead className="w-[250px]">Título</TableHead>
-                      <TableHead>Snippet</TableHead>
-                      <TableHead className="w-[80px]">Link</TableHead>
+                      <SortableTableHead
+                        sortKey="term"
+                        currentSort={sort}
+                        onSort={handleSort}
+                        className="w-[120px]"
+                      >
+                        Termo
+                      </SortableTableHead>
+                      <SortableTableHead
+                        sortKey="title"
+                        currentSort={sort}
+                        onSort={handleSort}
+                        className="w-[250px]"
+                      >
+                        Título
+                      </SortableTableHead>
+                      <SortableTableHead
+                        sortKey="snippet"
+                        currentSort={sort}
+                        onSort={handleSort}
+                      >
+                        Snippet
+                      </SortableTableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {results.map((result) => (
+                    {sortedResults.map((result) => (
                       <TableRow key={result.id}>
                         <TableCell className="font-mono text-xs">{result.term}</TableCell>
-                        <TableCell className="font-medium text-sm">{result.title || "—"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground max-w-md truncate">
-                          {result.snippet || "—"}
-                        </TableCell>
-                        <TableCell>
+                        <TableCell className="font-medium text-sm">
                           {result.link_url ? (
                             <a
                               href={result.link_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-primary hover:underline"
+                              className="hover:text-primary hover:underline flex items-center gap-1"
                             >
-                              <ExternalLink className="w-4 h-4" />
+                              {result.title || "—"}
+                              <ExternalLink className="w-3 h-3" />
                             </a>
                           ) : (
-                            "—"
+                            result.title || "—"
                           )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground max-w-md truncate">
+                          {result.snippet || "—"}
                         </TableCell>
                       </TableRow>
                     ))}
