@@ -49,22 +49,22 @@ function extractWords(titles: (string | null | undefined)[]): { text: string; va
 
 const options = {
   colors: [
-    "#FF6B6B", "#4ECDC4", "#FFE66D", "#95E1D3", "#F38181",
-    "#AA96DA", "#FCBAD3", "#A8E6CF", "#FF8B94", "#88D8B0",
-    "#FFEAA7", "#DFE6E9", "#74B9FF", "#FD79A8", "#00CEC9"
+    "#FF6B6B", "#4ECDC4", "#FFE66D", "#F38181", "#AA96DA",
+    "#FCBAD3", "#A8E6CF", "#FF8B94", "#88D8B0", "#74B9FF",
+    "#FD79A8", "#00CEC9", "#E17055", "#00B894", "#6C5CE7"
   ],
   enableTooltip: true,
-  deterministic: true,
+  deterministic: false,
   fontFamily: "Inter, system-ui, sans-serif",
-  fontSizes: [14, 72] as [number, number],
+  fontSizes: [16, 80] as [number, number],
   fontStyle: "normal",
   fontWeight: "bold",
-  padding: 3,
+  padding: 4,
   rotations: 2,
   rotationAngles: [-90, 0] as [number, number],
   scale: "sqrt" as const,
   spiral: "archimedean" as const,
-  transitionDuration: 500,
+  transitionDuration: 300,
 };
 
 export function WordCloud({ titles, onWordClick, activeWord }: WordCloudProps) {
