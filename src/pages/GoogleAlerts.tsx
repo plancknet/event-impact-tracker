@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { Play, Loader2, CheckCircle, XCircle, Clock } from "lucide-react";
 import { format } from "date-fns";
+import { SortableTableHead, SortDirection } from "@/components/SortableTableHead";
 
 type TermWithStatus = {
   id: string;
@@ -24,6 +25,10 @@ export default function GoogleAlerts() {
   const [selectedTerms, setSelectedTerms] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [sort, setSort] = useState<{ key: string; direction: SortDirection }>({
+    key: "term",
+    direction: "asc",
+  });
 
   useEffect(() => {
     loadTermsWithStatus();
@@ -39,7 +44,6 @@ export default function GoogleAlerts() {
 
       if (termsError) throw termsError;
 
-      // Get latest query result for each term
       const termsWithStatus: TermWithStatus[] = [];
 
       for (const term of termsData || []) {
@@ -70,6 +74,37 @@ export default function GoogleAlerts() {
       setIsLoading(false);
     }
   }
+
+  function handleSort(key: string) {
+    setSort((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  }
+
+  const sortedTerms = useMemo(() => {
+    if (!sort.direction) return terms;
+
+    return [...terms].sort((a, b) => {
+      let aVal: string | number = "";
+      let bVal: string | number = "";
+
+      if (sort.key === "term") {
+        aVal = a.term.toLowerCase();
+        bVal = b.term.toLowerCase();
+      } else if (sort.key === "status") {
+        aVal = a.lastQuery?.status || "pending";
+        bVal = b.lastQuery?.status || "pending";
+      } else if (sort.key === "queried_at") {
+        aVal = a.lastQuery?.queried_at ? new Date(a.lastQuery.queried_at).getTime() : 0;
+        bVal = b.lastQuery?.queried_at ? new Date(b.lastQuery.queried_at).getTime() : 0;
+      }
+
+      if (aVal < bVal) return sort.direction === "asc" ? -1 : 1;
+      if (aVal > bVal) return sort.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [terms, sort]);
 
   function toggleTermSelection(termId: string) {
     setSelectedTerms((prev) => {
@@ -198,13 +233,31 @@ export default function GoogleAlerts() {
                       onCheckedChange={toggleSelectAll}
                     />
                   </TableHead>
-                  <TableHead>Termo</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Última consulta</TableHead>
+                  <SortableTableHead
+                    sortKey="term"
+                    currentSort={sort}
+                    onSort={handleSort}
+                  >
+                    Termo
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="status"
+                    currentSort={sort}
+                    onSort={handleSort}
+                  >
+                    Status
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="queried_at"
+                    currentSort={sort}
+                    onSort={handleSort}
+                  >
+                    Última consulta
+                  </SortableTableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {terms.map((term) => (
+                {sortedTerms.map((term) => (
                   <TableRow key={term.id}>
                     <TableCell>
                       <Checkbox
