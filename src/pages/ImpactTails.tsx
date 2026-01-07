@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { format, addDays } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -70,7 +72,8 @@ interface TailData {
   title: string;
   calculatedDirection: "bullish" | "bearish" | "neutral";
   maxImpactPct: number;
-  chartData: { day: number; impact: number }[];
+  newsDate: Date;
+  chartData: { day: number; impact: number; date: string }[];
 }
 
 function getDefaultVariables(): ModelVariables {
@@ -144,8 +147,9 @@ function C3(t: number): number {
 function calculateImpactTail(
   vars: ModelVariables,
   confidenceScore: number,
-  numDays: number
-): { chartData: { day: number; impact: number }[]; calculatedDirection: "bullish" | "bearish" | "neutral" } {
+  numDays: number,
+  newsDate: Date
+): { chartData: { day: number; impact: number; date: string }[]; calculatedDirection: "bullish" | "bearish" | "neutral" } {
   const { w1, w2, w3 } = calculateTailWeights(vars);
   
   // Calculate raw mixture for all days
@@ -173,11 +177,16 @@ function calculateImpactTail(
     calculatedDirection = "bearish";
   }
   
-  // Generate chart data - bearish will naturally be negative
-  const chartData = mixtureNorm.map((norm, idx) => ({
-    day: idx + 1,
-    impact: S_percent * norm * 100, // Convert to percentage points
-  }));
+  // Generate chart data - bearish will naturally be negative, include date
+  const chartData = mixtureNorm.map((norm, idx) => {
+    const dayNumber = idx + 1;
+    const pointDate = addDays(newsDate, dayNumber);
+    return {
+      day: dayNumber,
+      impact: S_percent * norm * 100, // Convert to percentage points
+      date: format(pointDate, "dd/MM/yyyy", { locale: ptBR }),
+    };
+  });
   
   return { chartData, calculatedDirection };
 }
@@ -194,7 +203,7 @@ function getDirectionFromTail(direction: "bullish" | "bearish" | "neutral") {
 }
 
 // Mini chart component for table thumbnail
-function MiniTailChart({ data, direction }: { data: { day: number; impact: number }[]; direction: "bullish" | "bearish" | "neutral" }) {
+function MiniTailChart({ data, direction }: { data: { day: number; impact: number; date: string }[]; direction: "bullish" | "bearish" | "neutral" }) {
   const { color } = getDirectionFromTail(direction);
   
   return (
@@ -283,11 +292,20 @@ function FullChartDialog({
                 ticks={[-50, -25, 0, 25, 50]}
               />
               <Tooltip
-                formatter={(value: number) => [
-                  `${value.toFixed(3)}%`,
-                  "Impacto",
-                ]}
-                labelFormatter={(label) => `Dia ${label}`}
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    const data = payload[0].payload;
+                    return (
+                      <div className="bg-background border rounded-lg shadow-lg p-3">
+                        <p className="font-medium">Dia {label} - {data.date}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Impacto: <span className="font-medium">{Number(data.impact).toFixed(3)}%</span>
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
               />
               <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeWidth={1} />
               <Line
@@ -353,7 +371,8 @@ export default function ImpactTails() {
     for (const item of newsItems) {
       const vars = parseModelVariables(item.model_variables_json);
       const confidence = item.confidence_score ?? 0.5;
-      const { chartData, calculatedDirection } = calculateImpactTail(vars, confidence, numDays);
+      const newsDate = new Date(item.created_at);
+      const { chartData, calculatedDirection } = calculateImpactTail(vars, confidence, numDays, newsDate);
       
       const maxImpact = Math.max(...chartData.map(d => Math.abs(d.impact)));
       
@@ -362,6 +381,7 @@ export default function ImpactTails() {
         title: item.title || "Sem título",
         calculatedDirection,
         maxImpactPct: maxImpact,
+        newsDate,
         chartData,
       });
     }
