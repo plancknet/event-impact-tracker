@@ -14,7 +14,94 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      alert_news_results: {
+        Row: {
+          created_at: string
+          id: string
+          link_url: string | null
+          query_result_id: string
+          snippet: string | null
+          source_raw: string | null
+          title: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link_url?: string | null
+          query_result_id: string
+          snippet?: string | null
+          source_raw?: string | null
+          title?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link_url?: string | null
+          query_result_id?: string
+          snippet?: string | null
+          source_raw?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_news_results_query_result_id_fkey"
+            columns: ["query_result_id"]
+            isOneToOne: false
+            referencedRelation: "alert_query_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alert_query_results: {
+        Row: {
+          id: string
+          queried_at: string
+          raw_html: string | null
+          status: string
+          term_id: string
+        }
+        Insert: {
+          id?: string
+          queried_at?: string
+          raw_html?: string | null
+          status?: string
+          term_id: string
+        }
+        Update: {
+          id?: string
+          queried_at?: string
+          raw_html?: string | null
+          status?: string
+          term_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_query_results_term_id_fkey"
+            columns: ["term_id"]
+            isOneToOne: false
+            referencedRelation: "search_terms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      search_terms: {
+        Row: {
+          created_at: string
+          id: string
+          term: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          term: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          term?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
