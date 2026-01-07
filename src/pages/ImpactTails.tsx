@@ -1,9 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -13,8 +11,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Calculator, TrendingUp, TrendingDown, Minus, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import {
   LineChart,
   Line,
@@ -32,7 +35,7 @@ const TAU2 = 30; // Long tail time constant
 const ALPHA2 = 1.5; // Long tail power
 const MU3 = 30; // Anticipation peak day
 const SIGMA3 = 10; // Anticipation spread
-const MAX_IMPACT_PCT = 0.10; // 10% maximum impact
+const MAX_IMPACT_PCT = 0.50; // 50% maximum impact (updated for -50% to +50% range)
 
 interface NewsWithAnalysis {
   id: string;
@@ -65,7 +68,7 @@ interface ModelVariables {
 interface TailData {
   newsId: string;
   title: string;
-  impactDirection: string;
+  calculatedDirection: "bullish" | "bearish" | "neutral";
   maxImpactPct: number;
   chartData: { day: number; impact: number }[];
 }
@@ -142,7 +145,7 @@ function calculateImpactTail(
   vars: ModelVariables,
   confidenceScore: number,
   numDays: number
-): { day: number; impact: number }[] {
+): { chartData: { day: number; impact: number }[]; calculatedDirection: "bullish" | "bearish" | "neutral" } {
   const { w1, w2, w3 } = calculateTailWeights(vars);
   
   // Calculate raw mixture for all days
@@ -158,21 +161,153 @@ function calculateImpactTail(
   // Normalize mixture
   const mixtureNorm = mixtureRaw.map(m => m / maxMix);
   
-  // Calculate amplitude
+  // Calculate amplitude - s determines direction (negative s = bearish = negative impact)
   const baseAmp = vars.M * vars.g * confidenceScore;
   const S_percent = vars.s * baseAmp * MAX_IMPACT_PCT;
   
-  // Generate chart data
-  return mixtureNorm.map((norm, idx) => ({
+  // Determine direction based on calculated s value
+  let calculatedDirection: "bullish" | "bearish" | "neutral" = "neutral";
+  if (S_percent > 0.001) {
+    calculatedDirection = "bullish";
+  } else if (S_percent < -0.001) {
+    calculatedDirection = "bearish";
+  }
+  
+  // Generate chart data - bearish will naturally be negative
+  const chartData = mixtureNorm.map((norm, idx) => ({
     day: idx + 1,
     impact: S_percent * norm * 100, // Convert to percentage points
   }));
+  
+  return { chartData, calculatedDirection };
+}
+
+function getDirectionFromTail(direction: "bullish" | "bearish" | "neutral") {
+  switch (direction) {
+    case "bullish":
+      return { icon: <TrendingUp className="h-4 w-4 text-green-500" />, color: "hsl(142, 76%, 36%)" };
+    case "bearish":
+      return { icon: <TrendingDown className="h-4 w-4 text-red-500" />, color: "hsl(0, 84%, 60%)" };
+    default:
+      return { icon: <Minus className="h-4 w-4 text-muted-foreground" />, color: "hsl(var(--muted-foreground))" };
+  }
+}
+
+// Mini chart component for table thumbnail
+function MiniTailChart({ data, direction }: { data: { day: number; impact: number }[]; direction: "bullish" | "bearish" | "neutral" }) {
+  const { color } = getDirectionFromTail(direction);
+  
+  return (
+    <div className="w-32 h-12 cursor-pointer hover:opacity-80 transition-opacity">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
+          <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeOpacity={0.3} />
+          <Line
+            type="monotone"
+            dataKey="impact"
+            stroke={color}
+            strokeWidth={1.5}
+            dot={false}
+          />
+          <YAxis domain={[-50, 50]} hide />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// Full chart dialog component
+function FullChartDialog({ 
+  tail, 
+  open, 
+  onOpenChange 
+}: { 
+  tail: TailData | null; 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void;
+}) {
+  if (!tail) return null;
+  
+  const { color } = getDirectionFromTail(tail.calculatedDirection);
+  
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between pr-8">
+            <span className="line-clamp-1">{tail.title}</span>
+            <div className="flex items-center gap-3">
+              <Badge
+                variant={
+                  tail.calculatedDirection === "bullish"
+                    ? "default"
+                    : tail.calculatedDirection === "bearish"
+                    ? "destructive"
+                    : "secondary"
+                }
+              >
+                {tail.calculatedDirection}
+              </Badge>
+              <span className="text-sm text-muted-foreground">
+                Impacto máx: {tail.maxImpactPct.toFixed(2)}%
+              </span>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="h-96">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={tail.chartData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+              <XAxis
+                dataKey="day"
+                label={{
+                  value: "Dias",
+                  position: "insideBottomRight",
+                  offset: -10,
+                }}
+                tickFormatter={(value) =>
+                  value % 30 === 0 || value === 1 ? value : ""
+                }
+              />
+              <YAxis
+                label={{
+                  value: "Impacto (%)",
+                  angle: -90,
+                  position: "insideLeft",
+                }}
+                tickFormatter={(value) => `${value.toFixed(0)}%`}
+                domain={[-50, 50]}
+                ticks={[-50, -25, 0, 25, 50]}
+              />
+              <Tooltip
+                formatter={(value: number) => [
+                  `${value.toFixed(3)}%`,
+                  "Impacto",
+                ]}
+                labelFormatter={(label) => `Dia ${label}`}
+              />
+              <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeWidth={1} />
+              <Line
+                type="monotone"
+                dataKey="impact"
+                stroke={color}
+                strokeWidth={2}
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default function ImpactTails() {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [tailResults, setTailResults] = useState<TailData[]>([]);
-  const [isCalculating, setIsCalculating] = useState(false);
+  const [selectedTail, setSelectedTail] = useState<TailData | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const { data: newsItems, isLoading } = useQuery({
     queryKey: ["news-with-analysis-for-tails"],
@@ -207,87 +342,38 @@ export default function ImpactTails() {
     },
   });
 
-  const toggleSelection = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
-  const toggleAll = () => {
-    if (!newsItems) return;
-    if (selectedIds.size === newsItems.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(newsItems.map((item) => item.id)));
+  // Pre-calculate all tails for display
+  const tailsMap = useMemo(() => {
+    if (!newsItems) return new Map<string, TailData>();
+    
+    const currentYear = new Date().getFullYear();
+    const numDays = isLeapYear(currentYear) ? 366 : 365;
+    const map = new Map<string, TailData>();
+    
+    for (const item of newsItems) {
+      const vars = parseModelVariables(item.model_variables_json);
+      const confidence = item.confidence_score ?? 0.5;
+      const { chartData, calculatedDirection } = calculateImpactTail(vars, confidence, numDays);
+      
+      const maxImpact = Math.max(...chartData.map(d => Math.abs(d.impact)));
+      
+      map.set(item.id, {
+        newsId: item.id,
+        title: item.title || "Sem título",
+        calculatedDirection,
+        maxImpactPct: maxImpact,
+        chartData,
+      });
     }
-  };
+    
+    return map;
+  }, [newsItems]);
 
-  const calculateTails = () => {
-    if (!newsItems || selectedIds.size === 0) {
-      toast.warning("Selecione pelo menos uma notícia");
-      return;
-    }
-
-    setIsCalculating(true);
-
-    try {
-      const results: TailData[] = [];
-      const currentYear = new Date().getFullYear();
-      const numDays = isLeapYear(currentYear) ? 366 : 365;
-
-      for (const item of newsItems) {
-        if (!selectedIds.has(item.id)) continue;
-
-        const vars = parseModelVariables(item.model_variables_json);
-        const confidence = item.confidence_score ?? 0.5;
-        const chartData = calculateImpactTail(vars, confidence, numDays);
-        
-        const maxImpact = Math.max(...chartData.map(d => Math.abs(d.impact)));
-
-        results.push({
-          newsId: item.id,
-          title: item.title || "Sem título",
-          impactDirection: item.impact_direction || "neutral",
-          maxImpactPct: maxImpact,
-          chartData,
-        });
-      }
-
-      setTailResults(results);
-      toast.success(`Caudas calculadas para ${results.length} notícia(s)`);
-    } catch (error) {
-      console.error("Erro ao calcular caudas:", error);
-      toast.error("Erro ao calcular caudas de impacto");
-    } finally {
-      setIsCalculating(false);
-    }
-  };
-
-  const getDirectionIcon = (direction: string | null) => {
-    switch (direction) {
-      case "bullish":
-        return <TrendingUp className="h-4 w-4 text-green-500" />;
-      case "bearish":
-        return <TrendingDown className="h-4 w-4 text-red-500" />;
-      default:
-        return <Minus className="h-4 w-4 text-muted-foreground" />;
-    }
-  };
-
-  const getDirectionColor = (direction: string) => {
-    switch (direction) {
-      case "bullish":
-        return "hsl(142, 76%, 36%)";
-      case "bearish":
-        return "hsl(0, 84%, 60%)";
-      default:
-        return "hsl(var(--muted-foreground))";
+  const handleThumbnailClick = (newsId: string) => {
+    const tail = tailsMap.get(newsId);
+    if (tail) {
+      setSelectedTail(tail);
+      setDialogOpen(true);
     }
   };
 
@@ -301,13 +387,11 @@ export default function ImpactTails() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Passos 11 e 12 – Cauda de Impacto</h1>
-          <p className="text-muted-foreground mt-1">
-            Calcule e visualize o impacto percentual previsto ao longo do tempo
-          </p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold">Passos 11 e 12 – Cauda de Impacto</h1>
+        <p className="text-muted-foreground mt-1">
+          Visualize o impacto percentual previsto ao longo do tempo (clique na miniatura para expandir)
+        </p>
       </div>
 
       <Card>
@@ -318,54 +402,15 @@ export default function ImpactTails() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4 mb-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleAll}
-              disabled={!newsItems?.length}
-            >
-              {selectedIds.size === newsItems?.length
-                ? "Desmarcar todas"
-                : "Selecionar todas"}
-            </Button>
-            <Button
-              onClick={calculateTails}
-              disabled={selectedIds.size === 0 || isCalculating}
-            >
-              {isCalculating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Calculando...
-                </>
-              ) : (
-                <>
-                  <Calculator className="h-4 w-4 mr-2" />
-                  Calcular cauda ({selectedIds.size} selecionada
-                  {selectedIds.size !== 1 ? "s" : ""})
-                </>
-              )}
-            </Button>
-          </div>
-
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={
-                        newsItems?.length
-                          ? selectedIds.size === newsItems.length
-                          : false
-                      }
-                      onCheckedChange={toggleAll}
-                    />
-                  </TableHead>
                   <TableHead>Título</TableHead>
                   <TableHead className="w-40">Categorias</TableHead>
                   <TableHead className="w-28">Direção</TableHead>
                   <TableHead className="w-28">Confiança</TableHead>
+                  <TableHead className="w-36">Cauda de Impacto</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -376,45 +421,56 @@ export default function ImpactTails() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  newsItems?.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedIds.has(item.id)}
-                          onCheckedChange={() => toggleSelection(item.id)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium line-clamp-2">
-                          {item.title || "Sem título"}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {item.categories?.split(",").slice(0, 2).map((cat, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">
-                              {cat.trim()}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          {getDirectionIcon(item.impact_direction)}
-                          <span className="text-sm capitalize">
-                            {item.impact_direction || "neutral"}
+                  newsItems?.map((item) => {
+                    const tail = tailsMap.get(item.id);
+                    const { icon } = tail ? getDirectionFromTail(tail.calculatedDirection) : { icon: null };
+                    
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <div className="font-medium line-clamp-2">
+                            {item.title || "Sem título"}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {item.categories?.split(",").slice(0, 2).map((cat, idx) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                {cat.trim()}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {tail && (
+                            <div className="flex items-center gap-1">
+                              {icon}
+                              <span className="text-sm capitalize">
+                                {tail.calculatedDirection}
+                              </span>
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm">
+                            {item.confidence_score
+                              ? `${(item.confidence_score * 100).toFixed(0)}%`
+                              : "-"}
                           </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">
-                          {item.confidence_score
-                            ? `${(item.confidence_score * 100).toFixed(0)}%`
-                            : "-"}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                        </TableCell>
+                        <TableCell>
+                          {tail && (
+                            <div onClick={() => handleThumbnailClick(item.id)}>
+                              <MiniTailChart 
+                                data={tail.chartData} 
+                                direction={tail.calculatedDirection} 
+                              />
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
@@ -422,85 +478,11 @@ export default function ImpactTails() {
         </CardContent>
       </Card>
 
-      {tailResults.length > 0 && (
-        <div className="space-y-6">
-          <h2 className="text-2xl font-semibold">Gráficos de Impacto</h2>
-          {tailResults.map((tail) => (
-            <Card key={tail.newsId}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg line-clamp-1">
-                    {tail.title}
-                  </CardTitle>
-                  <div className="flex items-center gap-4">
-                    <Badge
-                      variant={
-                        tail.impactDirection === "bullish"
-                          ? "default"
-                          : tail.impactDirection === "bearish"
-                          ? "destructive"
-                          : "secondary"
-                      }
-                    >
-                      {tail.impactDirection}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      Impacto máx: {tail.maxImpactPct.toFixed(2)}%
-                    </span>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={tail.chartData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                      <XAxis
-                        dataKey="day"
-                        label={{
-                          value: "Dias",
-                          position: "insideBottomRight",
-                          offset: -10,
-                        }}
-                        tickFormatter={(value) =>
-                          value % 30 === 0 || value === 1 ? value : ""
-                        }
-                      />
-                      <YAxis
-                        label={{
-                          value: "Impacto (%)",
-                          angle: -90,
-                          position: "insideLeft",
-                        }}
-                        tickFormatter={(value) => `${value.toFixed(1)}%`}
-                        domain={["auto", "auto"]}
-                      />
-                      <Tooltip
-                        formatter={(value: number) => [
-                          `${value.toFixed(3)}%`,
-                          "Impacto",
-                        ]}
-                        labelFormatter={(label) => `Dia ${label}`}
-                      />
-                      <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
-                      <Line
-                        type="monotone"
-                        dataKey="impact"
-                        stroke={getDirectionColor(tail.impactDirection)}
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      <FullChartDialog 
+        tail={selectedTail} 
+        open={dialogOpen} 
+        onOpenChange={setDialogOpen} 
+      />
     </div>
   );
 }
