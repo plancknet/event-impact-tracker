@@ -17,6 +17,19 @@ Deno.serve(async (req) => {
 
     console.log("Starting extraction of news results...");
 
+    // Get all successful query results that haven't been extracted yet
+    // First, get already processed query_result_ids
+    const { data: existingResults, error: existingError } = await supabase
+      .from("alert_news_results")
+      .select("query_result_id");
+    
+    if (existingError) {
+      console.error("Error checking existing results:", existingError);
+    }
+    
+    const processedIds = new Set((existingResults || []).map(r => r.query_result_id));
+    console.log(`Already processed ${processedIds.size} query results`);
+
     // Get all successful query results
     const { data: queryResults, error: queryError } = await supabase
       .from("alert_query_results")
@@ -27,21 +40,13 @@ Deno.serve(async (req) => {
       throw queryError;
     }
 
-    console.log(`Found ${queryResults?.length || 0} query results to process`);
-
-    // Delete existing extracted results to avoid duplicates
-    const { error: deleteError } = await supabase
-      .from("alert_news_results")
-      .delete()
-      .neq("id", "00000000-0000-0000-0000-000000000000");
-
-    if (deleteError) {
-      console.error("Error deleting existing results:", deleteError);
-    }
+    // Filter to only unprocessed query results
+    const unprocessedResults = (queryResults || []).filter(qr => !processedIds.has(qr.id));
+    console.log(`Found ${queryResults?.length || 0} total query results, ${unprocessedResults.length} new to process`);
 
     let extractedCount = 0;
 
-    for (const queryResult of queryResults || []) {
+    for (const queryResult of unprocessedResults) {
       const xml = queryResult.raw_html;
       if (!xml) continue;
 
