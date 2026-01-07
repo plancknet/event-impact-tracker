@@ -1,1 +1,10 @@
 project_id = "bficxnetrsuyzygutztn"
+
+[functions.extract-news-results]
+verify_jwt = false
+
+[functions.google-alerts-query]
+verify_jwt = false
+
+[functions.fetch-news-content]
+verify_jwt = false

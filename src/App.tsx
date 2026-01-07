@@ -7,6 +7,7 @@ import { Layout } from "@/components/Layout";
 import SearchTerms from "@/pages/SearchTerms";
 import GoogleAlerts from "@/pages/GoogleAlerts";
 import ExtractedResults from "@/pages/ExtractedResults";
+import FullContent from "@/pages/FullContent";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
             <Route path="/" element={<SearchTerms />} />
             <Route path="/queries" element={<GoogleAlerts />} />
             <Route path="/results" element={<ExtractedResults />} />
+            <Route path="/full-content" element={<FullContent />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>

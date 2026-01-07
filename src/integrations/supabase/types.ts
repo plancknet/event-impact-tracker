@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_duplicate: boolean
           link_url: string | null
           query_result_id: string
           snippet: string | null
@@ -27,6 +28,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_duplicate?: boolean
           link_url?: string | null
           query_result_id: string
           snippet?: string | null
@@ -36,6 +38,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_duplicate?: boolean
           link_url?: string | null
           query_result_id?: string
           snippet?: string | null
@@ -80,6 +83,38 @@ export type Database = {
             columns: ["term_id"]
             isOneToOne: false
             referencedRelation: "search_terms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      full_news_content: {
+        Row: {
+          content_full: string | null
+          fetched_at: string
+          id: string
+          news_id: string
+          status: string
+        }
+        Insert: {
+          content_full?: string | null
+          fetched_at?: string
+          id?: string
+          news_id: string
+          status?: string
+        }
+        Update: {
+          content_full?: string | null
+          fetched_at?: string
+          id?: string
+          news_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "full_news_content_news_id_fkey"
+            columns: ["news_id"]
+            isOneToOne: false
+            referencedRelation: "alert_news_results"
             referencedColumns: ["id"]
           },
         ]
