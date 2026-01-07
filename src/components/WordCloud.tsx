@@ -47,16 +47,34 @@ function extractWords(titles: (string | null | undefined)[]): { text: string; va
     .map(([text, value]) => ({ text, value }));
 }
 
+// Vibrant colors ordered by intensity (most vibrant first)
+const VIBRANT_COLORS = [
+  "#FF0066", // Hot pink
+  "#00FF88", // Neon green
+  "#FFD700", // Gold
+  "#00BFFF", // Deep sky blue
+  "#FF6B35", // Bright orange
+  "#9B59B6", // Purple
+  "#1ABC9C", // Turquoise
+  "#E91E63", // Pink
+  "#00CED1", // Dark turquoise
+  "#FF4757", // Red-pink
+];
+
+// Muted colors for less frequent words
+const MUTED_COLORS = [
+  "#7B8FA1", // Muted blue-gray
+  "#95A5A6", // Gray
+  "#A29BFE", // Light purple
+  "#81ECEC", // Light cyan
+  "#FFEAA7", // Light yellow
+];
+
 const options = {
-  colors: [
-    "#FF6B6B", "#4ECDC4", "#FFE66D", "#F38181", "#AA96DA",
-    "#FCBAD3", "#A8E6CF", "#FF8B94", "#88D8B0", "#74B9FF",
-    "#FD79A8", "#00CEC9", "#E17055", "#00B894", "#6C5CE7"
-  ],
   enableTooltip: true,
   deterministic: false,
   fontFamily: "Inter, system-ui, sans-serif",
-  fontSizes: [16, 80] as [number, number],
+  fontSizes: [14, 80] as [number, number],
   fontStyle: "normal",
   fontWeight: "bold",
   padding: 4,
@@ -69,25 +87,47 @@ const options = {
 
 export function WordCloud({ titles, onWordClick, activeWord }: WordCloudProps) {
   const words = useMemo(() => extractWords(titles), [titles]);
+  
+  const maxValue = useMemo(() => {
+    if (words.length === 0) return 1;
+    return Math.max(...words.map(w => w.value));
+  }, [words]);
 
   const callbacks = useMemo(
     () => ({
       onWordClick: (word: { text: string }) => {
         onWordClick(activeWord === word.text ? "" : word.text);
       },
-      getWordColor: (word: { text: string }) => {
+      getWordColor: (word: { text: string; value: number }) => {
         if (activeWord === word.text) {
-          return "#00d4ff";
+          return "#00FFFF"; // Cyan for active
         }
         if (activeWord && activeWord !== word.text) {
-          return "#6b7280";
+          return "#4a5568"; // Gray for inactive when filtering
         }
-        return undefined;
+        
+        // Calculate relative frequency (0 to 1)
+        const relativeFreq = word.value / maxValue;
+        
+        // Top 20% get vibrant colors
+        if (relativeFreq >= 0.8) {
+          return VIBRANT_COLORS[Math.floor(Math.random() * 3)]; // Top 3 vibrant
+        }
+        // 50-80% get medium vibrant colors
+        if (relativeFreq >= 0.5) {
+          return VIBRANT_COLORS[3 + Math.floor(Math.random() * 4)];
+        }
+        // 30-50% get lower vibrant colors
+        if (relativeFreq >= 0.3) {
+          return VIBRANT_COLORS[7 + Math.floor(Math.random() * 3)];
+        }
+        // Below 30% get muted colors
+        return MUTED_COLORS[Math.floor(Math.random() * MUTED_COLORS.length)];
       },
       getWordTooltip: (word: { text: string; value: number }) => 
         `${word.text}: ${word.value} ocorrência(s)`,
     }),
-    [activeWord, onWordClick]
+    [activeWord, onWordClick, maxValue]
   );
 
   if (words.length === 0) {
