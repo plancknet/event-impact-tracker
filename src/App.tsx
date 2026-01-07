@@ -10,6 +10,7 @@ import ExtractedResults from "@/pages/ExtractedResults";
 import FullContent from "@/pages/FullContent";
 import AnalysisResults from "@/pages/AnalysisResults";
 import ImpactTails from "@/pages/ImpactTails";
+import ContentCreator from "@/pages/ContentCreator";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/full-content" element={<FullContent />} />
             <Route path="/analysis" element={<AnalysisResults />} />
             <Route path="/impact-tails" element={<ImpactTails />} />
+            <Route path="/content-creator" element={<ContentCreator />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>

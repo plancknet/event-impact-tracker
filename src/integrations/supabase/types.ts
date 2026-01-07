@@ -215,6 +215,33 @@ export type Database = {
         }
         Relationships: []
       }
+      teleprompter_scripts: {
+        Row: {
+          created_at: string
+          id: string
+          news_ids_json: Json
+          parameters_json: Json
+          raw_ai_response: string | null
+          script_text: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          news_ids_json: Json
+          parameters_json: Json
+          raw_ai_response?: string | null
+          script_text: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          news_ids_json?: Json
+          parameters_json?: Json
+          raw_ai_response?: string | null
+          script_text?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
