@@ -306,7 +306,7 @@ export default function ExtractedResults() {
                       filteredAndSortedResults.map((result) => (
                         <TableRow key={result.id}>
                           <TableCell className="font-mono text-xs whitespace-nowrap">
-                            {format(new Date(result.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                            {format(new Date(result.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                           </TableCell>
                           <TableCell className="font-mono text-xs">{result.term}</TableCell>
                           <TableCell className="font-medium text-sm">

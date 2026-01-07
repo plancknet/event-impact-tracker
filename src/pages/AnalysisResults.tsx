@@ -432,7 +432,7 @@ export default function AnalysisResults() {
                           />
                         </TableCell>
                         <TableCell className="font-mono text-xs whitespace-nowrap">
-                          {format(new Date(item.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                          {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
