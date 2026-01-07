@@ -8,6 +8,10 @@ import { FileSearch, Loader2, ExternalLink, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { SortableTableHead, SortDirection } from "@/components/SortableTableHead";
 import { WordCloud } from "@/components/WordCloud";
+import { DateFilter } from "@/components/DateFilter";
+import { TermFilter } from "@/components/TermFilter";
+import { format, parse, isValid } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 type NewsResult = {
   id: string;
@@ -15,6 +19,7 @@ type NewsResult = {
   snippet: string | null;
   link_url: string | null;
   term: string;
+  created_at: string;
 };
 
 export default function ExtractedResults() {
@@ -23,11 +28,13 @@ export default function ExtractedResults() {
   const [isLoading, setIsLoading] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [sort, setSort] = useState<{ key: string; direction: SortDirection }>({
-    key: "term",
-    direction: "asc",
+    key: "created_at",
+    direction: "desc",
   });
   const [titleFilter, setTitleFilter] = useState("");
   const [wordCloudFilter, setWordCloudFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [termFilter, setTermFilter] = useState("all");
 
   useEffect(() => {
     loadResults();
@@ -43,25 +50,37 @@ export default function ExtractedResults() {
           title,
           snippet,
           link_url,
+          created_at,
+          is_duplicate,
           alert_query_results!inner (
             search_terms!inner (
               term
             )
           )
         `)
+        .eq("is_duplicate", false)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const formattedResults: NewsResult[] = (data || []).map((r: any) => ({
-        id: r.id,
-        title: r.title,
-        snippet: r.snippet,
-        link_url: r.link_url,
-        term: r.alert_query_results?.search_terms?.term || "—",
-      }));
+      // Group by title+link_url and keep only the one with smallest id (first occurrence)
+      const uniqueMap = new Map<string, NewsResult>();
+      for (const r of data || []) {
+        const key = `${(r.title || "").toLowerCase().trim()}|${(r.link_url || "").toLowerCase().trim()}`;
+        const existing = uniqueMap.get(key);
+        if (!existing || r.id < existing.id) {
+          uniqueMap.set(key, {
+            id: r.id,
+            title: r.title,
+            snippet: r.snippet,
+            link_url: r.link_url,
+            term: r.alert_query_results?.search_terms?.term || "—",
+            created_at: r.created_at,
+          });
+        }
+      }
 
-      setResults(formattedResults);
+      setResults(Array.from(uniqueMap.values()));
     } catch (error) {
       console.error("Error loading results:", error);
       toast({
@@ -90,15 +109,41 @@ export default function ExtractedResults() {
     }
   };
 
-  const filteredAndSortedResults = useMemo(() => {
-    // First filter by title
-    const filtered = titleFilter.trim()
-      ? results.filter((r) =>
-          (r.title || "").toLowerCase().includes(titleFilter.toLowerCase().trim())
-        )
-      : results;
+  const parseFilterDate = (dateStr: string): Date | null => {
+    if (dateStr.length !== 10) return null;
+    const parsed = parse(dateStr, "dd/MM/yyyy", new Date());
+    return isValid(parsed) ? parsed : null;
+  };
 
-    // Then sort
+  const filteredAndSortedResults = useMemo(() => {
+    let filtered = results;
+
+    // Filter by term
+    if (termFilter && termFilter !== "all") {
+      filtered = filtered.filter((r) => r.term.toLowerCase() === termFilter.toLowerCase());
+    }
+
+    // Filter by title
+    if (titleFilter.trim()) {
+      filtered = filtered.filter((r) =>
+        (r.title || "").toLowerCase().includes(titleFilter.toLowerCase().trim())
+      );
+    }
+
+    // Filter by date
+    const filterDate = parseFilterDate(dateFilter);
+    if (filterDate) {
+      filtered = filtered.filter((r) => {
+        const newsDate = new Date(r.created_at);
+        return (
+          newsDate.getDate() === filterDate.getDate() &&
+          newsDate.getMonth() === filterDate.getMonth() &&
+          newsDate.getFullYear() === filterDate.getFullYear()
+        );
+      });
+    }
+
+    // Sort
     if (!sort.direction) return filtered;
 
     return [...filtered].sort((a, b) => {
@@ -111,13 +156,16 @@ export default function ExtractedResults() {
       } else if (sort.key === "title") {
         aVal = (a.title || "").toLowerCase();
         bVal = (b.title || "").toLowerCase();
+      } else if (sort.key === "created_at") {
+        aVal = a.created_at;
+        bVal = b.created_at;
       }
 
       if (aVal < bVal) return sort.direction === "asc" ? -1 : 1;
       if (aVal > bVal) return sort.direction === "asc" ? 1 : -1;
       return 0;
     });
-  }, [results, sort, titleFilter]);
+  }, [results, sort, titleFilter, dateFilter, termFilter]);
 
   async function handleExtract() {
     setIsExtracting(true);
@@ -178,6 +226,10 @@ export default function ExtractedResults() {
             </p>
           ) : (
             <>
+              <div className="flex items-center gap-4 mb-4">
+                <TermFilter value={termFilter} onChange={setTermFilter} />
+              </div>
+
               <div className="mb-4">
                 <p className="text-xs text-muted-foreground mb-2">Clique em uma palavra para filtrar:</p>
                 <WordCloud
@@ -187,28 +239,43 @@ export default function ExtractedResults() {
                 />
               </div>
 
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-4 gap-4">
                 <p className="text-sm text-muted-foreground">
                   {filteredAndSortedResults.length} de {results.length} resultado(s)
                 </p>
-                <div className="relative w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Filtrar por título..."
-                    value={titleFilter}
-                    onChange={(e) => {
-                      setTitleFilter(e.target.value);
-                      setWordCloudFilter("");
-                    }}
-                    className="pl-9"
-                    maxLength={100}
+                <div className="flex items-center gap-2">
+                  <DateFilter
+                    value={dateFilter}
+                    onChange={setDateFilter}
+                    placeholder="dd/mm/aaaa"
                   />
+                  <div className="relative w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Filtrar por título..."
+                      value={titleFilter}
+                      onChange={(e) => {
+                        setTitleFilter(e.target.value);
+                        setWordCloudFilter("");
+                      }}
+                      className="pl-9"
+                      maxLength={100}
+                    />
+                  </div>
                 </div>
               </div>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <SortableTableHead
+                        sortKey="created_at"
+                        currentSort={sort}
+                        onSort={handleSort}
+                        className="w-[100px]"
+                      >
+                        Data
+                      </SortableTableHead>
                       <SortableTableHead
                         sortKey="term"
                         currentSort={sort}
@@ -230,13 +297,16 @@ export default function ExtractedResults() {
                   <TableBody>
                     {filteredAndSortedResults.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                          Nenhum resultado encontrado para "{titleFilter}"
+                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          Nenhum resultado encontrado
                         </TableCell>
                       </TableRow>
                     ) : (
                       filteredAndSortedResults.map((result) => (
                         <TableRow key={result.id}>
+                          <TableCell className="font-mono text-xs whitespace-nowrap">
+                            {format(new Date(result.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                          </TableCell>
                           <TableCell className="font-mono text-xs">{result.term}</TableCell>
                           <TableCell className="font-medium text-sm">
                             {result.title || "—"}
