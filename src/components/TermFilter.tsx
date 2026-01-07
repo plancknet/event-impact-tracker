@@ -1,17 +1,13 @@
-import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TermFilterProps {
-  value: string;
-  onChange: (value: string) => void;
+  value: string[];
+  onChange: (value: string[]) => void;
 }
 
 export function TermFilter({ value, onChange }: TermFilterProps) {
@@ -28,19 +24,56 @@ export function TermFilter({ value, onChange }: TermFilterProps) {
     },
   });
 
+  const selectedSet = new Set(value);
+
+  const toggleTerm = (term: string) => {
+    if (selectedSet.has(term)) {
+      onChange(value.filter((t) => t !== term));
+      return;
+    }
+    onChange([...value, term]);
+  };
+
+  const clearTerms = () => onChange([]);
+
+  const label = (() => {
+    if (value.length === 0) return "Todos os termos";
+    if (value.length <= 2) return value.join(", ");
+    return `${value.length} termos`;
+  })();
+
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder="Todos os termos" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">Todos os termos</SelectItem>
-        {terms.map((t) => (
-          <SelectItem key={t.id} value={t.term}>
-            {t.term}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="w-[200px] justify-between">
+          <span className="truncate">{label}</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[260px] p-3">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium">Termos</span>
+          <Button variant="ghost" size="sm" onClick={clearTerms} disabled={value.length === 0}>
+            Limpar
+          </Button>
+        </div>
+        <ScrollArea className="h-48">
+          <div className="space-y-1 pr-2">
+            {terms.length === 0 ? (
+              <div className="text-sm text-muted-foreground">Nenhum termo</div>
+            ) : (
+              terms.map((t) => (
+                <label
+                  key={t.id}
+                  className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted cursor-pointer"
+                >
+                  <Checkbox checked={selectedSet.has(t.term)} onCheckedChange={() => toggleTerm(t.term)} />
+                  <span className="text-sm">{t.term}</span>
+                </label>
+              ))
+            )}
+          </div>
+        </ScrollArea>
+      </PopoverContent>
+    </Popover>
   );
 }

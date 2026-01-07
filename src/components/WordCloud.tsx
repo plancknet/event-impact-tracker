@@ -1,19 +1,20 @@
-import { useMemo, useCallback } from "react";
+import { useMemo } from "react";
 import ReactWordcloud from "react-wordcloud";
 
 interface WordCloudProps {
   titles: (string | null | undefined)[];
   onWordClick: (word: string) => void;
-  activeWord?: string;
+  activeWords?: string[];
   compact?: boolean;
+  onClear?: () => void;
 }
 
 // Common Portuguese stop words to filter out
 const STOP_WORDS = new Set([
   "a", "e", "o", "de", "da", "do", "em", "que", "para", "com", "por", "no", "na",
   "um", "uma", "os", "as", "dos", "das", "ao", "aos", "se", "seu", "sua", "ou",
-  "mais", "como", "mas", "foi", "são", "tem", "ser", "está", "isso", "ele", "ela",
-  "não", "já", "sobre", "após", "entre", "pode", "quando", "ainda", "vez", "ano",
+  "mais", "como", "mas", "foi", "sao", "tem", "ser", "esta", "isso", "ele", "ela",
+  "nao", "ja", "sobre", "apos", "entre", "pode", "quando", "ainda", "vez", "ano",
   "anos", "dia", "dias", "the", "and", "is", "to", "of", "in", "for", "on", "with",
   "at", "by", "from", "this", "that", "it", "an", "be", "as", "are", "was", "were",
   "will", "has", "have", "had", "been", "would", "could", "should", "their", "its",
@@ -23,24 +24,24 @@ const STOP_WORDS = new Set([
 
 function extractWords(titles: (string | null | undefined)[]): { text: string; value: number }[] {
   const wordCounts = new Map<string, number>();
-  
+
   for (const title of titles) {
     if (!title) continue;
-    
+
     const words = title
       .toLowerCase()
-      .split(/[^a-záàâãéèêíïóôõöúçñ]+/i)
-      .filter((word) => 
-        word.length >= 3 && 
-        !STOP_WORDS.has(word) && 
+      .split(/[^a-z\u00C0-\u017F]+/i)
+      .filter((word) =>
+        word.length >= 3 &&
+        !STOP_WORDS.has(word) &&
         !/^\d+$/.test(word)
       );
-    
+
     for (const word of words) {
       wordCounts.set(word, (wordCounts.get(word) || 0) + 1);
     }
   }
-  
+
   // Sort by count descending, take top 50
   return Array.from(wordCounts.entries())
     .sort((a, b) => b[1] - a[1])
@@ -86,12 +87,12 @@ const getOptions = (compact: boolean) => ({
   transitionDuration: 300,
 });
 
-export function WordCloud({ titles, onWordClick, activeWord, compact = false }: WordCloudProps) {
+export function WordCloud({ titles, onWordClick, activeWords = [], compact = false, onClear }: WordCloudProps) {
   const words = useMemo(() => extractWords(titles), [titles]);
-  
+
   const maxValue = useMemo(() => {
     if (words.length === 0) return 1;
-    return Math.max(...words.map(w => w.value));
+    return Math.max(...words.map((w) => w.value));
   }, [words]);
 
   const options = useMemo(() => getOptions(compact), [compact]);
@@ -99,19 +100,19 @@ export function WordCloud({ titles, onWordClick, activeWord, compact = false }: 
   const callbacks = useMemo(
     () => ({
       onWordClick: (word: { text: string }) => {
-        onWordClick(activeWord === word.text ? "" : word.text);
+        onWordClick(word.text);
       },
       getWordColor: (word: { text: string; value: number }) => {
-        if (activeWord === word.text) {
+        if (activeWords.length > 0 && activeWords.includes(word.text)) {
           return "#00FFFF"; // Cyan for active
         }
-        if (activeWord && activeWord !== word.text) {
+        if (activeWords.length > 0 && !activeWords.includes(word.text)) {
           return "#4a5568"; // Gray for inactive when filtering
         }
-        
+
         // Calculate relative frequency (0 to 1)
         const relativeFreq = word.value / maxValue;
-        
+
         // Top 20% get vibrant colors
         if (relativeFreq >= 0.8) {
           return VIBRANT_COLORS[Math.floor(Math.random() * 3)]; // Top 3 vibrant
@@ -127,10 +128,10 @@ export function WordCloud({ titles, onWordClick, activeWord, compact = false }: 
         // Below 30% get muted colors
         return MUTED_COLORS[Math.floor(Math.random() * MUTED_COLORS.length)];
       },
-      getWordTooltip: (word: { text: string; value: number }) => 
-        `${word.text}: ${word.value} ocorrência(s)`,
+      getWordTooltip: (word: { text: string; value: number }) =>
+        `${word.text}: ${word.value} ocorrencia(s)`,
     }),
-    [activeWord, onWordClick, maxValue]
+    [activeWords, onWordClick, maxValue]
   );
 
   if (words.length === 0) {
@@ -146,7 +147,7 @@ export function WordCloud({ titles, onWordClick, activeWord, compact = false }: 
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(56,189,248,0.15),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(45,212,191,0.1),transparent_50%)]" />
       </div>
-      
+
       {/* Word cloud */}
       <div className={`relative ${height} w-full`}>
         <ReactWordcloud
@@ -155,14 +156,14 @@ export function WordCloud({ titles, onWordClick, activeWord, compact = false }: 
           callbacks={callbacks}
         />
       </div>
-      
+
       {/* Clear filter button */}
-      {activeWord && (
+      {activeWords.length > 0 && (
         <button
-          onClick={() => onWordClick("")}
-          className={`absolute top-1 right-1 px-1.5 py-0.5 text-xs text-cyan-300/70 hover:text-cyan-200 bg-slate-800/50 rounded transition-colors z-10 ${compact ? 'text-[10px]' : ''}`}
+          onClick={() => (onClear ? onClear() : onWordClick(""))}
+          className={`absolute top-1 right-1 px-1.5 py-0.5 text-xs text-cyan-300/70 hover:text-cyan-200 bg-slate-800/50 rounded transition-colors z-10 ${compact ? "text-[10px]" : ""}`}
         >
-          ✕ {activeWord}
+          Limpar ({activeWords.length})
         </button>
       )}
     </div>

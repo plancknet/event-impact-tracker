@@ -24,6 +24,7 @@ import { Brain, ChevronDown, ChevronRight, ExternalLink, Loader2, CheckCircle, X
 import { WordCloud } from "@/components/WordCloud";
 import { DateFilter } from "@/components/DateFilter";
 import { TermFilter } from "@/components/TermFilter";
+import { CategoryFilter } from "@/components/CategoryFilter";
 import { format, parse, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -57,9 +58,10 @@ export default function AnalysisResults() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [titleFilter, setTitleFilter] = useState("");
-  const [wordCloudFilter, setWordCloudFilter] = useState("");
+  const [wordCloudFilter, setWordCloudFilter] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState("");
-  const [termFilter, setTermFilter] = useState("all");
+  const [termFilter, setTermFilter] = useState<string[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const queryClient = useQueryClient();
 
   // Fetch news with successful content and analysis status
@@ -240,8 +242,9 @@ export default function AnalysisResults() {
   };
 
   const handleWordCloudClick = (word: string) => {
-    setWordCloudFilter(word);
-    setTitleFilter(word);
+    setWordCloudFilter((prev) =>
+      prev.includes(word) ? prev.filter((w) => w !== word) : [...prev, word]
+    );
   };
 
   const parseFilterDate = (dateStr: string): Date | null => {
@@ -253,8 +256,9 @@ export default function AnalysisResults() {
   // Filter by term first (affects word cloud)
   const termFilteredItems = useMemo(() => {
     if (!newsItems) return [];
-    if (!termFilter || termFilter === "all") return newsItems;
-    return newsItems.filter((n) => n.term.toLowerCase() === termFilter.toLowerCase());
+    if (termFilter.length === 0) return newsItems;
+    const termSet = new Set(termFilter.map((t) => t.toLowerCase()));
+    return newsItems.filter((n) => termSet.has(n.term.toLowerCase()));
   }, [newsItems, termFilter]);
 
   const filteredNewsItems = useMemo(() => {
@@ -265,6 +269,28 @@ export default function AnalysisResults() {
       filtered = filtered.filter((n) =>
         (n.title || "").toLowerCase().includes(titleFilter.toLowerCase().trim())
       );
+    }
+
+    // Filter by word cloud selection
+    if (wordCloudFilter.length > 0) {
+      const words = wordCloudFilter.map((w) => w.toLowerCase());
+      filtered = filtered.filter((n) =>
+        words.some((word) => (n.title || "").toLowerCase().includes(word))
+      );
+    }
+
+    // Filter by categories
+    if (categoryFilter.length > 0) {
+      const categorySet = new Set(categoryFilter.map((c) => c.toLowerCase()));
+      filtered = filtered.filter((n) => {
+        const rawCategories = n.analysis?.categories;
+        if (!rawCategories) return false;
+        const categories = rawCategories
+          .split(",")
+          .map((c) => c.trim().toLowerCase())
+          .filter(Boolean);
+        return categories.some((c) => categorySet.has(c));
+      });
     }
 
     // Filter by date
@@ -281,7 +307,21 @@ export default function AnalysisResults() {
     }
 
     return filtered;
-  }, [newsItems, titleFilter, dateFilter, termFilter]);
+  }, [newsItems, titleFilter, dateFilter, termFilter, wordCloudFilter, categoryFilter]);
+
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const item of newsItems || []) {
+      const rawCategories = item.analysis?.categories;
+      if (!rawCategories) continue;
+      rawCategories
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean)
+        .forEach((c) => set.add(c));
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [newsItems]);
 
   const notAnalyzedCount = filteredNewsItems.filter((n) => !n.has_analysis).length;
   const analyzedCount = filteredNewsItems.filter((n) => n.has_analysis).length;
@@ -367,6 +407,11 @@ export default function AnalysisResults() {
                 <div className="flex flex-col gap-2 w-[60%]">
                   <div className="flex items-center gap-2">
                     <TermFilter value={termFilter} onChange={setTermFilter} />
+                    <CategoryFilter
+                      value={categoryFilter}
+                      options={categoryOptions}
+                      onChange={setCategoryFilter}
+                    />
                     <DateFilter
                       value={dateFilter}
                       onChange={setDateFilter}
@@ -380,7 +425,6 @@ export default function AnalysisResults() {
                       value={titleFilter}
                       onChange={(e) => {
                         setTitleFilter(e.target.value);
-                        setWordCloudFilter("");
                       }}
                       className="pl-9"
                       maxLength={100}
@@ -395,7 +439,8 @@ export default function AnalysisResults() {
                     compact
                     titles={termFilteredItems.map((n) => n.title)}
                     onWordClick={handleWordCloudClick}
-                    activeWord={wordCloudFilter}
+                    activeWords={wordCloudFilter}
+                    onClear={() => setWordCloudFilter([])}
                   />
                 </div>
               </div>

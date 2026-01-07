@@ -10,6 +10,7 @@ import { SortableTableHead, SortDirection } from "@/components/SortableTableHead
 import { WordCloud } from "@/components/WordCloud";
 import { DateFilter } from "@/components/DateFilter";
 import { TermFilter } from "@/components/TermFilter";
+import { CategoryFilter } from "@/components/CategoryFilter";
 import { format, parse, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -20,6 +21,7 @@ type NewsResult = {
   link_url: string | null;
   term: string;
   created_at: string;
+  categories: string | null;
 };
 
 export default function ExtractedResults() {
@@ -32,9 +34,10 @@ export default function ExtractedResults() {
     direction: "desc",
   });
   const [titleFilter, setTitleFilter] = useState("");
-  const [wordCloudFilter, setWordCloudFilter] = useState("");
+  const [wordCloudFilter, setWordCloudFilter] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState("");
-  const [termFilter, setTermFilter] = useState("all");
+  const [termFilter, setTermFilter] = useState<string[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
 
   useEffect(() => {
     loadResults();
@@ -63,9 +66,22 @@ export default function ExtractedResults() {
 
       if (error) throw error;
 
+      const baseResults = data || [];
+      const newsIds = baseResults.map((r) => r.id);
+      let analysisMap = new Map<string, string | null>();
+      if (newsIds.length > 0) {
+        const { data: analyses, error: analysisError } = await supabase
+          .from("news_ai_analysis")
+          .select("news_id, categories")
+          .in("news_id", newsIds);
+
+        if (analysisError) throw analysisError;
+        analysisMap = new Map(analyses?.map((a) => [a.news_id, a.categories]) || []);
+      }
+
       // Group by title+link_url and keep only the one with smallest id (first occurrence)
       const uniqueMap = new Map<string, NewsResult>();
-      for (const r of data || []) {
+      for (const r of baseResults) {
         const key = `${(r.title || "").toLowerCase().trim()}|${(r.link_url || "").toLowerCase().trim()}`;
         const existing = uniqueMap.get(key);
         if (!existing || r.id < existing.id) {
@@ -76,6 +92,7 @@ export default function ExtractedResults() {
             link_url: r.link_url,
             term: r.alert_query_results?.search_terms?.term || "—",
             created_at: r.created_at,
+            categories: analysisMap.get(r.id) || null,
           });
         }
       }
@@ -101,12 +118,9 @@ export default function ExtractedResults() {
   }
 
   const handleWordCloudClick = (word: string) => {
-    setWordCloudFilter(word);
-    if (word) {
-      setTitleFilter(word);
-    } else {
-      setTitleFilter("");
-    }
+    setWordCloudFilter((prev) =>
+      prev.includes(word) ? prev.filter((w) => w !== word) : [...prev, word]
+    );
   };
 
   const parseFilterDate = (dateStr: string): Date | null => {
@@ -117,8 +131,9 @@ export default function ExtractedResults() {
 
   // Filter by term first (affects word cloud)
   const termFilteredResults = useMemo(() => {
-    if (!termFilter || termFilter === "all") return results;
-    return results.filter((r) => r.term.toLowerCase() === termFilter.toLowerCase());
+    if (termFilter.length === 0) return results;
+    const termSet = new Set(termFilter.map((t) => t.toLowerCase()));
+    return results.filter((r) => termSet.has(r.term.toLowerCase()));
   }, [results, termFilter]);
 
   const filteredAndSortedResults = useMemo(() => {
@@ -129,6 +144,27 @@ export default function ExtractedResults() {
       filtered = filtered.filter((r) =>
         (r.title || "").toLowerCase().includes(titleFilter.toLowerCase().trim())
       );
+    }
+
+    // Filter by word cloud selection
+    if (wordCloudFilter.length > 0) {
+      const words = wordCloudFilter.map((w) => w.toLowerCase());
+      filtered = filtered.filter((r) =>
+        words.some((word) => (r.title || "").toLowerCase().includes(word))
+      );
+    }
+
+    // Filter by categories
+    if (categoryFilter.length > 0) {
+      const categorySet = new Set(categoryFilter.map((c) => c.toLowerCase()));
+      filtered = filtered.filter((r) => {
+        if (!r.categories) return false;
+        const categories = r.categories
+          .split(",")
+          .map((c) => c.trim().toLowerCase())
+          .filter(Boolean);
+        return categories.some((c) => categorySet.has(c));
+      });
     }
 
     // Filter by date
@@ -166,7 +202,20 @@ export default function ExtractedResults() {
       if (aVal > bVal) return sort.direction === "asc" ? 1 : -1;
       return 0;
     });
-  }, [results, sort, titleFilter, dateFilter, termFilter]);
+  }, [results, sort, titleFilter, dateFilter, termFilter, wordCloudFilter, categoryFilter]);
+
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of results) {
+      if (!r.categories) continue;
+      r.categories
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean)
+        .forEach((c) => set.add(c));
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [results]);
 
   async function handleExtract() {
     setIsExtracting(true);
@@ -231,6 +280,11 @@ export default function ExtractedResults() {
                 <div className="flex flex-col gap-2 w-[60%]">
                   <div className="flex items-center gap-2">
                     <TermFilter value={termFilter} onChange={setTermFilter} />
+                    <CategoryFilter
+                      value={categoryFilter}
+                      options={categoryOptions}
+                      onChange={setCategoryFilter}
+                    />
                     <DateFilter
                       value={dateFilter}
                       onChange={setDateFilter}
@@ -244,7 +298,6 @@ export default function ExtractedResults() {
                       value={titleFilter}
                       onChange={(e) => {
                         setTitleFilter(e.target.value);
-                        setWordCloudFilter("");
                       }}
                       className="pl-9"
                       maxLength={100}
@@ -259,7 +312,8 @@ export default function ExtractedResults() {
                     compact
                     titles={termFilteredResults.map((r) => r.title)}
                     onWordClick={handleWordCloudClick}
-                    activeWord={wordCloudFilter}
+                    activeWords={wordCloudFilter}
+                    onClear={() => setWordCloudFilter([])}
                   />
                 </div>
               </div>

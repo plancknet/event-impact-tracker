@@ -34,6 +34,7 @@ import {
 import { WordCloud } from "@/components/WordCloud";
 import { DateFilter } from "@/components/DateFilter";
 import { TermFilter } from "@/components/TermFilter";
+import { CategoryFilter } from "@/components/CategoryFilter";
 
 // Constants for tail calculations (easily adjustable)
 const LAMBDA1 = 0.15; // Fast shock decay
@@ -332,9 +333,10 @@ export default function ImpactTails() {
   const [selectedTail, setSelectedTail] = useState<TailData | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [titleFilter, setTitleFilter] = useState("");
-  const [wordCloudFilter, setWordCloudFilter] = useState("");
+  const [wordCloudFilter, setWordCloudFilter] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState("");
-  const [termFilter, setTermFilter] = useState("all");
+  const [termFilter, setTermFilter] = useState<string[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
 
   const { data: newsItems, isLoading } = useQuery({
     queryKey: ["news-with-analysis-for-tails"],
@@ -434,8 +436,9 @@ export default function ImpactTails() {
   }, [newsItems]);
 
   const handleWordCloudClick = (word: string) => {
-    setWordCloudFilter(word);
-    setTitleFilter(word);
+    setWordCloudFilter((prev) =>
+      prev.includes(word) ? prev.filter((w) => w !== word) : [...prev, word]
+    );
   };
 
   const parseFilterDate = (dateStr: string): Date | null => {
@@ -447,8 +450,9 @@ export default function ImpactTails() {
   // Filter by term first (affects word cloud)
   const termFilteredItems = useMemo(() => {
     if (!newsItems) return [];
-    if (!termFilter || termFilter === "all") return newsItems;
-    return newsItems.filter((n) => n.term.toLowerCase() === termFilter.toLowerCase());
+    if (termFilter.length === 0) return newsItems;
+    const termSet = new Set(termFilter.map((t) => t.toLowerCase()));
+    return newsItems.filter((n) => termSet.has(n.term.toLowerCase()));
   }, [newsItems, termFilter]);
 
   const filteredNewsItems = useMemo(() => {
@@ -459,6 +463,27 @@ export default function ImpactTails() {
       filtered = filtered.filter((n) =>
         (n.title || "").toLowerCase().includes(titleFilter.toLowerCase().trim())
       );
+    }
+
+    // Filter by word cloud selection
+    if (wordCloudFilter.length > 0) {
+      const words = wordCloudFilter.map((w) => w.toLowerCase());
+      filtered = filtered.filter((n) =>
+        words.some((word) => (n.title || "").toLowerCase().includes(word))
+      );
+    }
+
+    // Filter by categories
+    if (categoryFilter.length > 0) {
+      const categorySet = new Set(categoryFilter.map((c) => c.toLowerCase()));
+      filtered = filtered.filter((n) => {
+        if (!n.categories) return false;
+        const categories = n.categories
+          .split(",")
+          .map((c) => c.trim().toLowerCase())
+          .filter(Boolean);
+        return categories.some((c) => categorySet.has(c));
+      });
     }
 
     // Filter by date
@@ -475,7 +500,20 @@ export default function ImpactTails() {
     }
 
     return filtered;
-  }, [newsItems, titleFilter, dateFilter, termFilter]);
+  }, [newsItems, titleFilter, dateFilter, termFilter, wordCloudFilter, categoryFilter]);
+
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const item of newsItems || []) {
+      if (!item.categories) continue;
+      item.categories
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean)
+        .forEach((c) => set.add(c));
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [newsItems]);
 
   const handleThumbnailClick = (newsId: string) => {
     const tail = tailsMap.get(newsId);
@@ -514,6 +552,11 @@ export default function ImpactTails() {
             <div className="flex flex-col gap-2 w-[60%]">
               <div className="flex items-center gap-2">
                 <TermFilter value={termFilter} onChange={setTermFilter} />
+                <CategoryFilter
+                  value={categoryFilter}
+                  options={categoryOptions}
+                  onChange={setCategoryFilter}
+                />
                 <DateFilter
                   value={dateFilter}
                   onChange={setDateFilter}
@@ -527,7 +570,6 @@ export default function ImpactTails() {
                   value={titleFilter}
                   onChange={(e) => {
                     setTitleFilter(e.target.value);
-                    setWordCloudFilter("");
                   }}
                   className="pl-9"
                   maxLength={100}
@@ -539,7 +581,8 @@ export default function ImpactTails() {
                 compact
                 titles={termFilteredItems.map((n) => n.title)}
                 onWordClick={handleWordCloudClick}
-                activeWord={wordCloudFilter}
+                activeWords={wordCloudFilter}
+                onClear={() => setWordCloudFilter([])}
               />
             </div>
           </div>
