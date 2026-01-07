@@ -5,6 +5,7 @@ interface WordCloudProps {
   titles: (string | null | undefined)[];
   onWordClick: (word: string) => void;
   activeWord?: string;
+  compact?: boolean;
 }
 
 // Common Portuguese stop words to filter out
@@ -70,28 +71,30 @@ const MUTED_COLORS = [
   "#FFEAA7", // Light yellow
 ];
 
-const options = {
+const getOptions = (compact: boolean) => ({
   enableTooltip: true,
   deterministic: false,
   fontFamily: "Inter, system-ui, sans-serif",
-  fontSizes: [14, 80] as [number, number],
+  fontSizes: compact ? [10, 28] as [number, number] : [14, 80] as [number, number],
   fontStyle: "normal",
   fontWeight: "bold",
-  padding: 4,
-  rotations: 2,
-  rotationAngles: [-90, 0] as [number, number],
+  padding: compact ? 2 : 4,
+  rotations: compact ? 0 : 2,
+  rotationAngles: [0, 0] as [number, number],
   scale: "sqrt" as const,
   spiral: "archimedean" as const,
   transitionDuration: 300,
-};
+});
 
-export function WordCloud({ titles, onWordClick, activeWord }: WordCloudProps) {
+export function WordCloud({ titles, onWordClick, activeWord, compact = false }: WordCloudProps) {
   const words = useMemo(() => extractWords(titles), [titles]);
   
   const maxValue = useMemo(() => {
     if (words.length === 0) return 1;
     return Math.max(...words.map(w => w.value));
   }, [words]);
+
+  const options = useMemo(() => getOptions(compact), [compact]);
 
   const callbacks = useMemo(
     () => ({
@@ -134,8 +137,10 @@ export function WordCloud({ titles, onWordClick, activeWord }: WordCloudProps) {
     return null;
   }
 
+  const height = compact ? "h-[56px]" : "h-[280px]";
+
   return (
-    <div className="relative rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
+    <div className="relative rounded-lg bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
       {/* Subtle background pattern */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(56,189,248,0.15),transparent_50%)]" />
@@ -143,7 +148,7 @@ export function WordCloud({ titles, onWordClick, activeWord }: WordCloudProps) {
       </div>
       
       {/* Word cloud */}
-      <div className="relative h-[280px] w-full">
+      <div className={`relative ${height} w-full`}>
         <ReactWordcloud
           words={words}
           options={options}
@@ -155,9 +160,9 @@ export function WordCloud({ titles, onWordClick, activeWord }: WordCloudProps) {
       {activeWord && (
         <button
           onClick={() => onWordClick("")}
-          className="absolute top-2 right-2 px-2 py-1 text-xs text-cyan-300/70 hover:text-cyan-200 bg-slate-800/50 rounded transition-colors z-10"
+          className={`absolute top-1 right-1 px-1.5 py-0.5 text-xs text-cyan-300/70 hover:text-cyan-200 bg-slate-800/50 rounded transition-colors z-10 ${compact ? 'text-[10px]' : ''}`}
         >
-          ✕ Limpar filtro: "{activeWord}"
+          ✕ {activeWord}
         </button>
       )}
     </div>
