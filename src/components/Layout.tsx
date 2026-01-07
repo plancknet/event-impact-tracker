@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Search, Radio, FileText, Download, Brain, LineChart } from "lucide-react";
+import { Search, Radio, FileText, Download, Brain, LineChart, Monitor } from "lucide-react";
 
 const navItems = [
   { to: "/", label: "Termos de Busca", icon: Search },
@@ -8,6 +8,7 @@ const navItems = [
   { to: "/full-content", label: "Conteúdo Completo", icon: Download },
   { to: "/analysis", label: "Análise IA", icon: Brain },
   { to: "/impact-tails", label: "Cauda de Impacto", icon: LineChart },
+  { to: "/content-creator", label: "Teleprompter", icon: Monitor },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {

@@ -1,0 +1,311 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  ChevronUp,
+  ChevronDown,
+  Maximize,
+  Minimize,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+
+interface TeleprompterDisplayProps {
+  script: string;
+}
+
+const PAUSE_DURATIONS = {
+  "pause-short": 1500,
+  "pause-medium": 3500,
+  "pause-long": 6000,
+  "pause": 2500,
+};
+
+export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [speed, setSpeed] = useState(50); // pixels per second
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showPauseTags, setShowPauseTags] = useState(false);
+  const [currentPause, setCurrentPause] = useState<string | null>(null);
+  
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef(0);
+  const animationRef = useRef<number>();
+  const lastTimeRef = useRef<number>();
+  const pauseTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Parse script to identify pause positions
+  const parseScript = useCallback((text: string) => {
+    const pauseRegex = /<(pause-short|pause-medium|pause-long|pause)>/g;
+    const parts: { type: "text" | "pause"; content: string; pauseType?: string }[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = pauseRegex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({
+          type: "text",
+          content: text.slice(lastIndex, match.index),
+        });
+      }
+      parts.push({
+        type: "pause",
+        content: match[0],
+        pauseType: match[1],
+      });
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push({
+        type: "text",
+        content: text.slice(lastIndex),
+      });
+    }
+
+    return parts;
+  }, []);
+
+  const parsedScript = parseScript(script);
+
+  // Animate scrolling
+  const animate = useCallback((timestamp: number) => {
+    if (!lastTimeRef.current) lastTimeRef.current = timestamp;
+    const delta = timestamp - lastTimeRef.current;
+    lastTimeRef.current = timestamp;
+
+    if (containerRef.current && contentRef.current && !isPaused) {
+      const pixelsPerMs = speed / 1000;
+      scrollPositionRef.current += delta * pixelsPerMs;
+      
+      const maxScroll = contentRef.current.scrollHeight - containerRef.current.clientHeight;
+      
+      if (scrollPositionRef.current >= maxScroll) {
+        scrollPositionRef.current = maxScroll;
+        setIsPlaying(false);
+      }
+      
+      containerRef.current.scrollTop = scrollPositionRef.current;
+
+      // Check for pause markers in view
+      const pauseElements = contentRef.current.querySelectorAll("[data-pause]");
+      pauseElements.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        const containerRect = containerRef.current!.getBoundingClientRect();
+        const triggerPoint = containerRect.top + containerRect.height * 0.3;
+        
+        if (rect.top <= triggerPoint && rect.bottom >= triggerPoint - 50) {
+          const pauseType = el.getAttribute("data-pause") as keyof typeof PAUSE_DURATIONS;
+          if (pauseType && !el.hasAttribute("data-triggered")) {
+            el.setAttribute("data-triggered", "true");
+            handlePause(pauseType);
+          }
+        }
+      });
+    }
+
+    if (isPlaying) {
+      animationRef.current = requestAnimationFrame(animate);
+    }
+  }, [speed, isPaused, isPlaying]);
+
+  const handlePause = (pauseType: keyof typeof PAUSE_DURATIONS) => {
+    setIsPaused(true);
+    setCurrentPause(pauseType);
+    
+    pauseTimeoutRef.current = setTimeout(() => {
+      setIsPaused(false);
+      setCurrentPause(null);
+    }, PAUSE_DURATIONS[pauseType]);
+  };
+
+  useEffect(() => {
+    if (isPlaying && !isPaused) {
+      lastTimeRef.current = undefined;
+      animationRef.current = requestAnimationFrame(animate);
+    } else if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [isPlaying, isPaused, animate]);
+
+  const handleStart = () => {
+    setIsPlaying(true);
+    setIsPaused(false);
+  };
+
+  const handlePauseToggle = () => {
+    if (isPaused) {
+      if (pauseTimeoutRef.current) {
+        clearTimeout(pauseTimeoutRef.current);
+      }
+      setIsPaused(false);
+      setCurrentPause(null);
+    } else {
+      setIsPaused(true);
+    }
+  };
+
+  const handleRestart = () => {
+    setIsPlaying(false);
+    setIsPaused(false);
+    setCurrentPause(null);
+    scrollPositionRef.current = 0;
+    if (containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+    // Reset pause triggers
+    if (contentRef.current) {
+      const pauseElements = contentRef.current.querySelectorAll("[data-triggered]");
+      pauseElements.forEach((el) => el.removeAttribute("data-triggered"));
+    }
+  };
+
+  const handleSpeedChange = (delta: number) => {
+    setSpeed((prev) => Math.max(10, Math.min(200, prev + delta)));
+  };
+
+  const toggleFullscreen = async () => {
+    if (!document.fullscreenElement) {
+      await containerRef.current?.parentElement?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      await document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  const renderContent = () => {
+    return parsedScript.map((part, index) => {
+      if (part.type === "pause") {
+        if (showPauseTags) {
+          return (
+            <span
+              key={index}
+              data-pause={part.pauseType}
+              className="inline-block px-2 py-1 mx-1 bg-yellow-500/30 text-yellow-300 rounded text-sm"
+            >
+              {part.content}
+            </span>
+          );
+        } else {
+          return (
+            <span
+              key={index}
+              data-pause={part.pauseType}
+              className="inline-block w-0 h-0"
+            />
+          );
+        }
+      }
+      return <span key={index}>{part.content}</span>;
+    });
+  };
+
+  return (
+    <div className={`flex flex-col ${isFullscreen ? "h-screen bg-black" : ""}`}>
+      {/* Controls */}
+      <Card className={`mb-4 ${isFullscreen ? "absolute top-4 left-4 right-4 z-10 bg-background/80 backdrop-blur" : ""}`}>
+        <CardContent className="py-3">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              {!isPlaying ? (
+                <Button onClick={handleStart} size="sm">
+                  <Play className="w-4 h-4 mr-1" />
+                  Iniciar
+                </Button>
+              ) : (
+                <Button onClick={handlePauseToggle} size="sm" variant={isPaused ? "default" : "secondary"}>
+                  <Pause className="w-4 h-4 mr-1" />
+                  {isPaused ? "Continuar" : "Pausar"}
+                </Button>
+              )}
+              <Button onClick={handleRestart} size="sm" variant="outline">
+                <RotateCcw className="w-4 h-4 mr-1" />
+                Reiniciar
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Button onClick={() => handleSpeedChange(-10)} size="sm" variant="outline">
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+                <div className="w-32">
+                  <Slider
+                    value={[speed]}
+                    onValueChange={([v]) => setSpeed(v)}
+                    min={10}
+                    max={200}
+                    step={5}
+                  />
+                </div>
+                <Button onClick={() => handleSpeedChange(10)} size="sm" variant="outline">
+                  <ChevronUp className="w-4 h-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground w-16">{speed} px/s</span>
+              </div>
+
+              <Button onClick={() => setShowPauseTags(!showPauseTags)} size="sm" variant="outline">
+                {showPauseTags ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </Button>
+
+              <Button onClick={toggleFullscreen} size="sm" variant="outline">
+                {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+              </Button>
+            </div>
+          </div>
+
+          {currentPause && (
+            <div className="mt-2 text-center text-yellow-500 animate-pulse">
+              ⏸ Pausa automática ({currentPause.replace("pause-", "").replace("pause", "normal")})
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Teleprompter Display */}
+      <div
+        ref={containerRef}
+        className={`relative overflow-hidden bg-black text-white rounded-lg ${
+          isFullscreen ? "flex-1" : "h-[500px]"
+        }`}
+        style={{ scrollBehavior: "auto" }}
+      >
+        {/* Gradient overlays for readability */}
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black to-transparent z-10 pointer-events-none" />
+        
+        {/* Center line indicator */}
+        <div className="absolute inset-x-0 top-[30%] h-0.5 bg-primary/30 z-10 pointer-events-none" />
+        
+        <div
+          ref={contentRef}
+          className={`px-8 py-32 ${isFullscreen ? "text-4xl leading-relaxed" : "text-2xl leading-relaxed"}`}
+          style={{ fontFamily: "'Inter', sans-serif" }}
+        >
+          {renderContent()}
+        </div>
+      </div>
+    </div>
+  );
+}
