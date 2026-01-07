@@ -3,6 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent } from "@/components/ui/card";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Play,
   Pause,
   RotateCcw,
@@ -25,6 +32,14 @@ const PAUSE_DURATIONS = {
   "pause": 2500,
 };
 
+const FONT_OPTIONS = [
+  { label: "Inter", value: "Inter, system-ui, sans-serif" },
+  { label: "Georgia", value: "Georgia, serif" },
+  { label: "Times", value: "\"Times New Roman\", serif" },
+  { label: "Arial", value: "Arial, sans-serif" },
+  { label: "Courier", value: "\"Courier New\", monospace" },
+];
+
 export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -32,6 +47,10 @@ export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showPauseTags, setShowPauseTags] = useState(false);
   const [currentPause, setCurrentPause] = useState<string | null>(null);
+  const [fontFamily, setFontFamily] = useState(FONT_OPTIONS[0].value);
+  const [fontSize, setFontSize] = useState(28);
+  const [textColor, setTextColor] = useState("#ffffff");
+  const [backgroundColor, setBackgroundColor] = useState("#000000");
   
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -222,7 +241,10 @@ export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
   };
 
   return (
-    <div className={`flex flex-col ${isFullscreen ? "h-screen bg-black" : ""}`}>
+    <div
+      className={`flex flex-col ${isFullscreen ? "h-screen" : ""}`}
+      style={isFullscreen ? { backgroundColor } : undefined}
+    >
       {/* Controls */}
       <Card className={`mb-4 ${isFullscreen ? "absolute top-4 left-4 right-4 z-10 bg-background/80 backdrop-blur" : ""}`}>
         <CardContent className="py-3">
@@ -275,6 +297,57 @@ export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
             </div>
           </div>
 
+          <div className="mt-3 flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Fonte</span>
+              <Select value={fontFamily} onValueChange={setFontFamily}>
+                <SelectTrigger className="w-[170px] h-8">
+                  <SelectValue placeholder="Fonte" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FONT_OPTIONS.map((font) => (
+                    <SelectItem key={font.label} value={font.value}>
+                      {font.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Tamanho</span>
+              <div className="w-36">
+                <Slider
+                  value={[fontSize]}
+                  onValueChange={([v]) => setFontSize(v)}
+                  min={18}
+                  max={64}
+                  step={2}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground w-10">{fontSize}px</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Cor</span>
+              <input
+                type="color"
+                value={textColor}
+                onChange={(e) => setTextColor(e.target.value)}
+                className="h-8 w-10 rounded border border-border bg-transparent p-0"
+                aria-label="Cor da fonte"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Fundo</span>
+              <input
+                type="color"
+                value={backgroundColor}
+                onChange={(e) => setBackgroundColor(e.target.value)}
+                className="h-8 w-10 rounded border border-border bg-transparent p-0"
+                aria-label="Cor do fundo"
+              />
+            </div>
+          </div>
+
           {currentPause && (
             <div className="mt-2 text-center text-yellow-500 animate-pulse">
               ⏸ Pausa automática ({currentPause.replace("pause-", "").replace("pause", "normal")})
@@ -286,22 +359,33 @@ export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
       {/* Teleprompter Display */}
       <div
         ref={containerRef}
-        className={`relative overflow-hidden bg-black text-white rounded-lg ${
+        className={`relative overflow-hidden text-white rounded-lg ${
           isFullscreen ? "flex-1" : "h-[500px]"
         }`}
-        style={{ scrollBehavior: "auto" }}
+        style={{ scrollBehavior: "auto", backgroundColor }}
       >
         {/* Gradient overlays for readability */}
-        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black to-transparent z-10 pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black to-transparent z-10 pointer-events-none" />
+        <div
+          className="absolute inset-x-0 top-0 h-24 z-10 pointer-events-none"
+          style={{ background: `linear-gradient(to bottom, ${backgroundColor}, transparent)` }}
+        />
+        <div
+          className="absolute inset-x-0 bottom-0 h-24 z-10 pointer-events-none"
+          style={{ background: `linear-gradient(to top, ${backgroundColor}, transparent)` }}
+        />
         
         {/* Center line indicator */}
         <div className="absolute inset-x-0 top-[30%] h-0.5 bg-primary/30 z-10 pointer-events-none" />
         
         <div
           ref={contentRef}
-          className={`px-8 py-32 ${isFullscreen ? "text-4xl leading-relaxed" : "text-2xl leading-relaxed"}`}
-          style={{ fontFamily: "'Inter', sans-serif" }}
+          className="px-8 py-32"
+          style={{
+            fontFamily,
+            fontSize: isFullscreen ? Math.round(fontSize * 1.3) : fontSize,
+            lineHeight: 1.6,
+            color: textColor,
+          }}
         >
           {renderContent()}
         </div>

@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Wand2, FileText, Monitor } from "lucide-react";
 import { NewsSelector, type SelectableNews } from "@/components/teleprompter/NewsSelector";
 import { EditorialParameters, type EditorialParametersData } from "@/components/teleprompter/EditorialParameters";
 import { TeleprompterDisplay } from "@/components/teleprompter/TeleprompterDisplay";
+import { format } from "date-fns";
 
 type TabValue = "select" | "configure" | "teleprompter";
 
@@ -118,6 +120,19 @@ export default function ContentCreator() {
     },
   });
 
+  const { data: scriptsData = [], isLoading: scriptsLoading } = useQuery({
+    queryKey: ["teleprompter-scripts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("teleprompter_scripts")
+        .select("id, created_at, news_ids_json, script_text")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   // Generate script mutation
   const generateMutation = useMutation({
     mutationFn: async () => {
@@ -168,7 +183,6 @@ export default function ContentCreator() {
     generateMutation.mutate();
   };
 
-  const canProceedToConfigure = selectedNewsIds.length > 0;
   const canGenerate = selectedNewsIds.length > 0;
 
   return (
@@ -188,11 +202,11 @@ export default function ContentCreator() {
             <FileText className="w-4 h-4" />
             1. Notícias
           </TabsTrigger>
-          <TabsTrigger value="configure" disabled={!canProceedToConfigure} className="flex items-center gap-2">
+          <TabsTrigger value="configure" className="flex items-center gap-2">
             <Wand2 className="w-4 h-4" />
             2. Configurar
           </TabsTrigger>
-          <TabsTrigger value="teleprompter" disabled={!generatedScript} className="flex items-center gap-2">
+          <TabsTrigger value="teleprompter" className="flex items-center gap-2">
             <Monitor className="w-4 h-4" />
             3. Teleprompter
           </TabsTrigger>
@@ -270,15 +284,75 @@ export default function ContentCreator() {
         </TabsContent>
 
         <TabsContent value="teleprompter" className="mt-6">
-          {generatedScript ? (
-            <TeleprompterDisplay script={generatedScript} />
-          ) : (
+          <div className="space-y-6">
             <Card>
-              <CardContent className="flex items-center justify-center py-12 text-muted-foreground">
-                Nenhum roteiro gerado ainda. Configure e gere o roteiro primeiro.
+              <CardHeader>
+                <CardTitle className="text-lg">Conteudos gerados</CardTitle>
+                <CardDescription>
+                  {scriptsData.length} roteiro(s) disponivel(eis)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {scriptsLoading ? (
+                  <div className="flex items-center justify-center py-8 text-muted-foreground">
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    Carregando roteiros...
+                  </div>
+                ) : scriptsData.length === 0 ? (
+                  <div className="py-8 text-center text-muted-foreground">
+                    Nenhum roteiro gerado ainda.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[140px]">Data</TableHead>
+                          <TableHead className="w-[120px]">Noticias</TableHead>
+                          <TableHead>Preview</TableHead>
+                          <TableHead className="w-[120px]">Acoes</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {scriptsData.map((script) => (
+                          <TableRow key={script.id}>
+                            <TableCell className="font-mono text-xs whitespace-nowrap">
+                              {format(new Date(script.created_at), "dd/MM/yyyy HH:mm")}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {getNewsCount(script.news_ids_json)}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {getScriptPreview(script.script_text)}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                size="sm"
+                                variant={generatedScript === script.script_text ? "secondary" : "outline"}
+                                onClick={() => setGeneratedScript(script.script_text)}
+                              >
+                                {generatedScript === script.script_text ? "Em uso" : "Usar"}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          )}
+
+            {generatedScript ? (
+              <TeleprompterDisplay script={generatedScript} />
+            ) : (
+              <Card>
+                <CardContent className="flex items-center justify-center py-12 text-muted-foreground">
+                  Selecione um roteiro acima ou gere um novo.
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
     </div>
@@ -293,4 +367,27 @@ function extractDomain(url: string | null): string {
   } catch {
     return "Fonte desconhecida";
   }
+}
+
+function getNewsCount(value: unknown): number {
+  if (Array.isArray(value)) return value.length;
+  if (value && typeof value === "object" && "length" in (value as { length: number })) {
+    const length = (value as { length: number }).length;
+    return typeof length === "number" ? length : 0;
+  }
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.length : 0;
+    } catch {
+      return 0;
+    }
+  }
+  return 0;
+}
+
+function getScriptPreview(text: string, maxLength = 140): string {
+  const condensed = text.replace(/\s+/g, " ").trim();
+  if (condensed.length <= maxLength) return condensed;
+  return `${condensed.slice(0, maxLength)}...`;
 }
