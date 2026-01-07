@@ -42,87 +42,70 @@ Deno.serve(async (req) => {
     let extractedCount = 0;
 
     for (const queryResult of queryResults || []) {
-      const html = queryResult.raw_html;
-      if (!html) continue;
+      const xml = queryResult.raw_html;
+      if (!xml) continue;
 
-      // Extract results using regex patterns for Google Alerts HTML
-      // Pattern 1: Look for result blocks with class="result"
-      const resultPattern = /<div[^>]*class="[^"]*result[^"]*"[^>]*>([\s\S]*?)<\/div>/gi;
-      const linkPattern = /<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
-      const titleLinkPattern = /<a[^>]*class="[^"]*result_title_link[^"]*"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+      console.log(`Processing query result ${queryResult.id}, content length: ${xml.length}`);
 
-      // Try to extract from JSON response (Google Alerts returns JSON in some cases)
-      try {
-        // Look for JSON array in the response
-        const jsonMatch = html.match(/\[\[.*?\]\]/s);
-        if (jsonMatch) {
-          const jsonStr = jsonMatch[0];
-          // Parse the nested array structure
-          const parsed = JSON.parse(jsonStr);
-          if (Array.isArray(parsed)) {
-            for (const item of parsed) {
-              if (Array.isArray(item) && item.length > 1) {
-                // Extract title and URL from the nested structure
-                const extractFromArray = (arr: any[]): { title?: string; url?: string; snippet?: string } => {
-                  const result: { title?: string; url?: string; snippet?: string } = {};
-                  for (const elem of arr) {
-                    if (typeof elem === "string") {
-                      if (elem.startsWith("http")) {
-                        result.url = elem;
-                      } else if (elem.length > 10 && elem.length < 200) {
-                        if (!result.title) result.title = elem;
-                        else if (!result.snippet) result.snippet = elem;
-                      }
-                    } else if (Array.isArray(elem)) {
-                      const nested = extractFromArray(elem);
-                      if (!result.url && nested.url) result.url = nested.url;
-                      if (!result.title && nested.title) result.title = nested.title;
-                      if (!result.snippet && nested.snippet) result.snippet = nested.snippet;
-                    }
-                  }
-                  return result;
-                };
+      // Parse RSS XML - extract <item> elements
+      // Each item has: <title>, <link>, <description>
+      const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
+      let itemMatch;
 
-                const extracted = extractFromArray(item);
-                if (extracted.title || extracted.url) {
-                  const { error: insertError } = await supabase.from("alert_news_results").insert({
-                    query_result_id: queryResult.id,
-                    title: extracted.title || null,
-                    snippet: extracted.snippet || null,
-                    link_url: extracted.url || null,
-                    source_raw: JSON.stringify(item).substring(0, 500),
-                  });
+      while ((itemMatch = itemRegex.exec(xml)) !== null) {
+        const itemContent = itemMatch[1];
 
-                  if (!insertError) {
-                    extractedCount++;
-                  }
-                }
-              }
-            }
+        // Extract title
+        const titleMatch = itemContent.match(/<title>([\s\S]*?)<\/title>/i);
+        let title = titleMatch ? titleMatch[1].trim() : null;
+        // Clean CDATA
+        if (title) {
+          title = title.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1").trim();
+          // Remove HTML entities
+          title = title.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+        }
+
+        // Extract link
+        const linkMatch = itemContent.match(/<link>([\s\S]*?)<\/link>/i);
+        let link = linkMatch ? linkMatch[1].trim() : null;
+
+        // Extract description/snippet
+        const descMatch = itemContent.match(/<description>([\s\S]*?)<\/description>/i);
+        let snippet = descMatch ? descMatch[1].trim() : null;
+        // Clean CDATA and HTML tags from snippet
+        if (snippet) {
+          snippet = snippet.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1");
+          snippet = snippet.replace(/<[^>]*>/g, " ").trim();
+          snippet = snippet.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+          snippet = snippet.replace(/\s+/g, " ").trim();
+          // Limit snippet length
+          if (snippet.length > 500) {
+            snippet = snippet.substring(0, 500) + "...";
           }
         }
-      } catch (e) {
-        console.log("Not a JSON response, trying HTML parsing");
-      }
 
-      // Fallback: Try HTML parsing
-      let match;
-      while ((match = titleLinkPattern.exec(html)) !== null) {
-        const url = match[1];
-        const titleHtml = match[2];
-        const title = titleHtml.replace(/<[^>]*>/g, "").trim();
+        // Extract source from title (Google News format: "Title - Source")
+        let source = null;
+        if (title && title.includes(" - ")) {
+          const parts = title.split(" - ");
+          source = parts[parts.length - 1];
+          title = parts.slice(0, -1).join(" - ");
+        }
 
-        if (url && title) {
+        if (title || link) {
           const { error: insertError } = await supabase.from("alert_news_results").insert({
             query_result_id: queryResult.id,
             title: title,
-            snippet: null,
-            link_url: url.startsWith("/url?") ? decodeURIComponent(url.split("q=")[1]?.split("&")[0] || url) : url,
-            source_raw: match[0].substring(0, 500),
+            snippet: snippet,
+            link_url: link,
+            source_raw: source,
           });
 
           if (!insertError) {
             extractedCount++;
+            console.log(`Extracted: ${title?.substring(0, 50)}...`);
+          } else {
+            console.error("Insert error:", insertError);
           }
         }
       }
