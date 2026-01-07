@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -19,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Calculator, TrendingUp, TrendingDown, Minus, Loader2 } from "lucide-react";
+import { Calculator, TrendingUp, TrendingDown, Minus, Loader2, Search } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -30,6 +31,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
+import { WordCloud } from "@/components/WordCloud";
 
 // Constants for tail calculations (easily adjustable)
 const LAMBDA1 = 0.15; // Fast shock decay
@@ -326,6 +328,8 @@ function FullChartDialog({
 export default function ImpactTails() {
   const [selectedTail, setSelectedTail] = useState<TailData | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [titleFilter, setTitleFilter] = useState("");
+  const [wordCloudFilter, setWordCloudFilter] = useState("");
 
   const { data: newsItems, isLoading } = useQuery({
     queryKey: ["news-with-analysis-for-tails"],
@@ -389,6 +393,19 @@ export default function ImpactTails() {
     return map;
   }, [newsItems]);
 
+  const handleWordCloudClick = (word: string) => {
+    setWordCloudFilter(word);
+    setTitleFilter(word);
+  };
+
+  const filteredNewsItems = useMemo(() => {
+    if (!newsItems) return [];
+    if (!titleFilter.trim()) return newsItems;
+    return newsItems.filter((n) =>
+      (n.title || "").toLowerCase().includes(titleFilter.toLowerCase().trim())
+    );
+  }, [newsItems, titleFilter]);
+
   const handleThumbnailClick = (newsId: string) => {
     const tail = tailsMap.get(newsId);
     if (tail) {
@@ -418,10 +435,35 @@ export default function ImpactTails() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calculator className="h-5 w-5" />
-            Notícias Analisadas ({newsItems?.length || 0})
+            Notícias Analisadas ({filteredNewsItems.length} de {newsItems?.length || 0})
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-4">
+            <p className="text-xs text-muted-foreground mb-2">Clique em uma palavra para filtrar:</p>
+            <WordCloud
+              titles={newsItems?.map((n) => n.title) || []}
+              onWordClick={handleWordCloudClick}
+              activeWord={wordCloudFilter}
+            />
+          </div>
+
+          <div className="flex items-center justify-end mb-4">
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Filtrar por título..."
+                value={titleFilter}
+                onChange={(e) => {
+                  setTitleFilter(e.target.value);
+                  setWordCloudFilter("");
+                }}
+                className="pl-9"
+                maxLength={100}
+              />
+            </div>
+          </div>
+
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -434,14 +476,14 @@ export default function ImpactTails() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {newsItems?.length === 0 ? (
+                {filteredNewsItems.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
-                      Nenhuma notícia analisada com selected_for_model = true
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      {titleFilter ? `Nenhuma notícia encontrada para "${titleFilter}"` : "Nenhuma notícia analisada com selected_for_model = true"}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  newsItems?.map((item) => {
+                  filteredNewsItems.map((item) => {
                     const tail = tailsMap.get(item.id);
                     const { icon } = tail ? getDirectionFromTail(tail.calculatedDirection) : { icon: null };
                     

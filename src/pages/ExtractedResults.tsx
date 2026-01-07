@@ -2,11 +2,12 @@ import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { FileSearch, Loader2, ExternalLink, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { SortableTableHead, SortDirection } from "@/components/SortableTableHead";
+import { WordCloud } from "@/components/WordCloud";
 
 type NewsResult = {
   id: string;
@@ -26,6 +27,7 @@ export default function ExtractedResults() {
     direction: "asc",
   });
   const [titleFilter, setTitleFilter] = useState("");
+  const [wordCloudFilter, setWordCloudFilter] = useState("");
 
   useEffect(() => {
     loadResults();
@@ -79,6 +81,15 @@ export default function ExtractedResults() {
     }));
   }
 
+  const handleWordCloudClick = (word: string) => {
+    setWordCloudFilter(word);
+    if (word) {
+      setTitleFilter(word);
+    } else {
+      setTitleFilter("");
+    }
+  };
+
   const filteredAndSortedResults = useMemo(() => {
     // First filter by title
     const filtered = titleFilter.trim()
@@ -100,9 +111,6 @@ export default function ExtractedResults() {
       } else if (sort.key === "title") {
         aVal = (a.title || "").toLowerCase();
         bVal = (b.title || "").toLowerCase();
-      } else if (sort.key === "snippet") {
-        aVal = (a.snippet || "").toLowerCase();
-        bVal = (b.snippet || "").toLowerCase();
       }
 
       if (aVal < bVal) return sort.direction === "asc" ? -1 : 1;
@@ -137,7 +145,7 @@ export default function ExtractedResults() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto space-y-4">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -170,6 +178,15 @@ export default function ExtractedResults() {
             </p>
           ) : (
             <>
+              <div className="mb-4">
+                <p className="text-xs text-muted-foreground mb-2">Clique em uma palavra para filtrar:</p>
+                <WordCloud
+                  titles={results.map((r) => r.title)}
+                  onWordClick={handleWordCloudClick}
+                  activeWord={wordCloudFilter}
+                />
+              </div>
+
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm text-muted-foreground">
                   {filteredAndSortedResults.length} de {results.length} resultado(s)
@@ -179,7 +196,10 @@ export default function ExtractedResults() {
                   <Input
                     placeholder="Filtrar por título..."
                     value={titleFilter}
-                    onChange={(e) => setTitleFilter(e.target.value)}
+                    onChange={(e) => {
+                      setTitleFilter(e.target.value);
+                      setWordCloudFilter("");
+                    }}
                     className="pl-9"
                     maxLength={100}
                   />
@@ -201,17 +221,10 @@ export default function ExtractedResults() {
                         sortKey="title"
                         currentSort={sort}
                         onSort={handleSort}
-                        className="w-[250px]"
                       >
                         Título
                       </SortableTableHead>
-                      <SortableTableHead
-                        sortKey="snippet"
-                        currentSort={sort}
-                        onSort={handleSort}
-                      >
-                        Snippet
-                      </SortableTableHead>
+                      <TableHead className="w-[100px]">Link</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -226,22 +239,22 @@ export default function ExtractedResults() {
                         <TableRow key={result.id}>
                           <TableCell className="font-mono text-xs">{result.term}</TableCell>
                           <TableCell className="font-medium text-sm">
+                            {result.title || "—"}
+                          </TableCell>
+                          <TableCell>
                             {result.link_url ? (
                               <a
                                 href={result.link_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="hover:text-primary hover:underline flex items-center gap-1"
+                                className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
                               >
-                                {result.title || "—"}
                                 <ExternalLink className="w-3 h-3" />
+                                Ver original
                               </a>
                             ) : (
-                              result.title || "—"
+                              "—"
                             )}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground max-w-md truncate">
-                            {result.snippet || "—"}
                           </TableCell>
                         </TableRow>
                       ))
