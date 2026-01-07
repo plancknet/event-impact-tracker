@@ -131,6 +131,72 @@ export type Database = {
           },
         ]
       }
+      news_ai_analysis: {
+        Row: {
+          ai_model: string
+          analyzed_at: string
+          categories: string | null
+          confidence_score: number | null
+          full_content_id: string
+          id: string
+          impact_asset_class: string | null
+          impact_direction: string | null
+          model_variables_json: string | null
+          news_id: string
+          raw_ai_response: string | null
+          region: string | null
+          selected_for_model: boolean
+          summary: string | null
+        }
+        Insert: {
+          ai_model?: string
+          analyzed_at?: string
+          categories?: string | null
+          confidence_score?: number | null
+          full_content_id: string
+          id?: string
+          impact_asset_class?: string | null
+          impact_direction?: string | null
+          model_variables_json?: string | null
+          news_id: string
+          raw_ai_response?: string | null
+          region?: string | null
+          selected_for_model?: boolean
+          summary?: string | null
+        }
+        Update: {
+          ai_model?: string
+          analyzed_at?: string
+          categories?: string | null
+          confidence_score?: number | null
+          full_content_id?: string
+          id?: string
+          impact_asset_class?: string | null
+          impact_direction?: string | null
+          model_variables_json?: string | null
+          news_id?: string
+          raw_ai_response?: string | null
+          region?: string | null
+          selected_for_model?: boolean
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_ai_analysis_full_content_id_fkey"
+            columns: ["full_content_id"]
+            isOneToOne: false
+            referencedRelation: "full_news_content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_ai_analysis_news_id_fkey"
+            columns: ["news_id"]
+            isOneToOne: false
+            referencedRelation: "alert_news_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       search_terms: {
         Row: {
           created_at: string

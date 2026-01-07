@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.fetch-news-content]
 verify_jwt = false
+
+[functions.analyze-news]
+verify_jwt = false
