@@ -9,6 +9,7 @@ import GoogleAlerts from "@/pages/GoogleAlerts";
 import ExtractedResults from "@/pages/ExtractedResults";
 import FullContent from "@/pages/FullContent";
 import AnalysisResults from "@/pages/AnalysisResults";
+import ImpactTails from "@/pages/ImpactTails";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/results" element={<ExtractedResults />} />
             <Route path="/full-content" element={<FullContent />} />
             <Route path="/analysis" element={<AnalysisResults />} />
+            <Route path="/impact-tails" element={<ImpactTails />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>
