@@ -20,29 +20,29 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Querying Google Alerts for term: ${term}`);
+    console.log(`Querying Google News for term: ${term}`);
 
-    // Build Google Alerts URL with English language
+    // Use Google News RSS feed - more reliable than Alerts API
     const encodedTerm = encodeURIComponent(term);
-    const alertsUrl = `https://www.google.com/alerts/preview?params=[null,[null,null,null,[null,"${encodedTerm}","com",[null,"en","US"],null,null,null,0,1],null,null,null,0]]`;
+    const newsUrl = `https://news.google.com/rss/search?q=${encodedTerm}&hl=en-US&gl=US&ceid=US:en`;
 
-    console.log(`Fetching URL: ${alertsUrl}`);
+    console.log(`Fetching URL: ${newsUrl}`);
 
     let rawHtml = "";
     let status = "error";
 
     try {
-      const response = await fetch(alertsUrl, {
+      const response = await fetch(newsUrl, {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+          "Accept": "application/rss+xml, application/xml, text/xml, */*",
           "Accept-Language": "en-US,en;q=0.5",
         },
       });
 
       rawHtml = await response.text();
       status = response.ok ? "success" : "error";
-      console.log(`Response status: ${response.status}, HTML length: ${rawHtml.length}`);
+      console.log(`Response status: ${response.status}, Content length: ${rawHtml.length}`);
     } catch (fetchError) {
       console.error("Fetch error:", fetchError);
       rawHtml = `Error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`;
@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Successfully saved query result for term: ${term}`);
+    console.log(`Successfully saved query result for term: ${term}, status: ${status}`);
 
     return new Response(
       JSON.stringify({ success: true, status }),
