@@ -510,36 +510,36 @@ export default function ImpactTails() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4 mb-4">
-            <TermFilter value={termFilter} onChange={setTermFilter} />
-          </div>
-
-          <div className="mb-4">
-            <p className="text-xs text-muted-foreground mb-2">Clique em uma palavra para filtrar:</p>
-            <WordCloud
-              titles={termFilteredItems.map((n) => n.title)}
-              onWordClick={handleWordCloudClick}
-              activeWord={wordCloudFilter}
-            />
-          </div>
-
-          <div className="flex items-center justify-end mb-4 gap-2">
-            <DateFilter
-              value={dateFilter}
-              onChange={setDateFilter}
-              placeholder="dd/mm/aaaa"
-            />
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Filtrar por título..."
-                value={titleFilter}
-                onChange={(e) => {
-                  setTitleFilter(e.target.value);
-                  setWordCloudFilter("");
-                }}
-                className="pl-9"
-                maxLength={100}
+          <div className="flex gap-4 mb-4">
+            <div className="flex flex-col gap-2 w-[70%]">
+              <div className="flex items-center gap-2">
+                <TermFilter value={termFilter} onChange={setTermFilter} />
+                <DateFilter
+                  value={dateFilter}
+                  onChange={setDateFilter}
+                  placeholder="dd/mm/aaaa"
+                />
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Filtrar por título..."
+                  value={titleFilter}
+                  onChange={(e) => {
+                    setTitleFilter(e.target.value);
+                    setWordCloudFilter("");
+                  }}
+                  className="pl-9"
+                  maxLength={100}
+                />
+              </div>
+            </div>
+            <div className="w-[30%]">
+              <WordCloud
+                compact
+                titles={termFilteredItems.map((n) => n.title)}
+                onWordClick={handleWordCloudClick}
+                activeWord={wordCloudFilter}
               />
             </div>
           </div>
