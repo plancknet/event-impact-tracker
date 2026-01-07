@@ -1,11 +1,15 @@
 import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
+import { format, isValid, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CheckSquare, Square, Search } from "lucide-react";
+import { TermFilter } from "@/components/TermFilter";
+import { CategoryFilter } from "@/components/CategoryFilter";
+import { DateFilter } from "@/components/DateFilter";
 
 export interface SelectableNews {
   id: string;
@@ -14,6 +18,8 @@ export interface SelectableNews {
   source: string;
   summary?: string;
   content?: string;
+  term?: string | null;
+  categories?: string[];
 }
 
 interface NewsSelectorProps {
@@ -23,13 +29,67 @@ interface NewsSelectorProps {
 }
 
 export function NewsSelector({ news, selectedIds, onSelectionChange }: NewsSelectorProps) {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [titleWordFilter, setTitleWordFilter] = useState("");
+  const [termFilter, setTermFilter] = useState<string[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+  const [dateFilter, setDateFilter] = useState("");
 
-  const filteredNews = news.filter(item =>
-    item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.source.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.summary && item.summary.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const parseFilterDate = (dateStr: string): Date | null => {
+    if (dateStr.length !== 10) return null;
+    const parsed = parse(dateStr, "dd/MM/yyyy", new Date());
+    return isValid(parsed) ? parsed : null;
+  };
+
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const item of news) {
+      if (!item.categories) continue;
+      item.categories.forEach((cat) => {
+        if (cat.trim()) set.add(cat.trim());
+      });
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [news]);
+
+  const filteredNews = useMemo(() => {
+    let filtered = news;
+
+    if (termFilter.length > 0) {
+      const termSet = new Set(termFilter.map((t) => t.toLowerCase()));
+      filtered = filtered.filter((item) =>
+        item.term ? termSet.has(item.term.toLowerCase()) : false
+      );
+    }
+
+    if (categoryFilter.length > 0) {
+      const categorySet = new Set(categoryFilter.map((c) => c.toLowerCase()));
+      filtered = filtered.filter((item) => {
+        if (!item.categories || item.categories.length === 0) return false;
+        return item.categories.some((cat) => categorySet.has(cat.toLowerCase()));
+      });
+    }
+
+    if (titleWordFilter.trim()) {
+      const query = titleWordFilter.toLowerCase().trim();
+      filtered = filtered.filter((item) =>
+        item.title.toLowerCase().includes(query)
+      );
+    }
+
+    const filterDate = parseFilterDate(dateFilter);
+    if (filterDate) {
+      filtered = filtered.filter((item) => {
+        const newsDate = item.date;
+        return (
+          newsDate.getDate() === filterDate.getDate() &&
+          newsDate.getMonth() === filterDate.getMonth() &&
+          newsDate.getFullYear() === filterDate.getFullYear()
+        );
+      });
+    }
+
+    return filtered;
+  }, [news, termFilter, categoryFilter, titleWordFilter, dateFilter]);
 
   const handleToggle = (id: string) => {
     if (selectedIds.includes(id)) {
@@ -69,14 +129,28 @@ export function NewsSelector({ news, selectedIds, onSelectionChange }: NewsSelec
             </Button>
           </div>
         </div>
-        <div className="relative mt-2">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar notícias..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+        <div className="mt-3 flex flex-wrap gap-3">
+          <TermFilter value={termFilter} onChange={setTermFilter} />
+          <CategoryFilter
+            value={categoryFilter}
+            options={categoryOptions}
+            onChange={setCategoryFilter}
           />
+          <DateFilter
+            value={dateFilter}
+            onChange={setDateFilter}
+            placeholder="dd/mm/aaaa"
+          />
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Palavra no titulo..."
+              value={titleWordFilter}
+              onChange={(e) => setTitleWordFilter(e.target.value)}
+              className="pl-10"
+              maxLength={100}
+            />
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -122,3 +196,10 @@ export function NewsSelector({ news, selectedIds, onSelectionChange }: NewsSelec
     </Card>
   );
 }
+
+
+
+
+
+
+

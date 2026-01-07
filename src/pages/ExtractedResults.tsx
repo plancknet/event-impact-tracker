@@ -70,13 +70,20 @@ export default function ExtractedResults() {
       const newsIds = baseResults.map((r) => r.id);
       let analysisMap = new Map<string, string | null>();
       if (newsIds.length > 0) {
-        const { data: analyses, error: analysisError } = await supabase
-          .from("news_ai_analysis")
-          .select("news_id, categories")
-          .in("news_id", newsIds);
+        const chunkSize = 100;
+        const analysesAll: { news_id: string; categories: string | null }[] = [];
+        for (let i = 0; i < newsIds.length; i += chunkSize) {
+          const chunk = newsIds.slice(i, i + chunkSize);
+          const { data: analyses, error: analysisError } = await supabase
+            .from("news_ai_analysis")
+            .select("news_id, categories")
+            .in("news_id", chunk);
 
-        if (analysisError) throw analysisError;
-        analysisMap = new Map(analyses?.map((a) => [a.news_id, a.categories]) || []);
+          if (analysisError) throw analysisError;
+          analysesAll.push(...(analyses || []));
+        }
+
+        analysisMap = new Map(analysesAll.map((a) => [a.news_id, a.categories]));
       }
 
       // Group by title+link_url and keep only the one with smallest id (first occurrence)

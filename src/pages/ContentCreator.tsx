@@ -46,7 +46,13 @@ export default function ContentCreator() {
             id,
             title,
             link_url,
-            snippet
+            snippet,
+            created_at,
+            alert_query_results!inner (
+              search_terms!inner (
+                term
+              )
+            )
           )
         `)
         .eq("status", "success")
@@ -61,6 +67,7 @@ export default function ContentCreator() {
         .select(`
           id,
           news_id,
+          categories,
           summary,
           analyzed_at,
           full_news_content!inner (
@@ -69,7 +76,13 @@ export default function ContentCreator() {
             alert_news_results!inner (
               id,
               title,
-              link_url
+              link_url,
+              created_at,
+              alert_query_results!inner (
+                search_terms!inner (
+                  term
+                )
+              )
             )
           )
         `)
@@ -84,13 +97,17 @@ export default function ContentCreator() {
       fullContentNews?.forEach((item: any) => {
         const newsItem = item.alert_news_results;
         if (newsItem && !newsMap.has(newsItem.id)) {
+          const createdAt = newsItem.created_at
+            ? new Date(newsItem.created_at)
+            : new Date(item.fetched_at);
           newsMap.set(newsItem.id, {
             id: newsItem.id,
             title: newsItem.title || "Sem título",
-            date: new Date(item.fetched_at),
+            date: createdAt,
             source: extractDomain(newsItem.link_url),
             summary: newsItem.snippet,
             content: item.content_full,
+            term: newsItem.alert_query_results?.search_terms?.term ?? null,
           });
         }
       });
@@ -100,17 +117,31 @@ export default function ContentCreator() {
         const fullContent = item.full_news_content;
         const newsItem = fullContent?.alert_news_results;
         if (newsItem) {
+          const createdAt = newsItem.created_at
+            ? new Date(newsItem.created_at)
+            : new Date(item.analyzed_at);
+          const categories = item.categories
+            ? item.categories
+                .split(",")
+                .map((cat: string) => cat.trim())
+                .filter(Boolean)
+            : undefined;
           const existing = newsMap.get(newsItem.id);
           if (existing) {
             existing.summary = item.summary || existing.summary;
+            existing.categories = categories || existing.categories;
+            existing.term = newsItem.alert_query_results?.search_terms?.term ?? existing.term;
+            existing.date = createdAt;
           } else {
             newsMap.set(newsItem.id, {
               id: newsItem.id,
               title: newsItem.title || "Sem título",
-              date: new Date(item.analyzed_at),
+              date: createdAt,
               source: extractDomain(newsItem.link_url),
               summary: item.summary,
               content: fullContent.content_full,
+              categories,
+              term: newsItem.alert_query_results?.search_terms?.term ?? null,
             });
           }
         }
@@ -391,3 +422,10 @@ function getScriptPreview(text: string, maxLength = 140): string {
   if (condensed.length <= maxLength) return condensed;
   return `${condensed.slice(0, maxLength)}...`;
 }
+
+
+
+
+
+
+
