@@ -444,15 +444,15 @@ export default function ImpactTails() {
     return isValid(parsed) ? parsed : null;
   };
 
-  const filteredNewsItems = useMemo(() => {
+  // Filter by term first (affects word cloud)
+  const termFilteredItems = useMemo(() => {
     if (!newsItems) return [];
-    
-    let filtered = newsItems;
+    if (!termFilter || termFilter === "all") return newsItems;
+    return newsItems.filter((n) => n.term.toLowerCase() === termFilter.toLowerCase());
+  }, [newsItems, termFilter]);
 
-    // Filter by term
-    if (termFilter && termFilter !== "all") {
-      filtered = filtered.filter((n) => n.term.toLowerCase() === termFilter.toLowerCase());
-    }
+  const filteredNewsItems = useMemo(() => {
+    let filtered = termFilteredItems;
 
     // Filter by title
     if (titleFilter.trim()) {
@@ -517,7 +517,7 @@ export default function ImpactTails() {
           <div className="mb-4">
             <p className="text-xs text-muted-foreground mb-2">Clique em uma palavra para filtrar:</p>
             <WordCloud
-              titles={newsItems?.map((n) => n.title) || []}
+              titles={termFilteredItems.map((n) => n.title)}
               onWordClick={handleWordCloudClick}
               activeWord={wordCloudFilter}
             />
