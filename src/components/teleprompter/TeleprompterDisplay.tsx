@@ -436,6 +436,17 @@ export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
           isFullscreen ? "flex-1" : "h-[500px]"
         }`}
         style={{ scrollBehavior: "auto", backgroundColor }}
+        onWheel={(event) => {
+          if (!containerRef.current || !contentRef.current) return;
+          const maxScroll =
+            contentRef.current.scrollHeight - containerRef.current.clientHeight;
+          const nextScroll = Math.min(
+            Math.max(0, containerRef.current.scrollTop + event.deltaY),
+            maxScroll
+          );
+          containerRef.current.scrollTop = nextScroll;
+          scrollPositionRef.current = nextScroll;
+        }}
       >
         {/* Gradient overlays for readability */}
         <div
