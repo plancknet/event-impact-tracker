@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { Play, Loader2, CheckCircle, XCircle, Clock } from "lucide-react";
 import { format } from "date-fns";
@@ -20,6 +21,7 @@ type TermWithStatus = {
 export default function GoogleAlerts() {
   const { toast } = useToast();
   const [terms, setTerms] = useState<TermWithStatus[]>([]);
+  const [selectedTerms, setSelectedTerms] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
 
@@ -69,11 +71,33 @@ export default function GoogleAlerts() {
     }
   }
 
+  function toggleTermSelection(termId: string) {
+    setSelectedTerms((prev) => {
+      const next = new Set(prev);
+      if (next.has(termId)) {
+        next.delete(termId);
+      } else {
+        next.add(termId);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedTerms.size === terms.length) {
+      setSelectedTerms(new Set());
+    } else {
+      setSelectedTerms(new Set(terms.map((t) => t.id)));
+    }
+  }
+
   async function handleExecuteQueries() {
-    if (terms.length === 0) {
+    const termsToQuery = terms.filter((t) => selectedTerms.has(t.id));
+
+    if (termsToQuery.length === 0) {
       toast({
         title: "Atenção",
-        description: "Nenhum termo cadastrado. Adicione termos primeiro.",
+        description: "Selecione pelo menos um termo para consultar.",
         variant: "destructive",
       });
       return;
@@ -84,7 +108,7 @@ export default function GoogleAlerts() {
     let errorCount = 0;
 
     try {
-      for (const term of terms) {
+      for (const term of termsToQuery) {
         try {
           const { data, error } = await supabase.functions.invoke("google-alerts-query", {
             body: { termId: term.id, term: term.term },
@@ -108,6 +132,7 @@ export default function GoogleAlerts() {
         description: `${successCount} sucesso(s), ${errorCount} erro(s)`,
       });
 
+      setSelectedTerms(new Set());
       await loadTermsWithStatus();
     } catch (error) {
       console.error("Error executing queries:", error);
@@ -144,13 +169,13 @@ export default function GoogleAlerts() {
                 Execute as consultas no Google Alerts para cada termo cadastrado.
               </CardDescription>
             </div>
-            <Button onClick={handleExecuteQueries} disabled={isExecuting || isLoading}>
+            <Button onClick={handleExecuteQueries} disabled={isExecuting || isLoading || selectedTerms.size === 0}>
               {isExecuting ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Play className="w-4 h-4 mr-2" />
               )}
-              Executar consultas no Google Alerts
+              Consultar selecionados ({selectedTerms.size})
             </Button>
           </div>
         </CardHeader>
@@ -167,6 +192,12 @@ export default function GoogleAlerts() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectedTerms.size === terms.length && terms.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Termo</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Última consulta</TableHead>
@@ -175,6 +206,12 @@ export default function GoogleAlerts() {
               <TableBody>
                 {terms.map((term) => (
                   <TableRow key={term.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedTerms.has(term.id)}
+                        onCheckedChange={() => toggleTermSelection(term.id)}
+                      />
+                    </TableCell>
                     <TableCell className="font-mono">{term.term}</TableCell>
                     <TableCell>{getStatusBadge(term.lastQuery?.status)}</TableCell>
                     <TableCell className="text-muted-foreground">

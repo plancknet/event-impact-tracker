@@ -42,33 +42,44 @@ export default function SearchTerms() {
   async function handleSave() {
     setIsSaving(true);
     try {
-      // Parse terms from textarea
-      const termsList = terms
+      // Parse new terms from textarea
+      const newTermsList = terms
         .split("\n")
         .map((t) => t.trim())
         .filter((t) => t.length > 0);
 
-      // Delete all existing terms
-      const { error: deleteError } = await supabase
+      // Get existing terms to avoid duplicates
+      const { data: existingTerms, error: fetchError } = await supabase
         .from("search_terms")
-        .delete()
-        .neq("id", "00000000-0000-0000-0000-000000000000"); // Delete all
+        .select("term");
 
-      if (deleteError) throw deleteError;
+      if (fetchError) throw fetchError;
 
-      // Insert new terms
-      if (termsList.length > 0) {
+      const existingSet = new Set(existingTerms?.map((t) => t.term.toLowerCase()) || []);
+      
+      // Filter only truly new terms (case-insensitive)
+      const termsToInsert = newTermsList.filter(
+        (t) => !existingSet.has(t.toLowerCase())
+      );
+
+      // Insert only new terms
+      if (termsToInsert.length > 0) {
         const { error: insertError } = await supabase
           .from("search_terms")
-          .insert(termsList.map((term) => ({ term })));
+          .insert(termsToInsert.map((term) => ({ term })));
 
         if (insertError) throw insertError;
       }
 
+      const skipped = newTermsList.length - termsToInsert.length;
       toast({
         title: "Sucesso",
-        description: `${termsList.length} termo(s) salvo(s) com sucesso.`,
+        description: `${termsToInsert.length} novo(s) termo(s) adicionado(s)${skipped > 0 ? `, ${skipped} já existente(s)` : ""}.`,
       });
+
+      // Reload and clear textarea
+      await loadTerms();
+      setTerms("");
     } catch (error) {
       console.error("Error saving terms:", error);
       toast({
