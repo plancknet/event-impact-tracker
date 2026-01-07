@@ -364,7 +364,7 @@ export default function AnalysisResults() {
           ) : (
             <>
               <div className="flex gap-4 mb-4">
-                <div className="flex flex-col gap-2 w-[70%]">
+                <div className="flex flex-col gap-2 w-[60%]">
                   <div className="flex items-center gap-2">
                     <TermFilter value={termFilter} onChange={setTermFilter} />
                     <DateFilter
@@ -390,7 +390,7 @@ export default function AnalysisResults() {
                     {filteredNewsItems.length} de {newsItems.length} notícias
                   </p>
                 </div>
-                <div className="w-[30%]">
+                <div className="w-[40%]">
                   <WordCloud
                     compact
                     titles={termFilteredItems.map((n) => n.title)}
