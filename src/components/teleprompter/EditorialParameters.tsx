@@ -57,6 +57,7 @@ export function EditorialParameters({ parameters, onChange }: EditorialParameter
               <SelectItem value="educativo">Educativo</SelectItem>
               <SelectItem value="tecnico">Técnico</SelectItem>
               <SelectItem value="humoristico">Humorístico</SelectItem>
+              <SelectItem value="descontraido">Descontraido e informal</SelectItem>
               <SelectItem value="storytelling">Storytelling</SelectItem>
             </SelectContent>
           </Select>

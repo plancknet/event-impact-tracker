@@ -51,6 +51,7 @@ export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
   const [fontSize, setFontSize] = useState(28);
   const [textColor, setTextColor] = useState("#ffffff");
   const [backgroundColor, setBackgroundColor] = useState("#000000");
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -58,11 +59,12 @@ export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
   const animationRef = useRef<number>();
   const lastTimeRef = useRef<number>();
   const pauseTimeoutRef = useRef<NodeJS.Timeout>();
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Parse script to identify pause positions
   const parseScript = useCallback((text: string) => {
-    const pauseRegex = /<(pause-short|pause-medium|pause-long|pause)>/g;
-    const parts: { type: "text" | "pause"; content: string; pauseType?: string }[] = [];
+    const pauseRegex = /<(pause-short|pause-medium|pause-long|pause|topic-change)>/g;
+    const parts: { type: "text" | "pause" | "topic"; content: string; pauseType?: string }[] = [];
     let lastIndex = 0;
     let match;
 
@@ -73,11 +75,18 @@ export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
           content: text.slice(lastIndex, match.index),
         });
       }
-      parts.push({
-        type: "pause",
-        content: match[0],
-        pauseType: match[1],
-      });
+      if (match[1] === "topic-change") {
+        parts.push({
+          type: "topic",
+          content: match[0],
+        });
+      } else {
+        parts.push({
+          type: "pause",
+          content: match[0],
+          pauseType: match[1],
+        });
+      }
       lastIndex = match.index + match[0].length;
     }
 
@@ -159,6 +168,26 @@ export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
     };
   }, [isPlaying, isPaused, animate]);
 
+  useEffect(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    if (isPlaying && !isPaused) {
+      timerRef.current = setInterval(() => {
+        setElapsedSeconds((prev) => prev + 1);
+      }, 1000);
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [isPlaying, isPaused]);
+
   const handleStart = () => {
     setIsPlaying(true);
     setIsPaused(false);
@@ -181,6 +210,7 @@ export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
     setIsPaused(false);
     setCurrentPause(null);
     scrollPositionRef.current = 0;
+    setElapsedSeconds(0);
     if (containerRef.current) {
       containerRef.current.scrollTop = 0;
     }
@@ -216,14 +246,38 @@ export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
   const renderContent = () => {
     return parsedScript.map((part, index) => {
       if (part.type === "pause") {
+        const pauseLabel = (() => {
+          switch (part.pauseType) {
+            case "pause-short":
+              return "Pausa curta";
+            case "pause-medium":
+              return "Pausa média";
+            case "pause-long":
+              return "Pausa longa";
+            default:
+              return "Pausa";
+          }
+        })();
+        const pauseClass = (() => {
+          switch (part.pauseType) {
+            case "pause-short":
+              return "bg-green-500/30 text-green-300";
+            case "pause-medium":
+              return "bg-yellow-500/30 text-yellow-300";
+            case "pause-long":
+              return "bg-red-500/30 text-red-300";
+            default:
+              return "bg-yellow-500/30 text-yellow-300";
+          }
+        })();
         if (showPauseTags) {
           return (
             <span
               key={index}
               data-pause={part.pauseType}
-              className="inline-block px-2 py-1 mx-1 bg-yellow-500/30 text-yellow-300 rounded text-sm"
+              className={`inline-block px-2 py-1 mx-1 rounded text-sm ${pauseClass}`}
             >
-              {part.content}
+              {pauseLabel}
             </span>
           );
         } else {
@@ -236,8 +290,24 @@ export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
           );
         }
       }
+      if (part.type === "topic") {
+        return (
+          <span
+            key={index}
+            className="inline-block px-2 py-1 mx-1 rounded text-sm bg-purple-500/30 text-purple-300"
+          >
+            Mudança de assunto
+          </span>
+        );
+      }
       return <span key={index}>{part.content}</span>;
     });
+  };
+
+  const formatElapsed = (totalSeconds: number) => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   };
 
   return (
@@ -268,6 +338,9 @@ export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
             </div>
 
             <div className="flex items-center gap-4">
+              <div className="text-sm text-muted-foreground">
+                {formatElapsed(elapsedSeconds)}
+              </div>
               <div className="flex items-center gap-2">
                 <Button onClick={() => handleSpeedChange(-10)} size="sm" variant="outline">
                   <ChevronDown className="w-4 h-4" />

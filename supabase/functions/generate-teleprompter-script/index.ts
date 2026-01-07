@@ -70,6 +70,7 @@ serve(async (req) => {
       'educativo': 'educativo e didático, explicando conceitos de forma clara',
       'tecnico': 'técnico e preciso, usando terminologia especializada quando apropriado',
       'humoristico': 'leve e bem-humorado, mantendo a informação mas com toques de humor',
+      'descontraido': 'descontraido e informal, com linguagem leve e natural'
       'storytelling': 'narrativo e envolvente, contando a história de forma cativante',
     };
 
@@ -105,8 +106,9 @@ REGRAS ABSOLUTAS:
    - <pause-short> para pausas breves (1-2 segundos) após frases importantes
    - <pause-medium> para pausas médias (3-4 segundos) entre tópicos
    - <pause-long> para pausas longas (5-6 segundos) entre notícias diferentes ou seções
-5. Coloque pausas naturais onde um apresentador respiraria ou daria ênfase
-6. O idioma do roteiro deve ser: ${parameters.language}
+5. Insira <topic-change> sempre que houver mudanca de assunto (entre noticias ou blocos distintos)
+6. Coloque pausas naturais onde um apresentador respiraria ou daria enfase
+7. O idioma do roteiro deve ser: ${parameters.language}
 
 CONFIGURAÇÕES DO ROTEIRO:
 - Tom: ${toneMap[parameters.tone] || parameters.tone}
@@ -203,3 +205,6 @@ Lembre-se: retorne APENAS o texto do roteiro com as marcações de pausa. Nada m
     });
   }
 });
+
+
+
