@@ -115,13 +115,14 @@ export default function ExtractedResults() {
     return isValid(parsed) ? parsed : null;
   };
 
-  const filteredAndSortedResults = useMemo(() => {
-    let filtered = results;
+  // Filter by term first (affects word cloud)
+  const termFilteredResults = useMemo(() => {
+    if (!termFilter || termFilter === "all") return results;
+    return results.filter((r) => r.term.toLowerCase() === termFilter.toLowerCase());
+  }, [results, termFilter]);
 
-    // Filter by term
-    if (termFilter && termFilter !== "all") {
-      filtered = filtered.filter((r) => r.term.toLowerCase() === termFilter.toLowerCase());
-    }
+  const filteredAndSortedResults = useMemo(() => {
+    let filtered = termFilteredResults;
 
     // Filter by title
     if (titleFilter.trim()) {
@@ -233,7 +234,7 @@ export default function ExtractedResults() {
               <div className="mb-4">
                 <p className="text-xs text-muted-foreground mb-2">Clique em uma palavra para filtrar:</p>
                 <WordCloud
-                  titles={results.map((r) => r.title)}
+                  titles={termFilteredResults.map((r) => r.title)}
                   onWordClick={handleWordCloudClick}
                   activeWord={wordCloudFilter}
                 />
