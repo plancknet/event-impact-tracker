@@ -3,181 +3,178 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Extract actual URL from Google News redirect URLs
+// Extract real URL from Google News redirect
 function extractRealUrl(url: string): string {
   try {
-    const urlObj = new URL(url);
-    
     // Handle Google News redirect URLs
-    if (urlObj.hostname.includes('google.com') && urlObj.pathname === '/url') {
-      const realUrl = urlObj.searchParams.get('url') || urlObj.searchParams.get('q');
-      if (realUrl) {
-        console.log('Extracted real URL from Google redirect:', realUrl);
-        return realUrl;
+    if (url.includes('news.google.com')) {
+      // Try to extract from ./articles/ format
+      const articlesMatch = url.match(/\/articles\/([^?]+)/);
+      if (articlesMatch) {
+        // These are base64-encoded, just return original
+        return url;
+      }
+      
+      // Try URL parameter extraction
+      const urlObj = new URL(url);
+      const redirectUrl = urlObj.searchParams.get('url');
+      if (redirectUrl) {
+        return redirectUrl;
       }
     }
-    
-    // Handle news.google.com article URLs
-    if (urlObj.hostname === 'news.google.com') {
-      // These URLs often need to be followed to get the real article
-      console.log('Google News URL detected, will follow redirects');
-    }
-    
     return url;
   } catch {
     return url;
   }
 }
 
-// Follow redirects manually to get the final URL
-async function followRedirects(url: string, maxRedirects = 5): Promise<{ finalUrl: string; html: string }> {
-  let currentUrl = url;
-  let redirectCount = 0;
+// Paywall/protection detection keywords
+const PAYWALL_INDICATORS = [
+  'subscribe', 'subscription', 'paywall', 'premium', 'member',
+  'sign in to continue', 'login to read', 'assine', 'assinante',
+  'acesso exclusivo', 'conteúdo exclusivo', 'faça login',
+  'create an account', 'register to continue', 'unlock this article'
+];
+
+function detectPaywall(content: string): boolean {
+  const lowerContent = content.toLowerCase();
+  const matchCount = PAYWALL_INDICATORS.filter(indicator => 
+    lowerContent.includes(indicator)
+  ).length;
   
-  while (redirectCount < maxRedirects) {
-    console.log(`Fetching (redirect ${redirectCount}):`, currentUrl);
-    
-    const response = await fetch(currentUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-      },
-      redirect: 'manual',
-    });
-    
-    // Check for redirect
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get('location');
-      if (location) {
-        // Handle relative URLs
-        if (location.startsWith('/')) {
-          const urlObj = new URL(currentUrl);
-          currentUrl = `${urlObj.protocol}//${urlObj.host}${location}`;
-        } else if (!location.startsWith('http')) {
-          const urlObj = new URL(currentUrl);
-          currentUrl = `${urlObj.protocol}//${urlObj.host}/${location}`;
-        } else {
-          currentUrl = location;
-        }
-        redirectCount++;
-        continue;
-      }
-    }
-    
-    // Check for meta refresh redirect in HTML
-    if (response.ok) {
-      const html = await response.text();
-      
-      // Check for meta refresh
-      const metaRefreshMatch = html.match(/<meta[^>]*http-equiv=["']refresh["'][^>]*content=["'][^"']*url=([^"'\s>]+)/i);
-      if (metaRefreshMatch && redirectCount < maxRedirects) {
-        let refreshUrl = metaRefreshMatch[1];
-        if (refreshUrl.startsWith('/')) {
-          const urlObj = new URL(currentUrl);
-          refreshUrl = `${urlObj.protocol}//${urlObj.host}${refreshUrl}`;
-        } else if (!refreshUrl.startsWith('http')) {
-          const urlObj = new URL(currentUrl);
-          refreshUrl = `${urlObj.protocol}//${urlObj.host}/${refreshUrl}`;
-        }
-        currentUrl = refreshUrl;
-        redirectCount++;
-        continue;
-      }
-      
-      // Check for JavaScript redirects
-      const jsRedirectMatch = html.match(/window\.location(?:\.href)?\s*=\s*["']([^"']+)["']/i) ||
-                              html.match(/location\.replace\(["']([^"']+)["']\)/i);
-      if (jsRedirectMatch && redirectCount < maxRedirects) {
-        let jsUrl = jsRedirectMatch[1];
-        if (jsUrl.startsWith('/')) {
-          const urlObj = new URL(currentUrl);
-          jsUrl = `${urlObj.protocol}//${urlObj.host}${jsUrl}`;
-        } else if (!jsUrl.startsWith('http')) {
-          const urlObj = new URL(currentUrl);
-          jsUrl = `${urlObj.protocol}//${urlObj.host}/${jsUrl}`;
-        }
-        currentUrl = jsUrl;
-        redirectCount++;
-        continue;
-      }
-      
-      return { finalUrl: currentUrl, html };
-    }
-    
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-  
-  throw new Error('Too many redirects');
+  // If content is short AND has paywall indicators, likely paywalled
+  return content.length < 1000 && matchCount >= 2;
 }
 
-// Extract main content from HTML
-function extractContent(html: string): string {
-  let content = html;
-  
-  // Remove scripts, styles, and non-content elements
-  content = content.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ');
-  content = content.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ');
-  content = content.replace(/<noscript\b[^<]*(?:(?!<\/noscript>)<[^<]*)*<\/noscript>/gi, ' ');
-  content = content.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, ' ');
-  content = content.replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, ' ');
-  content = content.replace(/<!--[\s\S]*?-->/g, ' ');
-  
-  // Try to find article content using common patterns
-  const patterns = [
-    // Article tag
-    /<article[^>]*>([\s\S]*?)<\/article>/i,
-    // Main tag
-    /<main[^>]*>([\s\S]*?)<\/main>/i,
-    // Common article class patterns
-    /<div[^>]*class="[^"]*(?:article-body|article-content|article__body|article__content|post-content|post-body|entry-content|story-body|story-content|news-body|news-content|content-article|texto|materia|noticia)[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-    // ID patterns
-    /<div[^>]*id="[^"]*(?:article|content|post|story|news|texto|materia)[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
-    // Paragraph-heavy sections (likely content)
-    /(<p[^>]*>[\s\S]{100,}?<\/p>[\s\S]*?<p[^>]*>[\s\S]{100,}?<\/p>)/i,
+// Simple extraction fallback
+function extractContentSimple(html: string): string {
+  // Remove scripts, styles, and other non-content elements
+  let content = html
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
+    .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '')
+    .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
+    .replace(/<aside[^>]*>[\s\S]*?<\/aside>/gi, '')
+    .replace(/<form[^>]*>[\s\S]*?<\/form>/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '');
+
+  // Try to find article content
+  const articlePatterns = [
+    /<article[^>]*>([\s\S]*?)<\/article>/gi,
+    /<div[^>]*class="[^"]*(?:article|post|content|entry|story)[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+    /<main[^>]*>([\s\S]*?)<\/main>/gi,
   ];
-  
-  for (const pattern of patterns) {
-    const match = content.match(pattern);
-    if (match && match[1] && match[1].length > 200) {
-      content = match[1];
-      console.log('Found content using pattern, length:', content.length);
+
+  for (const pattern of articlePatterns) {
+    const matches = [...content.matchAll(pattern)];
+    if (matches.length > 0) {
+      content = matches.map(m => m[1]).join('\n');
       break;
     }
   }
-  
-  // Remove navigation, header, footer, sidebar elements
-  content = content.replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, ' ');
-  content = content.replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, ' ');
-  content = content.replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, ' ');
-  content = content.replace(/<aside\b[^<]*(?:(?!<\/aside>)<[^<]*)*<\/aside>/gi, ' ');
-  content = content.replace(/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi, ' ');
-  
-  // Remove common non-content divs
-  content = content.replace(/<div[^>]*class="[^"]*(?:sidebar|menu|nav|footer|header|comment|social|share|related|advertisement|ad-|ads-|banner)[^"]*"[^>]*>[\s\S]*?<\/div>/gi, ' ');
-  
-  // Remove all remaining HTML tags
-  content = content.replace(/<[^>]+>/g, ' ');
-  
-  // Decode HTML entities
-  content = content.replace(/&nbsp;/g, ' ');
-  content = content.replace(/&amp;/g, '&');
-  content = content.replace(/&lt;/g, '<');
-  content = content.replace(/&gt;/g, '>');
-  content = content.replace(/&quot;/g, '"');
-  content = content.replace(/&#39;/g, "'");
-  content = content.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code)));
-  content = content.replace(/&[a-zA-Z]+;/g, ' ');
-  
-  // Clean up whitespace
-  content = content.replace(/\s+/g, ' ').trim();
-  
-  // Remove very short lines that are likely navigation or UI text
-  const lines = content.split(/(?<=[.!?])\s+/);
-  const meaningfulLines = lines.filter(line => line.length > 30);
-  content = meaningfulLines.join(' ');
-  
+
+  // Clean HTML tags and normalize whitespace
+  content = content
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+
   return content;
+}
+
+// Firecrawl scraping
+async function scrapeWithFirecrawl(url: string, apiKey: string): Promise<{ success: boolean; content?: string; finalUrl?: string; error?: string }> {
+  console.log('Attempting Firecrawl scrape for:', url);
+  
+  try {
+    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url,
+        formats: ['markdown'],
+        onlyMainContent: true,
+        waitFor: 3000,
+      }),
+    });
+
+    const data = await response.json();
+    console.log('Firecrawl response status:', response.status);
+
+    if (!response.ok) {
+      console.error('Firecrawl API error:', data);
+      return { success: false, error: data.error || `Firecrawl error: ${response.status}` };
+    }
+
+    // Handle v1 API response structure
+    const markdown = data.data?.markdown || data.markdown;
+    const finalUrl = data.data?.metadata?.sourceURL || data.metadata?.sourceURL || url;
+
+    if (!markdown || markdown.length < 100) {
+      return { success: false, error: 'Firecrawl returned insufficient content' };
+    }
+
+    // Check for paywall
+    if (detectPaywall(markdown)) {
+      return { success: false, error: 'Conteúdo protegido por paywall detectado' };
+    }
+
+    return { success: true, content: markdown, finalUrl };
+  } catch (error) {
+    console.error('Firecrawl fetch error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Firecrawl request failed' };
+  }
+}
+
+// Simple fetch fallback
+async function scrapeSimple(url: string): Promise<{ success: boolean; content?: string; finalUrl?: string; error?: string }> {
+  console.log('Attempting simple scrape for:', url);
+  
+  try {
+    const realUrl = extractRealUrl(url);
+    
+    const response = await fetch(realUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7',
+      },
+      redirect: 'follow',
+    });
+
+    if (!response.ok) {
+      return { success: false, error: `HTTP ${response.status}` };
+    }
+
+    const html = await response.text();
+    const finalUrl = response.url || realUrl;
+    
+    const content = extractContentSimple(html);
+
+    if (content.length < 200) {
+      return { success: false, error: 'Conteúdo extraído muito curto - possível proteção' };
+    }
+
+    // Check for paywall
+    if (detectPaywall(content)) {
+      return { success: false, error: 'Conteúdo protegido por paywall detectado' };
+    }
+
+    return { success: true, content, finalUrl };
+  } catch (error) {
+    console.error('Simple scrape error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Fetch failed' };
+  }
 }
 
 Deno.serve(async (req) => {
@@ -195,47 +192,55 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Original URL:', url);
-    
-    // Extract real URL if it's a Google redirect
-    const realUrl = extractRealUrl(url);
-    console.log('Processing URL:', realUrl);
+    console.log('Processing URL:', url);
 
-    // Fetch with redirect following
-    const { finalUrl, html } = await followRedirects(realUrl);
-    console.log('Final URL after redirects:', finalUrl);
-    console.log('HTML length:', html.length);
+    // Check for Firecrawl API key
+    const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
     
-    // Extract content
-    const content = extractContent(html);
-    
-    if (content.length < 100) {
-      console.warn('Content too short, might be a paywall or failed extraction');
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Não foi possível extrair o conteúdo. O site pode ter paywall ou proteção contra bots.',
-          finalUrl 
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    let result: { success: boolean; content?: string; finalUrl?: string; error?: string; extractor?: string };
+
+    // Try Firecrawl first if available
+    if (firecrawlKey) {
+      console.log('Firecrawl key available, trying Firecrawl first');
+      result = await scrapeWithFirecrawl(url, firecrawlKey);
+      result.extractor = 'firecrawl';
+      
+      // If Firecrawl fails, fallback to simple
+      if (!result.success) {
+        console.log('Firecrawl failed, falling back to simple scrape');
+        const simpleResult = await scrapeSimple(url);
+        if (simpleResult.success) {
+          result = { ...simpleResult, extractor: 'simple' };
+        }
+        // Keep Firecrawl error if simple also fails
+      }
+    } else {
+      console.log('No Firecrawl key, using simple scrape');
+      result = await scrapeSimple(url);
+      result.extractor = 'simple';
     }
-    
-    // Limit content length
-    const finalContent = content.length > 50000 ? content.substring(0, 50000) + '...' : content;
 
-    console.log('Content extracted successfully, length:', finalContent.length);
+    console.log('Final result:', { success: result.success, extractor: result.extractor, contentLength: result.content?.length });
 
     return new Response(
-      JSON.stringify({ success: true, content: finalContent, finalUrl }),
+      JSON.stringify({
+        success: result.success,
+        content: result.content,
+        finalUrl: result.finalUrl || url,
+        extractor: result.extractor,
+        error: result.error,
+        sourceUrl: url,
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error fetching content:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch content';
+    console.error('Handler error:', error);
     return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

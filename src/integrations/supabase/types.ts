@@ -90,23 +90,35 @@ export type Database = {
       full_news_content: {
         Row: {
           content_full: string | null
+          error_message: string | null
+          extractor: string | null
           fetched_at: string
+          final_url: string | null
           id: string
           news_id: string
+          source_url: string | null
           status: string
         }
         Insert: {
           content_full?: string | null
+          error_message?: string | null
+          extractor?: string | null
           fetched_at?: string
+          final_url?: string | null
           id?: string
           news_id: string
+          source_url?: string | null
           status?: string
         }
         Update: {
           content_full?: string | null
+          error_message?: string | null
+          extractor?: string | null
           fetched_at?: string
+          final_url?: string | null
           id?: string
           news_id?: string
+          source_url?: string | null
           status?: string
         }
         Relationships: [
