@@ -310,15 +310,12 @@ export default function AnalysisResults() {
                         <TableCell>
                           <div className="space-y-1">
                             <div className="font-medium line-clamp-2">{item.title || "Sem título"}</div>
-                            <div className="text-sm text-muted-foreground line-clamp-1">
-                              {item.snippet}
-                            </div>
                             {item.link_url && (
                               <a
                                 href={item.link_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs text-blue-500 hover:underline flex items-center gap-1"
+                                className="text-xs text-primary hover:underline inline-flex items-center gap-1"
                               >
                                 <ExternalLink className="h-3 w-3" />
                                 Ver original
