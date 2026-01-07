@@ -11,11 +11,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { SortableTableHead, type SortDirection } from "@/components/SortableTableHead";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, ExternalLink, Eye } from "lucide-react";
 
-type SortField = "title" | "snippet" | "status";
+type SortField = "title" | "status";
 
 type NewsResult = {
   id: string;
@@ -40,6 +47,7 @@ export default function FullContent() {
   });
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const [deduplicationDone, setDeduplicationDone] = useState(false);
+  const [viewingContent, setViewingContent] = useState<NewsResult | null>(null);
 
   // Run deduplication on mount
   const deduplicationMutation = useMutation({
@@ -238,9 +246,8 @@ export default function FullContent() {
         aVal = a.fullContent?.status || "pending";
         bVal = b.fullContent?.status || "pending";
       } else {
-        const key = currentSort.key as "title" | "snippet";
-        aVal = (a[key] || "").toLowerCase();
-        bVal = (b[key] || "").toLowerCase();
+        aVal = (a.title || "").toLowerCase();
+        bVal = (b.title || "").toLowerCase();
       }
 
       if (currentSort.direction === "asc") {
@@ -324,13 +331,6 @@ export default function FullContent() {
                 >
                   Título
                 </SortableTableHead>
-                <SortableTableHead
-                  sortKey="snippet"
-                  currentSort={currentSort}
-                  onSort={handleSort}
-                >
-                  Snippet
-                </SortableTableHead>
                 <TableHead>Link</TableHead>
                 <SortableTableHead
                   sortKey="status"
@@ -339,6 +339,7 @@ export default function FullContent() {
                 >
                   Status
                 </SortableTableHead>
+                <TableHead>Conteúdo</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -350,11 +351,8 @@ export default function FullContent() {
                       onCheckedChange={() => toggleSelection(news.id)}
                     />
                   </TableCell>
-                  <TableCell className="max-w-[300px] truncate font-medium">
+                  <TableCell className="max-w-[400px] truncate font-medium">
                     {news.title || "—"}
-                  </TableCell>
-                  <TableCell className="max-w-[400px] truncate text-muted-foreground">
-                    {news.snippet || "—"}
                   </TableCell>
                   <TableCell>
                     {news.link_url ? (
@@ -371,12 +369,36 @@ export default function FullContent() {
                     )}
                   </TableCell>
                   <TableCell>{getStatusIcon(news)}</TableCell>
+                  <TableCell>
+                    {news.fullContent?.status === "success" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setViewingContent(news)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
       )}
+
+      <Dialog open={!!viewingContent} onOpenChange={() => setViewingContent(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="pr-8">{viewingContent?.title || "Conteúdo"}</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[60vh] pr-4">
+            <div className="whitespace-pre-wrap text-sm">
+              {viewingContent?.fullContent?.content_full || "Sem conteúdo disponível."}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
