@@ -49,9 +49,9 @@ function extractWords(titles: (string | null | undefined)[]): { text: string; va
 
 const options = {
   colors: [
-    "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
-    "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
-    "#aec7e8", "#ffbb78", "#98df8a", "#ff9896", "#c5b0d5"
+    "#FF6B6B", "#4ECDC4", "#FFE66D", "#95E1D3", "#F38181",
+    "#AA96DA", "#FCBAD3", "#A8E6CF", "#FF8B94", "#88D8B0",
+    "#FFEAA7", "#DFE6E9", "#74B9FF", "#FD79A8", "#00CEC9"
   ],
   enableTooltip: true,
   deterministic: true,
