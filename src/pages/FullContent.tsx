@@ -552,7 +552,7 @@ export default function FullContent() {
                         />
                       </TableCell>
                       <TableCell className="font-mono text-xs whitespace-nowrap">
-                        {format(new Date(news.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                        {format(new Date(news.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                       </TableCell>
                       <TableCell className="max-w-[400px] truncate font-medium">
                         {news.title || "—"}

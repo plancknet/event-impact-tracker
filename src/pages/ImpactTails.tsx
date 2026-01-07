@@ -571,7 +571,7 @@ export default function ImpactTails() {
                     return (
                       <TableRow key={item.id}>
                         <TableCell className="font-mono text-xs whitespace-nowrap">
-                          {format(new Date(item.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                          {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                         </TableCell>
                         <TableCell>
                           <div className="font-medium line-clamp-2">
