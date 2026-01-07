@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { FileSearch, Loader2, ExternalLink } from "lucide-react";
+import { FileSearch, Loader2, ExternalLink, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { SortableTableHead, SortDirection } from "@/components/SortableTableHead";
 
 type NewsResult = {
@@ -24,6 +25,7 @@ export default function ExtractedResults() {
     key: "term",
     direction: "asc",
   });
+  const [titleFilter, setTitleFilter] = useState("");
 
   useEffect(() => {
     loadResults();
@@ -77,10 +79,18 @@ export default function ExtractedResults() {
     }));
   }
 
-  const sortedResults = useMemo(() => {
-    if (!sort.direction) return results;
+  const filteredAndSortedResults = useMemo(() => {
+    // First filter by title
+    const filtered = titleFilter.trim()
+      ? results.filter((r) =>
+          (r.title || "").toLowerCase().includes(titleFilter.toLowerCase().trim())
+        )
+      : results;
 
-    return [...results].sort((a, b) => {
+    // Then sort
+    if (!sort.direction) return filtered;
+
+    return [...filtered].sort((a, b) => {
       let aVal = "";
       let bVal = "";
 
@@ -99,7 +109,7 @@ export default function ExtractedResults() {
       if (aVal > bVal) return sort.direction === "asc" ? 1 : -1;
       return 0;
     });
-  }, [results, sort]);
+  }, [results, sort, titleFilter]);
 
   async function handleExtract() {
     setIsExtracting(true);
@@ -160,9 +170,21 @@ export default function ExtractedResults() {
             </p>
           ) : (
             <>
-              <p className="text-sm text-muted-foreground mb-4">
-                {results.length} resultado(s) encontrado(s)
-              </p>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-muted-foreground">
+                  {filteredAndSortedResults.length} de {results.length} resultado(s)
+                </p>
+                <div className="relative w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Filtrar por título..."
+                    value={titleFilter}
+                    onChange={(e) => setTitleFilter(e.target.value)}
+                    className="pl-9"
+                    maxLength={100}
+                  />
+                </div>
+              </div>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -193,29 +215,37 @@ export default function ExtractedResults() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedResults.map((result) => (
-                      <TableRow key={result.id}>
-                        <TableCell className="font-mono text-xs">{result.term}</TableCell>
-                        <TableCell className="font-medium text-sm">
-                          {result.link_url ? (
-                            <a
-                              href={result.link_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="hover:text-primary hover:underline flex items-center gap-1"
-                            >
-                              {result.title || "—"}
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          ) : (
-                            result.title || "—"
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground max-w-md truncate">
-                          {result.snippet || "—"}
+                    {filteredAndSortedResults.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                          Nenhum resultado encontrado para "{titleFilter}"
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      filteredAndSortedResults.map((result) => (
+                        <TableRow key={result.id}>
+                          <TableCell className="font-mono text-xs">{result.term}</TableCell>
+                          <TableCell className="font-medium text-sm">
+                            {result.link_url ? (
+                              <a
+                                href={result.link_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:text-primary hover:underline flex items-center gap-1"
+                              >
+                                {result.title || "—"}
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            ) : (
+                              result.title || "—"
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground max-w-md truncate">
+                            {result.snippet || "—"}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>
