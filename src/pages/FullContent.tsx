@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -22,7 +23,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SortableTableHead, type SortDirection } from "@/components/SortableTableHead";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle2, XCircle, ExternalLink, Eye, AlertCircle, ClipboardPaste, RefreshCw } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, ExternalLink, Eye, AlertCircle, ClipboardPaste, RefreshCw, Search } from "lucide-react";
+import { WordCloud } from "@/components/WordCloud";
 
 type SortField = "title" | "status";
 
@@ -59,6 +61,8 @@ export default function FullContent() {
   const [viewingError, setViewingError] = useState<NewsResult | null>(null);
   const [manualInputNews, setManualInputNews] = useState<NewsResult | null>(null);
   const [manualContent, setManualContent] = useState("");
+  const [titleFilter, setTitleFilter] = useState("");
+  const [wordCloudFilter, setWordCloudFilter] = useState("");
 
   // Run deduplication on mount
   const deduplicationMutation = useMutation({
@@ -297,8 +301,21 @@ export default function FullContent() {
     }));
   };
 
-  const sortedNews = useMemo(() => {
-    return [...newsResults].sort((a, b) => {
+  const handleWordCloudClick = (word: string) => {
+    setWordCloudFilter(word);
+    setTitleFilter(word);
+  };
+
+  const filteredAndSortedNews = useMemo(() => {
+    // Filter by title
+    const filtered = titleFilter.trim()
+      ? newsResults.filter((n) =>
+          (n.title || "").toLowerCase().includes(titleFilter.toLowerCase().trim())
+        )
+      : newsResults;
+
+    // Sort
+    return [...filtered].sort((a, b) => {
       let aVal: string;
       let bVal: string;
 
@@ -315,7 +332,7 @@ export default function FullContent() {
       }
       return bVal.localeCompare(aVal);
     });
-  }, [newsResults, currentSort]);
+  }, [newsResults, currentSort, titleFilter]);
 
   const getStatusIcon = (news: NewsResult) => {
     if (processingIds.has(news.id)) {
@@ -343,12 +360,12 @@ export default function FullContent() {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-6">Passo 5 — Conteúdo Completo</h1>
+    <div className="container mx-auto py-8 space-y-4">
+      <h1 className="text-2xl font-bold">Passo 5 — Conteúdo Completo</h1>
 
-      <div className="mb-4 flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <p className="text-muted-foreground">
-          {newsResults.length} notícias únicas encontradas
+          {filteredAndSortedNews.length} de {newsResults.length} notícias únicas
         </p>
         <Button
           onClick={handleFetchSelected}
@@ -374,112 +391,148 @@ export default function FullContent() {
           Nenhuma notícia disponível.
         </p>
       ) : (
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={selectedNews.size === newsResults.length && newsResults.length > 0}
-                    onCheckedChange={toggleSelectAll}
-                  />
-                </TableHead>
-                <SortableTableHead
-                  sortKey="title"
-                  currentSort={currentSort}
-                  onSort={handleSort}
-                >
-                  Título
-                </SortableTableHead>
-                <TableHead>Link</TableHead>
-                <SortableTableHead
-                  sortKey="status"
-                  currentSort={currentSort}
-                  onSort={handleSort}
-                >
-                  Status
-                </SortableTableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedNews.map((news) => (
-                <TableRow key={news.id}>
-                  <TableCell>
+        <>
+          <div>
+            <p className="text-xs text-muted-foreground mb-2">Clique em uma palavra para filtrar:</p>
+            <WordCloud
+              titles={newsResults.map((n) => n.title)}
+              onWordClick={handleWordCloudClick}
+              activeWord={wordCloudFilter}
+            />
+          </div>
+
+          <div className="flex items-center justify-end">
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Filtrar por título..."
+                value={titleFilter}
+                onChange={(e) => {
+                  setTitleFilter(e.target.value);
+                  setWordCloudFilter("");
+                }}
+                className="pl-9"
+                maxLength={100}
+              />
+            </div>
+          </div>
+
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
                     <Checkbox
-                      checked={selectedNews.has(news.id)}
-                      onCheckedChange={() => toggleSelection(news.id)}
+                      checked={selectedNews.size === filteredAndSortedNews.length && filteredAndSortedNews.length > 0}
+                      onCheckedChange={toggleSelectAll}
                     />
-                  </TableCell>
-                  <TableCell className="max-w-[400px] truncate font-medium">
-                    {news.title || "—"}
-                  </TableCell>
-                  <TableCell>
-                    {news.link_url ? (
-                      <a
-                        href={news.link_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline inline-flex items-center gap-1"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    ) : (
-                      "—"
-                    )}
-                  </TableCell>
-                  <TableCell>{getStatusIcon(news)}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      {news.fullContent?.status === "success" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setViewingContent(news)}
-                          title="Ver conteúdo"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {news.fullContent?.status === "error" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setViewingError(news)}
-                          title="Ver erro"
-                        >
-                          <AlertCircle className="h-4 w-4 text-red-500" />
-                        </Button>
-                      )}
-                      {news.fullContent && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleReprocess(news.id)}
-                          disabled={processingIds.has(news.id)}
-                          title="Reprocessar"
-                        >
-                          <RefreshCw className={`h-4 w-4 ${processingIds.has(news.id) ? 'animate-spin' : ''}`} />
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setManualInputNews(news);
-                          setManualContent(news.fullContent?.content_full || "");
-                        }}
-                        title="Colar conteúdo manualmente"
-                      >
-                        <ClipboardPaste className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  </TableHead>
+                  <SortableTableHead
+                    sortKey="title"
+                    currentSort={currentSort}
+                    onSort={handleSort}
+                  >
+                    Título
+                  </SortableTableHead>
+                  <TableHead>Link</TableHead>
+                  <SortableTableHead
+                    sortKey="status"
+                    currentSort={currentSort}
+                    onSort={handleSort}
+                  >
+                    Status
+                  </SortableTableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {filteredAndSortedNews.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      Nenhuma notícia encontrada para "{titleFilter}"
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredAndSortedNews.map((news) => (
+                    <TableRow key={news.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedNews.has(news.id)}
+                          onCheckedChange={() => toggleSelection(news.id)}
+                        />
+                      </TableCell>
+                      <TableCell className="max-w-[400px] truncate font-medium">
+                        {news.title || "—"}
+                      </TableCell>
+                      <TableCell>
+                        {news.link_url ? (
+                          <a
+                            href={news.link_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            Ver original
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell>{getStatusIcon(news)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          {news.fullContent?.status === "success" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setViewingContent(news)}
+                              title="Ver conteúdo"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {news.fullContent?.status === "error" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setViewingError(news)}
+                              title="Ver erro"
+                            >
+                              <AlertCircle className="h-4 w-4 text-red-500" />
+                            </Button>
+                          )}
+                          {news.fullContent && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleReprocess(news.id)}
+                              disabled={processingIds.has(news.id)}
+                              title="Reprocessar"
+                            >
+                              <RefreshCw className={`h-4 w-4 ${processingIds.has(news.id) ? "animate-spin" : ""}`} />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setManualInputNews(news);
+                              setManualContent(news.fullContent?.content_full || "");
+                            }}
+                            title="Colar conteúdo manualmente"
+                          >
+                            <ClipboardPaste className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       {/* View Content Dialog */}

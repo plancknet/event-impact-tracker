@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -19,7 +20,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Brain, ChevronDown, ChevronRight, ExternalLink, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Brain, ChevronDown, ChevronRight, ExternalLink, Loader2, CheckCircle, XCircle, Search } from "lucide-react";
+import { WordCloud } from "@/components/WordCloud";
 
 interface NewsWithContent {
   id: string;
@@ -48,6 +50,8 @@ interface NewsWithContent {
 export default function AnalysisResults() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [titleFilter, setTitleFilter] = useState("");
+  const [wordCloudFilter, setWordCloudFilter] = useState("");
   const queryClient = useQueryClient();
 
   // Fetch news with successful content and analysis status
@@ -207,8 +211,21 @@ export default function AnalysisResults() {
     }
   };
 
-  const notAnalyzedCount = newsItems?.filter((n) => !n.has_analysis).length || 0;
-  const analyzedCount = newsItems?.filter((n) => n.has_analysis).length || 0;
+  const handleWordCloudClick = (word: string) => {
+    setWordCloudFilter(word);
+    setTitleFilter(word);
+  };
+
+  const filteredNewsItems = useMemo(() => {
+    if (!newsItems) return [];
+    if (!titleFilter.trim()) return newsItems;
+    return newsItems.filter((n) =>
+      (n.title || "").toLowerCase().includes(titleFilter.toLowerCase().trim())
+    );
+  }, [newsItems, titleFilter]);
+
+  const notAnalyzedCount = filteredNewsItems.filter((n) => !n.has_analysis).length;
+  const analyzedCount = filteredNewsItems.filter((n) => n.has_analysis).length;
 
   return (
     <div className="space-y-6">
@@ -286,17 +303,53 @@ export default function AnalysisResults() {
               Primeiro extraia o conteúdo completo na página "Conteúdo Completo".
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12"></TableHead>
-                  <TableHead>Título</TableHead>
-                  <TableHead className="w-32">Status</TableHead>
-                  <TableHead className="w-24">Detalhes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {newsItems.map((item) => (
+            <>
+              <div className="mb-4">
+                <p className="text-xs text-muted-foreground mb-2">Clique em uma palavra para filtrar:</p>
+                <WordCloud
+                  titles={newsItems.map((n) => n.title)}
+                  onWordClick={handleWordCloudClick}
+                  activeWord={wordCloudFilter}
+                />
+              </div>
+
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-muted-foreground">
+                  {filteredNewsItems.length} de {newsItems.length} notícias
+                </p>
+                <div className="relative w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Filtrar por título..."
+                    value={titleFilter}
+                    onChange={(e) => {
+                      setTitleFilter(e.target.value);
+                      setWordCloudFilter("");
+                    }}
+                    className="pl-9"
+                    maxLength={100}
+                  />
+                </div>
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12"></TableHead>
+                    <TableHead>Título</TableHead>
+                    <TableHead className="w-32">Status</TableHead>
+                    <TableHead className="w-24">Detalhes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredNewsItems.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        Nenhuma notícia encontrada para "{titleFilter}"
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredNewsItems.map((item) => (
                   <Collapsible key={item.id} asChild>
                     <>
                       <TableRow className={expandedIds.has(item.id) ? "border-b-0" : ""}>
@@ -365,9 +418,11 @@ export default function AnalysisResults() {
                       )}
                     </>
                   </Collapsible>
-                ))}
-              </TableBody>
-            </Table>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </>
           )}
         </CardContent>
       </Card>
