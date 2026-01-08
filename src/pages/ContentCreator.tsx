@@ -1,745 +1,447 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2, Wand2, FileText, Monitor } from "lucide-react";
-import { NewsSelector, type SelectableNews } from "@/components/teleprompter/NewsSelector";
-import { EditorialParameters, type EditorialParametersData } from "@/components/teleprompter/EditorialParameters";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { FileText, Monitor, Wand2 } from "lucide-react";
 import { TeleprompterDisplay } from "@/components/teleprompter/TeleprompterDisplay";
-import { format } from "date-fns";
 
-type TabValue = "select" | "configure" | "teleprompter";
+type StepId = 1 | 2 | 3;
+
+type WritingProfile = {
+  mainAreaChips: string[];
+  tone: string;
+  audience: string;
+  duration: string;
+  platform: string;
+  goal: string;
+};
+
+type NewsItem = {
+  id: string;
+  title: string;
+  summary: string;
+  url: string;
+  fullText: string;
+  publishedAt: string;
+};
+
+const MAIN_AREA_OPTIONS = [
+  "Marketing",
+  "Fintech",
+  "Climate",
+  "AI",
+  "Healthcare",
+  "Education",
+  "Sports",
+  "Politics",
+];
+
+// TODO: Replace mock news with RSS ingestion aligned with docs/news-pipeline.md.
+// TODO: Add Firecrawl full-text extraction once RSS items are fetched.
+// TODO: Persist news with dedupe rules (URL + canonical title) in Lovable DB.
+const MOCK_NEWS: NewsItem[] = [
+  {
+    id: "news-1",
+    title: "Local startups use AI to speed up medical imaging reviews",
+    summary: "Hospitals report shorter wait times as AI tools assist radiologists.",
+    url: "https://example.com/ai-imaging",
+    fullText:
+      "Hospitals across the region are deploying AI-assisted imaging review tools. " +
+      "Early pilots show reductions in turnaround time for routine scans while keeping doctors in the loop.",
+    publishedAt: "2026-01-06",
+  },
+  {
+    id: "news-2",
+    title: "New education policy expands access to online certifications",
+    summary: "A new framework funds short-form credentials for working adults.",
+    url: "https://example.com/education-policy",
+    fullText:
+      "The education ministry announced expanded funding for micro-credentials. " +
+      "The policy emphasizes skills-based learning and partnerships with employers.",
+    publishedAt: "2026-01-05",
+  },
+  {
+    id: "news-3",
+    title: "Fintech regulators propose faster approval for digital wallets",
+    summary: "A draft proposal outlines a streamlined compliance checklist.",
+    url: "https://example.com/fintech-wallets",
+    fullText:
+      "Regulators released a draft proposal to simplify the approval process for digital wallets. " +
+      "The checklist focuses on consumer protections and data security.",
+    publishedAt: "2026-01-03",
+  },
+];
+
+const SYSTEM_PROMPT_GUIDANCE = [
+  "Optimize for speech, not reading.",
+  "Preserve the creator's voice and intent.",
+  "Keep structure visible and easy to follow.",
+  "Be concise and practical.",
+  "Do not invent facts; flag uncertainty.",
+];
 
 export default function ContentCreator() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<TabValue>("select");
+  const [step, setStep] = useState<StepId>(1);
+  const [profile, setProfile] = useState<WritingProfile>({
+    mainAreaChips: [],
+    tone: "",
+    audience: "",
+    duration: "",
+    platform: "",
+    goal: "",
+  });
   const [selectedNewsIds, setSelectedNewsIds] = useState<string[]>([]);
-  const [generatedScript, setGeneratedScript] = useState<string>("");
-  const [editedScript, setEditedScript] = useState<string>("");
-  const [refinementPrompt, setRefinementPrompt] = useState<string>("");
-  const [feedbackQuestions, setFeedbackQuestions] = useState<string[]>([]);
-  const [feedbackAnswers, setFeedbackAnswers] = useState<string[]>([]);
-  const [activeScriptNewsIds, setActiveScriptNewsIds] = useState<string[]>([]);
-  const [activeScriptParameters, setActiveScriptParameters] = useState<EditorialParametersData | null>(null);
-  const [isSavingScript, setIsSavingScript] = useState(false);
-  const [parameters, setParameters] = useState<EditorialParametersData>({
-    tone: "jornalistico",
-    audience: "publico_geral",
-    language: "Português",
-    duration: "5",
-    durationUnit: "minutes",
-    scriptType: "video_longo",
-    includeCta: false,
-    ctaText: "",
-  });
+  const [complementaryPrompt, setComplementaryPrompt] = useState("");
+  const [generationPayload, setGenerationPayload] = useState("");
+  const [generatedScript, setGeneratedScript] = useState("");
+  const [editedScript, setEditedScript] = useState("");
 
-  // Fetch news with full content or analysis
-  const { data: newsData, isLoading: newsLoading } = useQuery({
-    queryKey: ["eligible-news-for-teleprompter"],
-    queryFn: async () => {
-      // Get news with full content
-      const { data: fullContentNews, error: fullError } = await supabase
-        .from("full_news_content")
-        .select(`
-          id,
-          news_id,
-          content_full,
-          fetched_at,
-          alert_news_results!inner (
-            id,
-            title,
-            link_url,
-            snippet,
-            created_at,
-            published_at,
-            alert_query_results!inner (
-              search_terms!inner (
-                term
-              )
-            )
-          )
-        `)
-        .eq("status", "success")
-        .not("content_full", "is", null)
-        .order("fetched_at", { ascending: false });
+  const selectedNews = useMemo(
+    () => MOCK_NEWS.filter((item) => selectedNewsIds.includes(item.id)),
+    [selectedNewsIds],
+  );
 
-      if (fullError) throw fullError;
+  const references = useMemo(
+    () =>
+      selectedNews.map((item) => ({
+        title: item.title,
+        url: item.url,
+      })),
+    [selectedNews],
+  );
 
-      // Get news with AI analysis
-      const { data: analysisNews, error: analysisError } = await supabase
-        .from("news_ai_analysis")
-        .select(`
-          id,
-          news_id,
-          categories,
-          summary,
-          analyzed_at,
-          full_news_content!inner (
-            id,
-            content_full,
-            alert_news_results!inner (
-              id,
-              title,
-              link_url,
-              created_at,
-              published_at,
-              alert_query_results!inner (
-                search_terms!inner (
-                  term
-                )
-              )
-            )
-          )
-        `)
-        .order("analyzed_at", { ascending: false });
+  const canContinueFromProfile =
+    profile.mainAreaChips.length > 0 &&
+    profile.tone.trim() &&
+    profile.audience.trim() &&
+    profile.duration.trim() &&
+    profile.platform.trim() &&
+    profile.goal.trim();
 
-      if (analysisError) throw analysisError;
+  const canContinueFromNews = selectedNewsIds.length > 0;
 
-      // Combine and deduplicate
-      const newsMap = new Map<string, SelectableNews>();
-
-      // Add from full content
-      fullContentNews?.forEach((item: any) => {
-        const newsItem = item.alert_news_results;
-        if (newsItem && !newsMap.has(newsItem.id)) {
-          const createdAt = newsItem.created_at
-            ? new Date(newsItem.created_at)
-            : new Date(item.fetched_at);
-          const publishedAt = newsItem.published_at
-            ? new Date(newsItem.published_at)
-            : null;
-          newsMap.set(newsItem.id, {
-            id: newsItem.id,
-            title: newsItem.title || "Sem título",
-            date: createdAt,
-            publishedAt,
-            source: extractDomain(newsItem.link_url),
-            linkUrl: newsItem.link_url,
-            summary: newsItem.snippet,
-            content: item.content_full,
-            term: newsItem.alert_query_results?.search_terms?.term ?? null,
-          });
-        }
-      });
-
-      // Add/update from analysis
-      analysisNews?.forEach((item: any) => {
-        const fullContent = item.full_news_content;
-        const newsItem = fullContent?.alert_news_results;
-        if (newsItem) {
-          const createdAt = newsItem.created_at
-            ? new Date(newsItem.created_at)
-            : new Date(item.analyzed_at);
-          const publishedAt = newsItem.published_at
-            ? new Date(newsItem.published_at)
-            : null;
-          const categories = item.categories
-            ? item.categories
-                .split(",")
-                .map((cat: string) => cat.trim())
-                .filter(Boolean)
-            : undefined;
-          const existing = newsMap.get(newsItem.id);
-          if (existing) {
-            existing.summary = item.summary || existing.summary;
-            existing.categories = categories || existing.categories;
-            existing.term = newsItem.alert_query_results?.search_terms?.term ?? existing.term;
-            existing.date = createdAt;
-            existing.publishedAt = publishedAt ?? existing.publishedAt;
-            existing.linkUrl = newsItem.link_url || existing.linkUrl;
-          } else {
-            newsMap.set(newsItem.id, {
-              id: newsItem.id,
-              title: newsItem.title || "Sem título",
-              date: createdAt,
-              publishedAt,
-              source: extractDomain(newsItem.link_url),
-            linkUrl: newsItem.link_url,
-              summary: item.summary,
-              content: fullContent.content_full,
-              categories,
-              term: newsItem.alert_query_results?.search_terms?.term ?? null,
-            });
-          }
-        }
-      });
-
-      return Array.from(newsMap.values());
-    },
-  });
-
-  const getNewsItemsForIds = (ids: string[]) => {
-    const selectedNews = newsData?.filter((n) => ids.includes(n.id)) || [];
-    return selectedNews.map((n) => ({
-      id: n.id,
-      title: n.title,
-      summary: n.summary,
-      content: n.content,
-    }));
-  };
-
-  const getReferencesForIds = (ids: string[]) => {
-    const selectedNews = newsData?.filter((n) => ids.includes(n.id)) || [];
-    return selectedNews.map((n) => ({
-      title: n.title,
-      url: n.linkUrl || null,
-    }));
-  };
-
-  const { data: scriptsData = [], isLoading: scriptsLoading } = useQuery({
-    queryKey: ["teleprompter-scripts"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("teleprompter_scripts")
-        .select("id, created_at, news_ids_json, parameters_json, script_text")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      const uniqueById = new Map((data || []).map((item) => [item.id, item]));
-      return Array.from(uniqueById.values());
-    },
-  });
-
-  // Generate script mutation
-  const generateMutation = useMutation({
-    mutationFn: async () => {
-      const newsItems = getNewsItemsForIds(selectedNewsIds);
-
-      const { data, error } = await supabase.functions.invoke("generate-teleprompter-script", {
-        body: { newsItems, parameters },
-      });
-
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      return { script: data.script, questions: Array.isArray(data.questions) ? data.questions : [] };
-    },
-    onSuccess: (result) => {
-      const script = result?.script || "";
-      const questions = Array.isArray(result?.questions) ? result.questions : [];
-      setGeneratedScript(script);
-      setEditedScript(script);
-      setActiveScriptNewsIds([...selectedNewsIds]);
-      setActiveScriptParameters(parameters);
-      setRefinementPrompt("");
-      setFeedbackQuestions(questions);
-      setFeedbackAnswers(new Array(questions.length).fill(""));
-      queryClient.invalidateQueries({ queryKey: ["teleprompter-scripts"] });
-      setActiveTab("teleprompter");
-      toast({
-        title: "Roteiro gerado!",
-        description: "O roteiro foi criado com sucesso.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        variant: "destructive",
-        title: "Erro ao gerar roteiro",
-        description: error.message,
-      });
-    },
-  });
-
-  const regenerateMutation = useMutation({
-    mutationFn: async () => {
-      const baseScript = editedScript.trim() || generatedScript.trim();
-      const prompt = refinementPrompt.trim();
-      const newsIds = activeScriptNewsIds.length > 0 ? activeScriptNewsIds : selectedNewsIds;
-      const params = activeScriptParameters || parameters;
-      const newsItems = getNewsItemsForIds(newsIds);
-      const feedbackPayload = feedbackQuestions
-        .map((question, index) => ({
-          question,
-          answer: feedbackAnswers[index] || "",
-        }))
-        .filter((item) => item.answer.trim().length > 0);
-
-      const { data, error } = await supabase.functions.invoke("generate-teleprompter-script", {
-        body: {
-          newsItems,
-          parameters: params,
-          refinementPrompt: prompt,
-          baseScript,
-          feedback: feedbackPayload,
-        },
-      });
-
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      return { script: data.script, params, newsIds, questions: Array.isArray(data.questions) ? data.questions : [] };
-    },
-    onSuccess: ({ script, params, newsIds, questions }) => {
-      const nextQuestions = Array.isArray(questions) ? questions : [];
-      setGeneratedScript(script);
-      setEditedScript(script);
-      setActiveScriptNewsIds([...newsIds]);
-      setActiveScriptParameters(params);
-      setRefinementPrompt("");
-      setFeedbackQuestions(nextQuestions);
-      setFeedbackAnswers(new Array(nextQuestions.length).fill(""));
-      queryClient.invalidateQueries({ queryKey: ["teleprompter-scripts"] });
-      toast({
-        title: "Roteiro atualizado!",
-        description: "Uma nova versao foi gerada a partir do prompt.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        variant: "destructive",
-        title: "Erro ao regerar roteiro",
-        description: error.message,
-      });
-    },
-  });
-
-  const handleSaveScript = async () => {
-    const scriptText = editedScript.trim();
-    if (!scriptText) {
-      toast({
-        variant: "destructive",
-        title: "Texto vazio",
-        description: "Edite o roteiro antes de salvar.",
-      });
-      return;
-    }
-
-    setIsSavingScript(true);
-    try {
-      const newsIds = activeScriptNewsIds.length > 0 ? activeScriptNewsIds : selectedNewsIds;
-      const params = activeScriptParameters || parameters;
-
-      const { error } = await supabase
-        .from("teleprompter_scripts")
-        .insert({
-          news_ids_json: newsIds as unknown as import("@/integrations/supabase/types").Json,
-          parameters_json: params as unknown as import("@/integrations/supabase/types").Json,
-          script_text: scriptText,
-        });
-
-      if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ["teleprompter-scripts"] });
-      toast({
-        title: "Roteiro salvo",
-        description: "Uma nova versao foi registrada.",
-      });
-    } catch (error) {
-      console.error("Error saving script:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao salvar roteiro",
-        description: "Nao foi possivel salvar o roteiro.",
-      });
-    } finally {
-      setIsSavingScript(false);
-    }
-  };
-  const handleAnswerChange = (index: number, value: string) => {
-    setFeedbackAnswers((prev) => {
-      const next = [...prev];
-      next[index] = value;
-      return next;
+  const handleToggleChip = (chip: string) => {
+    setProfile((prev) => {
+      const exists = prev.mainAreaChips.includes(chip);
+      return {
+        ...prev,
+        mainAreaChips: exists
+          ? prev.mainAreaChips.filter((item) => item !== chip)
+          : [...prev.mainAreaChips, chip],
+      };
     });
   };
-  const handleGenerate = () => {
-    if (selectedNewsIds.length === 0) {
-      toast({
-        variant: "destructive",
-        title: "Selecione notícias",
-        description: "Você precisa selecionar pelo menos uma notícia para gerar o roteiro.",
-      });
-      return;
-    }
-    generateMutation.mutate();
+
+  const handleToggleNews = (id: string) => {
+    setSelectedNewsIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
   };
 
-  const canGenerate = selectedNewsIds.length > 0;
-  const canSaveScript = editedScript.trim().length > 0;
-  const canRegenerate = refinementPrompt.trim().length > 0 && (editedScript.trim() || generatedScript.trim());
-  const referenceIds = activeScriptNewsIds.length > 0 ? activeScriptNewsIds : selectedNewsIds;
-  const referenceItems = editedScript ? getReferencesForIds(referenceIds) : [];
+  const buildGenerationPayload = () => {
+    const newsBlocks = selectedNews
+      .map((item) => {
+        return [
+          `Title: ${item.title}`,
+          `Published: ${item.publishedAt}`,
+          `URL: ${item.url}`,
+          `Full text: ${item.fullText}`,
+        ].join("\n");
+      })
+      .join("\n\n");
+
+    return [
+      "Writing profile:",
+      `Main areas: ${profile.mainAreaChips.join(", ")}`,
+      `Tone: ${profile.tone}`,
+      `Audience: ${profile.audience}`,
+      `Duration: ${profile.duration}`,
+      `Platform: ${profile.platform}`,
+      `Goal: ${profile.goal}`,
+      "",
+      "News context:",
+      newsBlocks || "No news selected.",
+      "",
+      "Complementary prompt:",
+      complementaryPrompt.trim() || "None.",
+    ].join("\n");
+  };
+
+  const buildScript = () => {
+    const mainPoints = selectedNews.map((item) => {
+      const firstSentence = item.fullText.split(".")[0]?.trim() || item.summary;
+      const source = item.url ? ` [Source: ${item.url}]` : "";
+      return `- ${firstSentence}.${source}`;
+    });
+
+    return [
+      "Hook:",
+      `Today, here's what matters in ${profile.mainAreaChips.join(", ")}.`,
+      "",
+      "Main points:",
+      mainPoints.length > 0 ? mainPoints.join("\n") : "- No news selected.",
+      "",
+      "Transitions:",
+      "Now let's connect this to what it means for you.",
+      "",
+      "CTA:",
+      `If you want more ${profile.goal.toLowerCase()} content like this, follow for the next update.`,
+      "",
+      "Optional alt hook:",
+      `Quick update for ${profile.audience}: here's what's changing.`,
+    ].join("\n");
+  };
+
+  const handleGenerate = () => {
+    const payload = buildGenerationPayload();
+    setGenerationPayload(payload);
+
+    // TODO: Replace with Lovable function call using prompts/system.md guidance.
+    const script = buildScript();
+    setGeneratedScript(script);
+    setEditedScript(script);
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Criação de Conteúdo e Teleprompter</h1>
-          <p className="text-muted-foreground">
-            Gere roteiros a partir de notícias e apresente com teleprompter
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold">Content Creator Workflow</h1>
+        <p className="text-muted-foreground">
+          Build a writing profile, add news context, and generate a spoken-first script.
+        </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="select" className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            1. Notícias
-          </TabsTrigger>
-          <TabsTrigger value="configure" className="flex items-center gap-2">
-            <Wand2 className="w-4 h-4" />
-            2. Configurar
-          </TabsTrigger>
-          <TabsTrigger value="teleprompter" className="flex items-center gap-2">
-            <Monitor className="w-4 h-4" />
-            3. Teleprompter
-          </TabsTrigger>
-        </TabsList>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Card className={step === 1 ? "border-primary" : ""}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Step 1
+            </CardTitle>
+            <CardDescription>Writing profile</CardDescription>
+          </CardHeader>
+        </Card>
+        <Card className={step === 2 ? "border-primary" : ""}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Wand2 className="h-4 w-4" />
+              Step 2
+            </CardTitle>
+            <CardDescription>News context</CardDescription>
+          </CardHeader>
+        </Card>
+        <Card className={step === 3 ? "border-primary" : ""}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Monitor className="h-4 w-4" />
+              Step 3
+            </CardTitle>
+            <CardDescription>Generate script</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
 
-        <TabsContent value="select" className="mt-6">
-          {newsLoading ? (
-            <Card>
-              <CardContent className="flex items-center justify-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin mr-2" />
-                Carregando notícias...
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              <NewsSelector
-                news={newsData || []}
-                selectedIds={selectedNewsIds}
-                onSelectionChange={setSelectedNewsIds}
+      {step === 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Writing Profile</CardTitle>
+            <CardDescription>Minimal fields to set the voice and format.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Main areas</p>
+              <div className="flex flex-wrap gap-2">
+                {MAIN_AREA_OPTIONS.map((chip) => {
+                  const selected = profile.mainAreaChips.includes(chip);
+                  return (
+                    <Button
+                      key={chip}
+                      type="button"
+                      variant={selected ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleToggleChip(chip)}
+                    >
+                      {chip}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Tone</p>
+                <Input
+                  value={profile.tone}
+                  onChange={(event) => setProfile((prev) => ({ ...prev, tone: event.target.value }))}
+                  placeholder="Conversational, bold, calm"
+                />
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Audience</p>
+                <Input
+                  value={profile.audience}
+                  onChange={(event) => setProfile((prev) => ({ ...prev, audience: event.target.value }))}
+                  placeholder="Creators, founders, students"
+                />
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Duration</p>
+                <Input
+                  value={profile.duration}
+                  onChange={(event) => setProfile((prev) => ({ ...prev, duration: event.target.value }))}
+                  placeholder="60s, 2 minutes, 800 words"
+                />
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Platform</p>
+                <Input
+                  value={profile.platform}
+                  onChange={(event) => setProfile((prev) => ({ ...prev, platform: event.target.value }))}
+                  placeholder="YouTube, TikTok, Podcast"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <p className="text-sm font-medium">Goal</p>
+                <Input
+                  value={profile.goal}
+                  onChange={(event) => setProfile((prev) => ({ ...prev, goal: event.target.value }))}
+                  placeholder="Teach, persuade, entertain, sell"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Button onClick={() => setStep(2)} disabled={!canContinueFromProfile}>
+                Continue to news
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 2 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>News Context</CardTitle>
+            <CardDescription>Select news and add a complementary prompt.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 lg:grid-cols-2">
+              {MOCK_NEWS.map((item) => {
+                const selected = selectedNewsIds.includes(item.id);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleToggleNews(item.id)}
+                    className={`rounded-lg border p-4 text-left transition ${
+                      selected ? "border-primary bg-muted" : "border-border"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-1">
+                        <p className="font-medium">{item.title}</p>
+                        <p className="text-sm text-muted-foreground">{item.summary}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.publishedAt} • {item.url}
+                        </p>
+                      </div>
+                      <span className="text-xs font-medium">
+                        {selected ? "Selected" : "Select"}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Complementary prompt</p>
+              <Textarea
+                value={complementaryPrompt}
+                onChange={(event) => setComplementaryPrompt(event.target.value)}
+                rows={3}
+                placeholder="Ex: focus on creator takeaways, keep it punchy, add a CTA."
               />
-              {selectedNewsIds.length > 0 && (
-                <div className="mt-4 flex justify-end">
-                  <Button onClick={() => setActiveTab("configure")}>
-                    Continuar para Configuração →
-                  </Button>
+            </div>
+
+            <div className="flex flex-wrap justify-between gap-2">
+              <Button variant="outline" onClick={() => setStep(1)}>
+                Back to profile
+              </Button>
+              <Button onClick={() => setStep(3)} disabled={!canContinueFromNews}>
+                Continue to generate
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 3 && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Generate</CardTitle>
+              <CardDescription>Compose inputs and generate the script.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-lg border p-4 text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">System guidance</p>
+                <ul className="list-disc pl-5">
+                  {SYSTEM_PROMPT_GUIDANCE.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <Button onClick={handleGenerate} disabled={!canContinueFromNews}>
+                <Wand2 className="mr-2 h-4 w-4" />
+                Generate script
+              </Button>
+
+              {generationPayload && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Generation payload</p>
+                  <Textarea value={generationPayload} readOnly rows={8} />
                 </div>
               )}
-            </>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Script editor</CardTitle>
+              <CardDescription>Edit before displaying in teleprompter.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                value={editedScript}
+                onChange={(event) => setEditedScript(event.target.value)}
+                rows={10}
+                placeholder="Generated script appears here..."
+              />
+            </CardContent>
+          </Card>
+
+          {editedScript ? (
+            <TeleprompterDisplay script={editedScript} references={references} />
+          ) : (
+            <Card>
+              <CardContent className="py-10 text-center text-muted-foreground">
+                Generate a script to see the teleprompter.
+              </CardContent>
+            </Card>
           )}
-        </TabsContent>
 
-        <TabsContent value="configure" className="mt-6">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <EditorialParameters parameters={parameters} onChange={setParameters} />
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Resumo da Seleção</CardTitle>
-                <CardDescription>
-                  {selectedNewsIds.length} notícia(s) selecionada(s)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="max-h-[300px] overflow-y-auto space-y-2">
-                  {newsData
-                    ?.filter((n) => selectedNewsIds.includes(n.id))
-                    .map((news) => (
-                      <div key={news.id} className="p-2 bg-muted rounded text-sm">
-                        {news.title}
-                      </div>
-                    ))}
-                </div>
-                
-                <Button
-                  onClick={handleGenerate}
-                  disabled={generateMutation.isPending || !canGenerate}
-                  className="w-full"
-                  size="lg"
-                >
-                  {generateMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Gerando Roteiro...
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 className="w-4 h-4 mr-2" />
-                      Gerar Roteiro com IA
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
+          <div className="flex justify-start">
+            <Button variant="outline" onClick={() => setStep(2)}>
+              Back to news
+            </Button>
           </div>
-        </TabsContent>
-
-        <TabsContent value="teleprompter" className="mt-6">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Conteudos gerados</CardTitle>
-                <CardDescription>
-                  {scriptsData.length} roteiro(s) disponivel(eis)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {scriptsLoading ? (
-                  <div className="flex items-center justify-center py-8 text-muted-foreground">
-                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    Carregando roteiros...
-                  </div>
-                ) : scriptsData.length === 0 ? (
-                  <div className="py-8 text-center text-muted-foreground">
-                    Nenhum roteiro gerado ainda.
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[140px]">Data</TableHead>
-                          <TableHead className="w-[120px]">Noticias</TableHead>
-                          <TableHead>Preview</TableHead>
-                          <TableHead className="w-[120px]">Acoes</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {scriptsData.map((script) => (
-                          <TableRow key={script.id}>
-                            <TableCell className="font-mono text-xs whitespace-nowrap">
-                              {format(new Date(script.created_at), "dd/MM/yyyy HH:mm")}
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {getNewsCount(script.news_ids_json)}
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {getScriptPreview(script.script_text)}
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                size="sm"
-                                variant={generatedScript === script.script_text ? "secondary" : "outline"}
-                                onClick={() => {
-                                  setGeneratedScript(script.script_text);
-                                  setEditedScript(script.script_text);
-                                  setActiveScriptNewsIds(parseNewsIds(script.news_ids_json));
-                                  setActiveScriptParameters(parseParameters(script.parameters_json));
-                                  setRefinementPrompt("");
-                                  setFeedbackQuestions([]);
-                                  setFeedbackAnswers([]);
-                                }}
-                              >
-                                {generatedScript === script.script_text ? "Em uso" : "Usar"}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Editor do roteiro</CardTitle>
-                <CardDescription>
-                  Edite o texto e salve uma nova versao do teleprompter.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Texto do teleprompter</p>
-                  <Textarea
-                    value={editedScript}
-                    onChange={(e) => setEditedScript(e.target.value)}
-                    rows={10}
-                    placeholder="Cole ou edite o roteiro aqui..."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Prompt complementar para refinar</p>
-                  <Textarea
-                    value={refinementPrompt}
-                    onChange={(e) => setRefinementPrompt(e.target.value)}
-                    rows={3}
-                    placeholder="Ex: deixe mais direto, ajuste o tom, reduza a abertura..."
-                  />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button onClick={handleSaveScript} disabled={isSavingScript || !canSaveScript}>
-                    {isSavingScript ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        Salvando...
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="w-4 h-4 mr-2" />
-                        Salvar versao
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => regenerateMutation.mutate()}
-                    disabled={regenerateMutation.isPending || !canRegenerate}
-                  >
-                    {regenerateMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        Regenerando...
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="w-4 h-4 mr-2" />
-                        Regenerar com prompt
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-            {feedbackQuestions.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Perguntas sobre sua opiniao</CardTitle>
-                  <CardDescription>
-                    Responda para ajudar a melhorar a proxima versao.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {feedbackQuestions.map((question, index) => (
-                    <div key={`${index}-${question}`} className="space-y-2">
-                      <p className="text-sm font-medium">
-                        {index + 1}. {question}
-                      </p>
-                      <Textarea
-                        value={feedbackAnswers[index] || ""}
-                        onChange={(e) => handleAnswerChange(index, e.target.value)}
-                        rows={3}
-                        placeholder="Sua resposta..."
-                      />
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
-            {editedScript ? (
-              <TeleprompterDisplay script={editedScript} references={referenceItems} />
-            ) : (
-              <Card>
-                <CardContent className="flex items-center justify-center py-12 text-muted-foreground">
-                  Selecione um roteiro acima ou gere um novo.
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
     </div>
   );
 }
-
-function extractDomain(url: string | null): string {
-  if (!url) return "Fonte desconhecida";
-  try {
-    const domain = new URL(url).hostname;
-    return domain.replace("www.", "");
-  } catch {
-    return "Fonte desconhecida";
-  }
-}
-
-function getNewsCount(value: unknown): number {
-  if (Array.isArray(value)) return value.length;
-  if (value && typeof value === "object" && "length" in (value as { length: number })) {
-    const length = (value as { length: number }).length;
-    return typeof length === "number" ? length : 0;
-  }
-  if (typeof value === "string") {
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed.length : 0;
-    } catch {
-      return 0;
-    }
-  }
-  return 0;
-}
-
-function parseNewsIds(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.filter((id) => typeof id === "string") as string[];
-  }
-  if (typeof value === "string") {
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed)
-        ? parsed.filter((id) => typeof id === "string")
-        : [];
-    } catch {
-      return [];
-    }
-  }
-  return [];
-}
-
-function getScriptPreview(text: string, maxLength = 140): string {
-  const condensed = text.replace(/\s+/g, " ").trim();
-  if (condensed.length <= maxLength) return condensed;
-  return `${condensed.slice(0, maxLength)}...`;
-}
-
-function parseParameters(value: unknown): EditorialParametersData | null {
-  if (!value || typeof value !== "object") return null;
-  const obj = value as Record<string, unknown>;
-  return {
-    tone: (obj.tone as string) || "jornalistico",
-    audience: (obj.audience as string) || "publico_geral",
-    language: (obj.language as string) || "Português",
-    duration: (obj.duration as string) || "5",
-    durationUnit: (obj.durationUnit as "minutes" | "words") || "minutes",
-    scriptType: (obj.scriptType as string) || "video_longo",
-    includeCta: Boolean(obj.includeCta),
-    ctaText: (obj.ctaText as string) || "",
-  };
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
