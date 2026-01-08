@@ -50,6 +50,7 @@ interface NewsWithAnalysis {
   title: string | null;
   link_url: string | null;
   created_at: string;
+  published_at: string | null;
   categories: string | null;
   impact_direction: string | null;
   confidence_score: number | null;
@@ -335,6 +336,7 @@ export default function ImpactTails() {
   const [titleFilter, setTitleFilter] = useState("");
   const [wordCloudFilter, setWordCloudFilter] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState("");
+  const [publishedDateFilter, setPublishedDateFilter] = useState("");
   const [termFilter, setTermFilter] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
 
@@ -355,6 +357,7 @@ export default function ImpactTails() {
             title, 
             link_url, 
             created_at,
+            published_at,
             is_duplicate,
             alert_query_results!inner (
               search_terms!inner (
@@ -380,6 +383,7 @@ export default function ImpactTails() {
           title: string | null;
           link_url: string | null;
           created_at: string;
+          published_at: string | null;
           alert_query_results: { search_terms: { term: string } };
         };
         
@@ -392,7 +396,8 @@ export default function ImpactTails() {
             news_id: item.news_id,
             title: news.title,
             link_url: news.link_url,
-            created_at: news.created_at,
+            created_at: news.created_at,
+            published_at: news.published_at || null,
             categories: item.categories,
             impact_direction: item.impact_direction,
             confidence_score: item.confidence_score,
@@ -417,7 +422,7 @@ export default function ImpactTails() {
     for (const item of newsItems) {
       const vars = parseModelVariables(item.model_variables_json);
       const confidence = item.confidence_score ?? 0.5;
-      const newsDate = new Date(item.created_at);
+      const newsDate = new Date(item.published_at || item.created_at);
       const { chartData, calculatedDirection } = calculateImpactTail(vars, confidence, numDays, newsDate);
       
       const maxImpact = Math.max(...chartData.map(d => Math.abs(d.impact)));
@@ -485,22 +490,34 @@ export default function ImpactTails() {
         return categories.some((c) => categorySet.has(c));
       });
     }
-
-    // Filter by date
-    const filterDate = parseFilterDate(dateFilter);
-    if (filterDate) {
+    // Filter by creation date
+    const creationFilterDate = parseFilterDate(dateFilter);
+    if (creationFilterDate) {
       filtered = filtered.filter((n) => {
         const newsDate = new Date(n.created_at);
         return (
-          newsDate.getDate() === filterDate.getDate() &&
-          newsDate.getMonth() === filterDate.getMonth() &&
-          newsDate.getFullYear() === filterDate.getFullYear()
+          newsDate.getDate() === creationFilterDate.getDate() &&
+          newsDate.getMonth() === creationFilterDate.getMonth() &&
+          newsDate.getFullYear() === creationFilterDate.getFullYear()
         );
       });
     }
 
+    // Filter by publication date
+    const publicationFilterDate = parseFilterDate(publishedDateFilter);
+    if (publicationFilterDate) {
+      filtered = filtered.filter((n) => {
+        if (!n.published_at) return false;
+        const publishedDate = new Date(n.published_at);
+        return (
+          publishedDate.getDate() === publicationFilterDate.getDate() &&
+          publishedDate.getMonth() === publicationFilterDate.getMonth() &&
+          publishedDate.getFullYear() === publicationFilterDate.getFullYear()
+        );
+      });
+    }
     return filtered;
-  }, [newsItems, titleFilter, dateFilter, termFilter, wordCloudFilter, categoryFilter]);
+  }, [newsItems, titleFilter, dateFilter, publishedDateFilter, termFilter, wordCloudFilter, categoryFilter]);
 
   const categoryOptions = useMemo(() => {
     const set = new Set<string>();
@@ -560,7 +577,12 @@ export default function ImpactTails() {
                 <DateFilter
                   value={dateFilter}
                   onChange={setDateFilter}
-                  placeholder="dd/mm/aaaa"
+                  placeholder="Criacao dd/mm/aaaa"
+                />
+                <DateFilter
+                  value={publishedDateFilter}
+                  onChange={setPublishedDateFilter}
+                  placeholder="Publicacao dd/mm/aaaa"
                 />
               </div>
               <div className="relative">
@@ -591,7 +613,8 @@ export default function ImpactTails() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[100px]">Data</TableHead>
+                  <TableHead className="w-[100px]">Criacao</TableHead>
+                  <TableHead className="w-[110px]">Publicacao</TableHead>
                   <TableHead>Título</TableHead>
                   <TableHead className="w-40">Categorias</TableHead>
                   <TableHead className="w-28">Direção</TableHead>
@@ -602,7 +625,7 @@ export default function ImpactTails() {
               <TableBody>
                 {filteredNewsItems.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       {titleFilter || dateFilter ? "Nenhuma notícia encontrada" : "Nenhuma notícia analisada com selected_for_model = true"}
                     </TableCell>
                   </TableRow>
@@ -615,6 +638,11 @@ export default function ImpactTails() {
                       <TableRow key={item.id}>
                         <TableCell className="font-mono text-xs whitespace-nowrap">
                           {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs whitespace-nowrap">
+                          {item.published_at
+                            ? format(new Date(item.published_at), "dd/MM/yyyy", { locale: ptBR })
+                            : "-"}
                         </TableCell>
                         <TableCell>
                           <div className="font-medium line-clamp-2">
@@ -673,3 +701,5 @@ export default function ImpactTails() {
     </div>
   );
 }
+
+

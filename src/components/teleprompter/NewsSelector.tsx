@@ -14,6 +14,7 @@ export interface SelectableNews {
   id: string;
   title: string;
   date: Date;
+  publishedAt?: Date | null;
   source: string;
   linkUrl?: string | null;
   summary?: string;
@@ -33,6 +34,7 @@ export function NewsSelector({ news, selectedIds, onSelectionChange }: NewsSelec
   const [termFilter, setTermFilter] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState("");
+  const [publishedDateFilter, setPublishedDateFilter] = useState("");
 
   const parseFilterDate = (dateStr: string): Date | null => {
     if (dateStr.length !== 10) return null;
@@ -75,21 +77,31 @@ export function NewsSelector({ news, selectedIds, onSelectionChange }: NewsSelec
         item.title.toLowerCase().includes(query)
       );
     }
-
-    const filterDate = parseFilterDate(dateFilter);
-    if (filterDate) {
+    const creationFilterDate = parseFilterDate(dateFilter);
+    if (creationFilterDate) {
       filtered = filtered.filter((item) => {
         const newsDate = item.date;
         return (
-          newsDate.getDate() === filterDate.getDate() &&
-          newsDate.getMonth() === filterDate.getMonth() &&
-          newsDate.getFullYear() === filterDate.getFullYear()
+          newsDate.getDate() === creationFilterDate.getDate() &&
+          newsDate.getMonth() === creationFilterDate.getMonth() &&
+          newsDate.getFullYear() === creationFilterDate.getFullYear()
         );
       });
     }
 
+    const publicationFilterDate = parseFilterDate(publishedDateFilter);
+    if (publicationFilterDate) {
+      filtered = filtered.filter((item) => {
+        if (!item.publishedAt) return false;
+        return (
+          item.publishedAt.getDate() === publicationFilterDate.getDate() &&
+          item.publishedAt.getMonth() === publicationFilterDate.getMonth() &&
+          item.publishedAt.getFullYear() === publicationFilterDate.getFullYear()
+        );
+      });
+    }
     return filtered;
-  }, [news, termFilter, categoryFilter, titleWordFilter, dateFilter]);
+  }, [news, termFilter, categoryFilter, titleWordFilter, dateFilter, publishedDateFilter]);
 
   const handleToggle = (id: string) => {
     if (selectedIds.includes(id)) {
@@ -139,7 +151,13 @@ export function NewsSelector({ news, selectedIds, onSelectionChange }: NewsSelec
           <DateFilter
             value={dateFilter}
             onChange={setDateFilter}
-            placeholder="dd/mm/aaaa"
+            placeholder="Criacao dd/mm/aaaa"
+          />
+          
+          <DateFilter
+            value={publishedDateFilter}
+            onChange={setPublishedDateFilter}
+            placeholder="Publicacao dd/mm/aaaa"
           />
           <div className="relative flex-1 min-w-[220px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -177,9 +195,12 @@ export function NewsSelector({ news, selectedIds, onSelectionChange }: NewsSelec
                 />
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium text-sm line-clamp-2">{item.title}</h4>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                    <span>{format(item.date, "dd/MM/yyyy", { locale: ptBR })}</span>
-                    <span>â€¢</span>
+                  <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
+                    <span>Criacao: {format(item.date, "dd/MM/yyyy", { locale: ptBR })}</span>
+                    {item.publishedAt && (
+                      <span>Publicacao: {format(item.publishedAt, "dd/MM/yyyy", { locale: ptBR })}</span>
+                    )}
+                    <span>ƒ?½</span>
                     <span className="truncate">{item.source}</span>
                   </div>
                   {item.summary && (
@@ -196,6 +217,10 @@ export function NewsSelector({ news, selectedIds, onSelectionChange }: NewsSelec
     </Card>
   );
 }
+
+
+
+
 
 
 

@@ -37,6 +37,7 @@ interface NewsWithContent {
   content_full: string | null;
   has_analysis: boolean;
   created_at: string;
+  published_at: string | null;
   term: string;
   analysis?: {
     id: string;
@@ -60,6 +61,7 @@ export default function AnalysisResults() {
   const [titleFilter, setTitleFilter] = useState("");
   const [wordCloudFilter, setWordCloudFilter] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState("");
+  const [publishedDateFilter, setPublishedDateFilter] = useState("");
   const [termFilter, setTermFilter] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const queryClient = useQueryClient();
@@ -81,6 +83,7 @@ export default function AnalysisResults() {
             snippet,
             link_url,
             created_at,
+            published_at,
             is_duplicate,
             alert_query_results!inner (
               search_terms!inner (
@@ -116,6 +119,7 @@ export default function AnalysisResults() {
           snippet: string | null;
           link_url: string | null;
           created_at: string;
+          published_at: string | null;
           alert_query_results: { search_terms: { term: string } };
         };
         
@@ -133,7 +137,8 @@ export default function AnalysisResults() {
             full_content_id: fc.id,
             content_full: fc.content_full,
             has_analysis: !!analysis,
-            created_at: news.created_at,
+            created_at: news.created_at,
+            published_at: news.published_at || null,
             term: news.alert_query_results?.search_terms?.term || "—",
             analysis: analysis ? {
               id: analysis.id,
@@ -292,22 +297,34 @@ export default function AnalysisResults() {
         return categories.some((c) => categorySet.has(c));
       });
     }
-
-    // Filter by date
-    const filterDate = parseFilterDate(dateFilter);
-    if (filterDate) {
+    // Filter by creation date
+    const creationFilterDate = parseFilterDate(dateFilter);
+    if (creationFilterDate) {
       filtered = filtered.filter((n) => {
         const newsDate = new Date(n.created_at);
         return (
-          newsDate.getDate() === filterDate.getDate() &&
-          newsDate.getMonth() === filterDate.getMonth() &&
-          newsDate.getFullYear() === filterDate.getFullYear()
+          newsDate.getDate() === creationFilterDate.getDate() &&
+          newsDate.getMonth() === creationFilterDate.getMonth() &&
+          newsDate.getFullYear() === creationFilterDate.getFullYear()
         );
       });
     }
 
+    // Filter by publication date
+    const publicationFilterDate = parseFilterDate(publishedDateFilter);
+    if (publicationFilterDate) {
+      filtered = filtered.filter((n) => {
+        if (!n.published_at) return false;
+        const publishedDate = new Date(n.published_at);
+        return (
+          publishedDate.getDate() === publicationFilterDate.getDate() &&
+          publishedDate.getMonth() === publicationFilterDate.getMonth() &&
+          publishedDate.getFullYear() === publicationFilterDate.getFullYear()
+        );
+      });
+    }
     return filtered;
-  }, [newsItems, titleFilter, dateFilter, termFilter, wordCloudFilter, categoryFilter]);
+  }, [newsItems, titleFilter, dateFilter, publishedDateFilter, termFilter, wordCloudFilter, categoryFilter]);
 
   const categoryOptions = useMemo(() => {
     const set = new Set<string>();
@@ -415,7 +432,12 @@ export default function AnalysisResults() {
                     <DateFilter
                       value={dateFilter}
                       onChange={setDateFilter}
-                      placeholder="dd/mm/aaaa"
+                      placeholder="Criacao dd/mm/aaaa"
+                    />
+                    <DateFilter
+                      value={publishedDateFilter}
+                      onChange={setPublishedDateFilter}
+                      placeholder="Publicacao dd/mm/aaaa"
                     />
                   </div>
                   <div className="relative">
@@ -449,7 +471,8 @@ export default function AnalysisResults() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12"></TableHead>
-                    <TableHead className="w-[100px]">Data</TableHead>
+                    <TableHead className="w-[100px]">Criacao</TableHead>
+                    <TableHead className="w-[110px]">Publicacao</TableHead>
                     <TableHead>Título</TableHead>
                     <TableHead className="w-32">Status</TableHead>
                     <TableHead className="w-24">Detalhes</TableHead>
@@ -458,7 +481,7 @@ export default function AnalysisResults() {
                 <TableBody>
                   {filteredNewsItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         Nenhuma notícia encontrada
                       </TableCell>
                     </TableRow>
@@ -476,6 +499,11 @@ export default function AnalysisResults() {
                         </TableCell>
                         <TableCell className="font-mono text-xs whitespace-nowrap">
                           {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs whitespace-nowrap">
+                          {item.published_at
+                            ? format(new Date(item.published_at), "dd/MM/yyyy", { locale: ptBR })
+                            : "-"}
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
@@ -527,7 +555,7 @@ export default function AnalysisResults() {
                       {item.has_analysis && item.analysis && (
                         <CollapsibleContent asChild>
                           <TableRow className="bg-muted/30">
-                            <TableCell colSpan={5} className="p-4">
+                            <TableCell colSpan={6} className="p-4">
                               <AnalysisDetail analysis={item.analysis} />
                             </TableCell>
                           </TableRow>
@@ -647,3 +675,6 @@ function AnalysisDetail({ analysis }: { analysis: NonNullable<NewsWithContent["a
     </div>
   );
 }
+
+
+

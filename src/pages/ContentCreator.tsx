@@ -57,6 +57,7 @@ export default function ContentCreator() {
             link_url,
             snippet,
             created_at,
+            published_at,
             alert_query_results!inner (
               search_terms!inner (
                 term
@@ -87,6 +88,7 @@ export default function ContentCreator() {
               title,
               link_url,
               created_at,
+              published_at,
               alert_query_results!inner (
                 search_terms!inner (
                   term
@@ -109,10 +111,14 @@ export default function ContentCreator() {
           const createdAt = newsItem.created_at
             ? new Date(newsItem.created_at)
             : new Date(item.fetched_at);
+          const publishedAt = newsItem.published_at
+            ? new Date(newsItem.published_at)
+            : null;
           newsMap.set(newsItem.id, {
             id: newsItem.id,
             title: newsItem.title || "Sem título",
             date: createdAt,
+            publishedAt,
             source: extractDomain(newsItem.link_url),
             linkUrl: newsItem.link_url,
             summary: newsItem.snippet,
@@ -130,6 +136,9 @@ export default function ContentCreator() {
           const createdAt = newsItem.created_at
             ? new Date(newsItem.created_at)
             : new Date(item.analyzed_at);
+          const publishedAt = newsItem.published_at
+            ? new Date(newsItem.published_at)
+            : null;
           const categories = item.categories
             ? item.categories
                 .split(",")
@@ -142,12 +151,14 @@ export default function ContentCreator() {
             existing.categories = categories || existing.categories;
             existing.term = newsItem.alert_query_results?.search_terms?.term ?? existing.term;
             existing.date = createdAt;
+            existing.publishedAt = publishedAt ?? existing.publishedAt;
             existing.linkUrl = newsItem.link_url || existing.linkUrl;
           } else {
             newsMap.set(newsItem.id, {
               id: newsItem.id,
               title: newsItem.title || "Sem título",
               date: createdAt,
+              publishedAt,
               source: extractDomain(newsItem.link_url),
             linkUrl: newsItem.link_url,
               summary: item.summary,
@@ -687,6 +698,9 @@ function parseParameters(value: unknown): EditorialParametersData | null {
     ctaText: (obj.ctaText as string) || "",
   };
 }
+
+
+
 
 
 

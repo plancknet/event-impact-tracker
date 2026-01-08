@@ -50,6 +50,7 @@ type NewsResult = {
   link_url: string | null;
   is_duplicate: boolean;
   created_at: string;
+  published_at: string | null;
   term: string;
   categories: string | null;
   fullContent?: FullContent | null;
@@ -71,6 +72,7 @@ export default function FullContent() {
   const [titleFilter, setTitleFilter] = useState("");
   const [wordCloudFilter, setWordCloudFilter] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState("");
+  const [publishedDateFilter, setPublishedDateFilter] = useState("");
   const [termFilter, setTermFilter] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [isDeduplicating, setIsDeduplicating] = useState(false);
@@ -154,6 +156,7 @@ export default function FullContent() {
           link_url, 
           is_duplicate, 
           created_at,
+          published_at,
           alert_query_results!inner (
             search_terms!inner (
               term
@@ -204,6 +207,7 @@ export default function FullContent() {
             link_url: n.link_url,
             is_duplicate: n.is_duplicate,
             created_at: n.created_at,
+            published_at: n.published_at || null,
             categories: analysisMap.get(n.id) || null,
             term: n.alert_query_results?.search_terms?.term || "—",
             fullContent: contentMap.get(n.id) || null,
@@ -408,21 +412,33 @@ export default function FullContent() {
         return categories.some((c) => categorySet.has(c));
       });
     }
-
-    // Filter by date
-    const filterDate = parseFilterDate(dateFilter);
-    if (filterDate) {
+    // Filter by creation date
+    const creationFilterDate = parseFilterDate(dateFilter);
+    if (creationFilterDate) {
       filtered = filtered.filter((n) => {
         const newsDate = new Date(n.created_at);
         return (
-          newsDate.getDate() === filterDate.getDate() &&
-          newsDate.getMonth() === filterDate.getMonth() &&
-          newsDate.getFullYear() === filterDate.getFullYear()
+          newsDate.getDate() === creationFilterDate.getDate() &&
+          newsDate.getMonth() === creationFilterDate.getMonth() &&
+          newsDate.getFullYear() === creationFilterDate.getFullYear()
         );
       });
     }
 
-    // Sort
+    // Filter by publication date
+    const publicationFilterDate = parseFilterDate(publishedDateFilter);
+    if (publicationFilterDate) {
+      filtered = filtered.filter((n) => {
+        if (!n.published_at) return false;
+        const publishedDate = new Date(n.published_at);
+        return (
+          publishedDate.getDate() === publicationFilterDate.getDate() &&
+          publishedDate.getMonth() === publicationFilterDate.getMonth() &&
+          publishedDate.getFullYear() === publicationFilterDate.getFullYear()
+        );
+      });
+    }
+// Sort
     return [...filtered].sort((a, b) => {
       let aVal: string;
       let bVal: string;
@@ -443,7 +459,7 @@ export default function FullContent() {
       }
       return bVal.localeCompare(aVal);
     });
-  }, [newsResults, currentSort, titleFilter, dateFilter, termFilter, wordCloudFilter, categoryFilter]);
+  }, [newsResults, currentSort, titleFilter, dateFilter, publishedDateFilter, termFilter, wordCloudFilter, categoryFilter]);
 
   const categoryOptions = useMemo(() => {
     const set = new Set<string>();
@@ -535,7 +551,12 @@ export default function FullContent() {
                 <DateFilter
                   value={dateFilter}
                   onChange={setDateFilter}
-                  placeholder="dd/mm/aaaa"
+                  placeholder="Criacao dd/mm/aaaa"
+                />
+                <DateFilter
+                  value={publishedDateFilter}
+                  onChange={setPublishedDateFilter}
+                  placeholder="Publicacao dd/mm/aaaa"
                 />
               </div>
               <div className="relative">
@@ -578,8 +599,9 @@ export default function FullContent() {
                     onSort={handleSort}
                     className="w-[100px]"
                   >
-                    Data
+                    Criacao
                   </SortableTableHead>
+                  <TableHead className="w-[110px]">Publicacao</TableHead>
                   <SortableTableHead
                     sortKey="title"
                     currentSort={currentSort}
@@ -601,7 +623,7 @@ export default function FullContent() {
               <TableBody>
                 {filteredAndSortedNews.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Nenhuma notícia encontrada
                     </TableCell>
                   </TableRow>
@@ -616,6 +638,11 @@ export default function FullContent() {
                       </TableCell>
                       <TableCell className="font-mono text-xs whitespace-nowrap">
                         {format(new Date(news.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs whitespace-nowrap">
+                        {news.published_at
+                          ? format(new Date(news.published_at), "dd/MM/yyyy", { locale: ptBR })
+                          : "-"}
                       </TableCell>
                       <TableCell className="max-w-[400px] truncate font-medium">
                         {news.title || "—"}
@@ -756,3 +783,7 @@ export default function FullContent() {
     </div>
   );
 }
+
+
+
+

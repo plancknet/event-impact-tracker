@@ -46,6 +46,14 @@ Deno.serve(async (req) => {
 
     let extractedCount = 0;
 
+    const parsePublishedAt = (value: string | null) => {
+      if (!value) return null;
+      const cleaned = value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1").trim();
+      const parsed = new Date(cleaned);
+      if (Number.isNaN(parsed.getTime())) return null;
+      return parsed.toISOString();
+    };
+
     for (const queryResult of unprocessedResults) {
       const xml = queryResult.raw_html;
       if (!xml) continue;
@@ -97,6 +105,14 @@ Deno.serve(async (req) => {
           title = parts.slice(0, -1).join(" - ");
         }
 
+        // Extract published date
+        const pubDateMatch = itemContent.match(/<pubDate>([\s\S]*?)<\/pubDate>/i);
+        const dcDateMatch = itemContent.match(/<dc:date>([\s\S]*?)<\/dc:date>/i);
+        const publishedMatch = itemContent.match(/<published>([\s\S]*?)<\/published>/i);
+        const publishedAt = parsePublishedAt(
+          pubDateMatch?.[1] || dcDateMatch?.[1] || publishedMatch?.[1] || null
+        );
+
         if (title || link) {
           const { error: insertError } = await supabase.from("alert_news_results").insert({
             query_result_id: queryResult.id,
@@ -104,6 +120,7 @@ Deno.serve(async (req) => {
             snippet: snippet,
             link_url: link,
             source_raw: source,
+            published_at: publishedAt,
           });
 
           if (!insertError) {

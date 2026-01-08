@@ -39,6 +39,7 @@ type NewsResult = {
   link_url: string | null;
   term: string;
   created_at: string;
+  published_at: string | null;
   categories: string | null;
   language: string | null;
 };
@@ -55,6 +56,7 @@ export default function ExtractedResults() {
   const [titleFilter, setTitleFilter] = useState("");
   const [wordCloudFilter, setWordCloudFilter] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState("");
+  const [publishedDateFilter, setPublishedDateFilter] = useState("");
   const [termFilter, setTermFilter] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [languageFilter, setLanguageFilter] = useState("all");
@@ -74,6 +76,7 @@ export default function ExtractedResults() {
           snippet,
           link_url,
           created_at,
+          published_at,
           is_duplicate,
           alert_query_results!inner (
             content_language,
@@ -120,6 +123,7 @@ export default function ExtractedResults() {
             link_url: r.link_url,
             term: r.alert_query_results?.search_terms?.term || "—",
             created_at: r.created_at,
+            published_at: r.published_at || null,
             categories: analysisMap.get(r.id) || null,
             language: r.alert_query_results?.content_language || null,
           });
@@ -199,16 +203,29 @@ export default function ExtractedResults() {
     if (languageFilter !== "all") {
       filtered = filtered.filter((r) => r.language === languageFilter);
     }
-
-    // Filter by date
-    const filterDate = parseFilterDate(dateFilter);
-    if (filterDate) {
+    // Filter by creation date
+    const creationFilterDate = parseFilterDate(dateFilter);
+    if (creationFilterDate) {
       filtered = filtered.filter((r) => {
         const newsDate = new Date(r.created_at);
         return (
-          newsDate.getDate() === filterDate.getDate() &&
-          newsDate.getMonth() === filterDate.getMonth() &&
-          newsDate.getFullYear() === filterDate.getFullYear()
+          newsDate.getDate() === creationFilterDate.getDate() &&
+          newsDate.getMonth() === creationFilterDate.getMonth() &&
+          newsDate.getFullYear() === creationFilterDate.getFullYear()
+        );
+      });
+    }
+
+    // Filter by publication date
+    const publicationFilterDate = parseFilterDate(publishedDateFilter);
+    if (publicationFilterDate) {
+      filtered = filtered.filter((r) => {
+        if (!r.published_at) return false;
+        const publishedDate = new Date(r.published_at);
+        return (
+          publishedDate.getDate() === publicationFilterDate.getDate() &&
+          publishedDate.getMonth() === publicationFilterDate.getMonth() &&
+          publishedDate.getFullYear() === publicationFilterDate.getFullYear()
         );
       });
     }
@@ -235,7 +252,7 @@ export default function ExtractedResults() {
       if (aVal > bVal) return sort.direction === "asc" ? 1 : -1;
       return 0;
     });
-  }, [results, sort, titleFilter, dateFilter, termFilter, wordCloudFilter, categoryFilter, languageFilter]);
+  }, [results, sort, titleFilter, dateFilter, publishedDateFilter, termFilter, wordCloudFilter, categoryFilter, languageFilter]);
 
   const categoryOptions = useMemo(() => {
     const set = new Set<string>();
@@ -321,7 +338,12 @@ export default function ExtractedResults() {
                     <DateFilter
                       value={dateFilter}
                       onChange={setDateFilter}
-                      placeholder="dd/mm/aaaa"
+                      placeholder="Criacao dd/mm/aaaa"
+                    />
+                    <DateFilter
+                      value={publishedDateFilter}
+                      onChange={setPublishedDateFilter}
+                      placeholder="Publicacao dd/mm/aaaa"
                     />
                     <Select value={languageFilter} onValueChange={setLanguageFilter}>
                       <SelectTrigger className="w-[170px]">
@@ -372,8 +394,9 @@ export default function ExtractedResults() {
                         onSort={handleSort}
                         className="w-[100px]"
                       >
-                        Data
+                        Criacao
                       </SortableTableHead>
+                      <TableHead className="w-[110px]">Publicacao</TableHead>
                       <SortableTableHead
                         sortKey="term"
                         currentSort={sort}
@@ -395,7 +418,7 @@ export default function ExtractedResults() {
                   <TableBody>
                     {filteredAndSortedResults.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                           Nenhum resultado encontrado
                         </TableCell>
                       </TableRow>
@@ -404,6 +427,11 @@ export default function ExtractedResults() {
                         <TableRow key={result.id}>
                           <TableCell className="font-mono text-xs whitespace-nowrap">
                             {format(new Date(result.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs whitespace-nowrap">
+                            {result.published_at
+                              ? format(new Date(result.published_at), "dd/MM/yyyy", { locale: ptBR })
+                              : "-"}
                           </TableCell>
                           <TableCell className="font-mono text-xs">{result.term}</TableCell>
                           <TableCell className="font-medium text-sm">
@@ -437,6 +465,13 @@ export default function ExtractedResults() {
     </div>
   );
 }
+
+
+
+
+
+
+
 
 
 
