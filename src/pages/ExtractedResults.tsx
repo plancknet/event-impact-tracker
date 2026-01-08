@@ -6,6 +6,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { FileSearch, Loader2, ExternalLink, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SortableTableHead, SortDirection } from "@/components/SortableTableHead";
 import { WordCloud } from "@/components/WordCloud";
 import { DateFilter } from "@/components/DateFilter";
@@ -13,6 +20,17 @@ import { TermFilter } from "@/components/TermFilter";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { format, parse, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+const LANGUAGE_OPTIONS = [
+  { value: "all", label: "Todos os idiomas" },
+  { value: "pt-BR", label: "Portugues (BR)" },
+  { value: "en-US", label: "Ingles (US)" },
+  { value: "en-GB", label: "Ingles (UK)" },
+  { value: "es-ES", label: "Espanhol (ES)" },
+  { value: "fr-FR", label: "Frances (FR)" },
+  { value: "de-DE", label: "Alemao (DE)" },
+  { value: "it-IT", label: "Italiano (IT)" },
+];
 
 type NewsResult = {
   id: string;
@@ -22,6 +40,7 @@ type NewsResult = {
   term: string;
   created_at: string;
   categories: string | null;
+  language: string | null;
 };
 
 export default function ExtractedResults() {
@@ -38,6 +57,7 @@ export default function ExtractedResults() {
   const [dateFilter, setDateFilter] = useState("");
   const [termFilter, setTermFilter] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+  const [languageFilter, setLanguageFilter] = useState("all");
 
   useEffect(() => {
     loadResults();
@@ -56,6 +76,7 @@ export default function ExtractedResults() {
           created_at,
           is_duplicate,
           alert_query_results!inner (
+            content_language,
             search_terms!inner (
               term
             )
@@ -100,6 +121,7 @@ export default function ExtractedResults() {
             term: r.alert_query_results?.search_terms?.term || "—",
             created_at: r.created_at,
             categories: analysisMap.get(r.id) || null,
+            language: r.alert_query_results?.content_language || null,
           });
         }
       }
@@ -174,6 +196,10 @@ export default function ExtractedResults() {
       });
     }
 
+    if (languageFilter !== "all") {
+      filtered = filtered.filter((r) => r.language === languageFilter);
+    }
+
     // Filter by date
     const filterDate = parseFilterDate(dateFilter);
     if (filterDate) {
@@ -209,7 +235,7 @@ export default function ExtractedResults() {
       if (aVal > bVal) return sort.direction === "asc" ? 1 : -1;
       return 0;
     });
-  }, [results, sort, titleFilter, dateFilter, termFilter, wordCloudFilter, categoryFilter]);
+  }, [results, sort, titleFilter, dateFilter, termFilter, wordCloudFilter, categoryFilter, languageFilter]);
 
   const categoryOptions = useMemo(() => {
     const set = new Set<string>();
@@ -297,6 +323,18 @@ export default function ExtractedResults() {
                       onChange={setDateFilter}
                       placeholder="dd/mm/aaaa"
                     />
+                    <Select value={languageFilter} onValueChange={setLanguageFilter}>
+                      <SelectTrigger className="w-[170px]">
+                        <SelectValue placeholder="Idioma" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LANGUAGE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -399,3 +437,12 @@ export default function ExtractedResults() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+

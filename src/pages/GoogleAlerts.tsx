@@ -5,10 +5,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { Play, Loader2, CheckCircle, XCircle, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { SortableTableHead, SortDirection } from "@/components/SortableTableHead";
+
+const LANGUAGE_OPTIONS = [
+  { value: "pt-BR", label: "Portugues (BR)" },
+  { value: "en-US", label: "Ingles (US)" },
+  { value: "en-GB", label: "Ingles (UK)" },
+  { value: "es-ES", label: "Espanhol (ES)" },
+  { value: "fr-FR", label: "Frances (FR)" },
+  { value: "de-DE", label: "Alemao (DE)" },
+  { value: "it-IT", label: "Italiano (IT)" },
+];
 
 type TermWithStatus = {
   id: string;
@@ -25,6 +42,7 @@ export default function GoogleAlerts() {
   const [selectedTerms, setSelectedTerms] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [contentLanguage, setContentLanguage] = useState("pt-BR");
   const [sort, setSort] = useState<{ key: string; direction: SortDirection }>({
     key: "term",
     direction: "asc",
@@ -146,7 +164,7 @@ export default function GoogleAlerts() {
       for (const term of termsToQuery) {
         try {
           const { data, error } = await supabase.functions.invoke("google-alerts-query", {
-            body: { termId: term.id, term: term.term },
+            body: { termId: term.id, term: term.term, language: contentLanguage },
           });
 
           if (error) throw error;
@@ -204,14 +222,28 @@ export default function GoogleAlerts() {
                 Execute as consultas no Google Alerts para cada termo cadastrado.
               </CardDescription>
             </div>
-            <Button onClick={handleExecuteQueries} disabled={isExecuting || isLoading || selectedTerms.size === 0}>
-              {isExecuting ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Play className="w-4 h-4 mr-2" />
-              )}
-              Consultar selecionados ({selectedTerms.size})
-            </Button>
+            <div className="flex items-center gap-3">
+              <Select value={contentLanguage} onValueChange={setContentLanguage}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Idioma do conteudo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LANGUAGE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={handleExecuteQueries} disabled={isExecuting || isLoading || selectedTerms.size === 0}>
+                {isExecuting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Play className="w-4 h-4 mr-2" />
+                )}
+                Consultar selecionados ({selectedTerms.size})
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
