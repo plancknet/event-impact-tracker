@@ -180,7 +180,7 @@ CONFIGURA√á√ïES DO ROTEIRO:
 - ${durationInstruction}
 ${ctaInstruction}
 
-Escreva um roteiro cont«nuo, coeso e envolvente baseado nas not«cias abaixo. Conecte as informa«ı«Êes de forma natural, criando transi«ı«Êes fluidas entre os assuntos.`;
+Escreva um roteiro cont√≠nuo, coeso e envolvente baseado nas not√≠cias abaixo. Conecte as informa√ß√µes de forma natural, criando transi√ß√µes fluidas entre os assuntos.`;
 
       userPrompt = `Com base nas seguintes not√≠cias, crie o roteiro conforme as configura√ß√µes acima:
 
@@ -197,6 +197,8 @@ Lembre-se: retorne APENAS o JSON solicitado.`;
       if (feedbackText) {
         userPrompt += `\n\nRespostas do usuario sobre o texto:\n${feedbackText}\n\nConsidere essas respostas ao ajustar o roteiro.`;
       }
+    }
+
     console.log(isRefinement ? "Refinando roteiro existente" : "Gerando novo roteiro para", newsItems.length, "not√≠cias");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -245,13 +247,12 @@ Lembre-se: retorne APENAS o JSON solicitado.`;
           scriptText = parsed.script;
         }
         if (Array.isArray(parsed.questions)) {
-          questions = parsed.questions.filter((q) => typeof q === "string").slice(0, 3);
+          questions = parsed.questions.filter((q: unknown) => typeof q === "string").slice(0, 3);
         }
       }
     } catch {
       // Fallback to raw content if JSON parsing fails
     }
-    
 
     if (!scriptText) {
       throw new Error("A IA n√£o retornou um roteiro v√°lido");
@@ -276,7 +277,7 @@ Lembre-se: retorne APENAS o JSON solicitado.`;
     if (saveError) {
       console.error("Erro ao salvar roteiro:", saveError);
       // Still return the script even if saving fails
-    }
+    }
     console.log("Roteiro gerado com sucesso:", scriptText.length, "caracteres");
 
     return new Response(JSON.stringify({ 
@@ -295,29 +296,3 @@ Lembre-se: retorne APENAS o JSON solicitado.`;
     });
   }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -20,6 +20,7 @@ export type Database = {
           id: string
           is_duplicate: boolean
           link_url: string | null
+          published_at: string | null
           query_result_id: string
           snippet: string | null
           source_raw: string | null
@@ -30,6 +31,7 @@ export type Database = {
           id?: string
           is_duplicate?: boolean
           link_url?: string | null
+          published_at?: string | null
           query_result_id: string
           snippet?: string | null
           source_raw?: string | null
@@ -40,6 +42,7 @@ export type Database = {
           id?: string
           is_duplicate?: boolean
           link_url?: string | null
+          published_at?: string | null
           query_result_id?: string
           snippet?: string | null
           source_raw?: string | null
