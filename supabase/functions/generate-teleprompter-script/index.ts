@@ -31,7 +31,17 @@ serve(async (req) => {
   }
 
   try {
-    const { newsItems, parameters }: { newsItems: NewsItem[]; parameters: EditorialParameters } = await req.json();
+    const {
+      newsItems,
+      parameters,
+      refinementPrompt,
+      baseScript,
+    }: {
+      newsItems: NewsItem[];
+      parameters: EditorialParameters;
+      refinementPrompt?: string;
+      baseScript?: string;
+    } = await req.json();
 
     if (!newsItems || newsItems.length === 0) {
       throw new Error("Nenhuma notícia selecionada");
@@ -70,7 +80,7 @@ serve(async (req) => {
       'educativo': 'educativo e didático, explicando conceitos de forma clara',
       'tecnico': 'técnico e preciso, usando terminologia especializada quando apropriado',
       'humoristico': 'leve e bem-humorado, mantendo a informação mas com toques de humor',
-      'descontraido': 'descontraido e informal, com linguagem leve e natural'
+      'descontraido': 'descontraido e informal, com linguagem leve e natural',
       'storytelling': 'narrativo e envolvente, contando a história de forma cativante',
     };
 
@@ -119,11 +129,15 @@ ${ctaInstruction}
 
 Escreva um roteiro contínuo, coeso e envolvente baseado nas notícias abaixo. Conecte as informações de forma natural, criando transições fluidas entre os assuntos.`;
 
-    const userPrompt = `Com base nas seguintes notícias, crie o roteiro conforme as configurações acima:
+    let userPrompt = `Com base nas seguintes notícias, crie o roteiro conforme as configurações acima:
 
 ${newsContext}
 
 Lembre-se: retorne APENAS o texto do roteiro com as marcações de pausa. Nada mais.`;
+
+    if (refinementPrompt) {
+      userPrompt += `\n\nTexto atual para refinamento:\n${baseScript || ""}\n\nPedido adicional do usuario:\n${refinementPrompt}\n\nReescreva o roteiro mantendo as informacoes factuais, os parametros definidos e as marcacoes de pausa, incorporando o pedido adicional.`;
+    }
 
     console.log("Gerando roteiro para", newsItems.length, "notícias");
 
@@ -205,6 +219,10 @@ Lembre-se: retorne APENAS o texto do roteiro com as marcações de pausa. Nada m
     });
   }
 });
+
+
+
+
 
 
 

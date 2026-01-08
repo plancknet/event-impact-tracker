@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -16,9 +17,15 @@ type TabValue = "select" | "configure" | "teleprompter";
 
 export default function ContentCreator() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabValue>("select");
   const [selectedNewsIds, setSelectedNewsIds] = useState<string[]>([]);
   const [generatedScript, setGeneratedScript] = useState<string>("");
+  const [editedScript, setEditedScript] = useState<string>("");
+  const [refinementPrompt, setRefinementPrompt] = useState<string>("");
+  const [activeScriptNewsIds, setActiveScriptNewsIds] = useState<string[]>([]);
+  const [activeScriptParameters, setActiveScriptParameters] = useState<EditorialParametersData | null>(null);
+  const [isSavingScript, setIsSavingScript] = useState(false);
   const [parameters, setParameters] = useState<EditorialParametersData>({
     tone: "jornalistico",
     audience: "publico_geral",
@@ -151,12 +158,22 @@ export default function ContentCreator() {
     },
   });
 
+  const getNewsItemsForIds = (ids: string[]) => {
+    const selectedNews = newsData?.filter((n) => ids.includes(n.id)) || [];
+    return selectedNews.map((n) => ({
+      id: n.id,
+      title: n.title,
+      summary: n.summary,
+      content: n.content,
+    }));
+  };
+
   const { data: scriptsData = [], isLoading: scriptsLoading } = useQuery({
     queryKey: ["teleprompter-scripts"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teleprompter_scripts")
-        .select("id, created_at, news_ids_json, script_text")
+        .select("id, created_at, news_ids_json, parameters_json, script_text")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -167,14 +184,7 @@ export default function ContentCreator() {
   // Generate script mutation
   const generateMutation = useMutation({
     mutationFn: async () => {
-      const selectedNews = newsData?.filter((n) => selectedNewsIds.includes(n.id)) || [];
-      
-      const newsItems = selectedNews.map((n) => ({
-        id: n.id,
-        title: n.title,
-        summary: n.summary,
-        content: n.content,
-      }));
+      const newsItems = getNewsItemsForIds(selectedNewsIds);
 
       const { data, error } = await supabase.functions.invoke("generate-teleprompter-script", {
         body: { newsItems, parameters },
@@ -187,6 +197,11 @@ export default function ContentCreator() {
     },
     onSuccess: (script) => {
       setGeneratedScript(script);
+      setEditedScript(script);
+      setActiveScriptNewsIds([...selectedNewsIds]);
+      setActiveScriptParameters(parameters);
+      setRefinementPrompt("");
+      queryClient.invalidateQueries({ queryKey: ["teleprompter-scripts"] });
       setActiveTab("teleprompter");
       toast({
         title: "Roteiro gerado!",
@@ -202,6 +217,91 @@ export default function ContentCreator() {
     },
   });
 
+  const regenerateMutation = useMutation({
+    mutationFn: async () => {
+      const baseScript = editedScript.trim() || generatedScript.trim();
+      const prompt = refinementPrompt.trim();
+      const newsIds = activeScriptNewsIds.length > 0 ? activeScriptNewsIds : selectedNewsIds;
+      const params = activeScriptParameters || parameters;
+      const newsItems = getNewsItemsForIds(newsIds);
+
+      const { data, error } = await supabase.functions.invoke("generate-teleprompter-script", {
+        body: {
+          newsItems,
+          parameters: params,
+          refinementPrompt: prompt,
+          baseScript,
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      return { script: data.script, params, newsIds };
+    },
+    onSuccess: ({ script, params, newsIds }) => {
+      setGeneratedScript(script);
+      setEditedScript(script);
+      setActiveScriptNewsIds([...newsIds]);
+      setActiveScriptParameters(params);
+      setRefinementPrompt("");
+      queryClient.invalidateQueries({ queryKey: ["teleprompter-scripts"] });
+      toast({
+        title: "Roteiro atualizado!",
+        description: "Uma nova versao foi gerada a partir do prompt.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Erro ao regerar roteiro",
+        description: error.message,
+      });
+    },
+  });
+
+  const handleSaveScript = async () => {
+    const scriptText = editedScript.trim();
+    if (!scriptText) {
+      toast({
+        variant: "destructive",
+        title: "Texto vazio",
+        description: "Edite o roteiro antes de salvar.",
+      });
+      return;
+    }
+
+    setIsSavingScript(true);
+    try {
+      const newsIds = activeScriptNewsIds.length > 0 ? activeScriptNewsIds : selectedNewsIds;
+      const params = activeScriptParameters || parameters;
+
+      const { error } = await supabase
+        .from("teleprompter_scripts")
+        .insert({
+          news_ids_json: newsIds,
+          parameters_json: params,
+          script_text: scriptText,
+        });
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["teleprompter-scripts"] });
+      toast({
+        title: "Roteiro salvo",
+        description: "Uma nova versao foi registrada.",
+      });
+    } catch (error) {
+      console.error("Error saving script:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar roteiro",
+        description: "Nao foi possivel salvar o roteiro.",
+      });
+    } finally {
+      setIsSavingScript(false);
+    }
+  };
   const handleGenerate = () => {
     if (selectedNewsIds.length === 0) {
       toast({
@@ -215,6 +315,8 @@ export default function ContentCreator() {
   };
 
   const canGenerate = selectedNewsIds.length > 0;
+  const canSaveScript = editedScript.trim().length > 0;
+  const canRegenerate = refinementPrompt.trim().length > 0 && (editedScript.trim() || generatedScript.trim());
 
   return (
     <div className="space-y-6">
@@ -360,7 +462,13 @@ export default function ContentCreator() {
                               <Button
                                 size="sm"
                                 variant={generatedScript === script.script_text ? "secondary" : "outline"}
-                                onClick={() => setGeneratedScript(script.script_text)}
+                                onClick={() => {
+                                  setGeneratedScript(script.script_text);
+                                  setEditedScript(script.script_text);
+                                  setActiveScriptNewsIds(parseNewsIds(script.news_ids_json));
+                                  setActiveScriptParameters(script.parameters_json || null);
+                                  setRefinementPrompt("");
+                                }}
                               >
                                 {generatedScript === script.script_text ? "Em uso" : "Usar"}
                               </Button>
@@ -374,8 +482,69 @@ export default function ContentCreator() {
               </CardContent>
             </Card>
 
-            {generatedScript ? (
-              <TeleprompterDisplay script={generatedScript} />
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Editor do roteiro</CardTitle>
+                <CardDescription>
+                  Edite o texto e salve uma nova versao do teleprompter.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Texto do teleprompter</p>
+                  <Textarea
+                    value={editedScript}
+                    onChange={(e) => setEditedScript(e.target.value)}
+                    rows={10}
+                    placeholder="Cole ou edite o roteiro aqui..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Prompt complementar para refinar</p>
+                  <Textarea
+                    value={refinementPrompt}
+                    onChange={(e) => setRefinementPrompt(e.target.value)}
+                    rows={3}
+                    placeholder="Ex: deixe mais direto, ajuste o tom, reduza a abertura..."
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={handleSaveScript} disabled={isSavingScript || !canSaveScript}>
+                    {isSavingScript ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-4 h-4 mr-2" />
+                        Salvar versao
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => regenerateMutation.mutate()}
+                    disabled={regenerateMutation.isPending || !canRegenerate}
+                  >
+                    {regenerateMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Regenerando...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4 mr-2" />
+                        Regenerar com prompt
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {editedScript ? (
+              <TeleprompterDisplay script={editedScript} />
             ) : (
               <Card>
                 <CardContent className="flex items-center justify-center py-12 text-muted-foreground">
@@ -417,11 +586,46 @@ function getNewsCount(value: unknown): number {
   return 0;
 }
 
+function parseNewsIds(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((id) => typeof id === "string") as string[];
+  }
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed)
+        ? parsed.filter((id) => typeof id === "string")
+        : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 function getScriptPreview(text: string, maxLength = 140): string {
   const condensed = text.replace(/\s+/g, " ").trim();
   if (condensed.length <= maxLength) return condensed;
   return `${condensed.slice(0, maxLength)}...`;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
