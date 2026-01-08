@@ -15,6 +15,7 @@ export interface SelectableNews {
   title: string;
   date: Date;
   source: string;
+  linkUrl?: string | null;
   summary?: string;
   content?: string;
   term?: string | null;

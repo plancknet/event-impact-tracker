@@ -36,11 +36,13 @@ serve(async (req) => {
       parameters,
       refinementPrompt,
       baseScript,
+      feedback,
     }: {
       newsItems: NewsItem[];
       parameters: EditorialParameters;
       refinementPrompt?: string;
       baseScript?: string;
+      feedback?: { question: string; answer: string }[];
     } = await req.json();
 
     if (!newsItems || newsItems.length === 0) {
@@ -119,13 +121,21 @@ serve(async (req) => {
 TAREFA: Modificar o roteiro existente conforme as instruções do usuário.
 
 REGRAS ABSOLUTAS PARA REFINAMENTO:
+0. Retorne um JSON valido com as chaves "script" e "questions"
 1. O roteiro refinado DEVE ser baseado no texto original fornecido
 2. Mantenha a MAIOR PARTE do texto original - faça APENAS as alterações solicitadas
 3. Preserve a estrutura geral, ordem dos tópicos e marcações de pausa existentes
 4. NÃO adicione informações que não estejam no texto original ou nas notícias
 5. Retorne o roteiro COMPLETO com as edições aplicadas
 6. Mantenha as marcações de pausa: <pause-short>, <pause-medium>, <pause-long>, <topic-change>
-7. O idioma do roteiro deve ser mantido: ${parameters.language}`;
+7. O idioma do roteiro deve ser mantido: ${parameters.language}
+8. Gere exatamente 3 perguntas sobre a opiniao pessoal do usuario sobre o texto
+
+FORMATO DE SAIDA (JSON):
+{
+  "script": "...",
+  "questions": ["Pergunta 1", "Pergunta 2", "Pergunta 3"]
+}`;
 
       userPrompt = `ROTEIRO ATUAL (você DEVE partir deste texto):
 ---
@@ -138,14 +148,14 @@ ${refinementPrompt}
 CONTEXTO DAS NOTÍCIAS ORIGINAIS (apenas para referência):
 ${newsContext}
 
-Por favor, aplique as modificações solicitadas ao roteiro acima e retorne o roteiro completo refinado.`;
+Por favor, aplique as modificações solicitadas ao roteiro acima e retorne o roteiro completo refinado. Retorne apenas o JSON solicitado.`;
 
     } else {
       // Generation mode: create new script from scratch
       systemPrompt = `Você é um roteirista profissional especializado em criar textos para leitura em voz alta.
 
 REGRAS ABSOLUTAS:
-1. Retorne APENAS o texto do roteiro, sem explicações, comentários, listas ou formatação técnica
+1. Retorne um JSON valido com as chaves "script" e "questions"
 2. O texto deve ser escrito como será LIDO EM VOZ ALTA, como um teleprompter
 3. NÃO invente fatos que não estejam nas notícias fornecidas
 4. Insira marcações de pausa nos seguintes formatos:
@@ -155,6 +165,13 @@ REGRAS ABSOLUTAS:
 5. Insira <topic-change> sempre que houver mudanca de assunto (entre noticias ou blocos distintos)
 6. Coloque pausas naturais onde um apresentador respiraria ou daria enfase
 7. O idioma do roteiro deve ser: ${parameters.language}
+8. Gere exatamente 3 perguntas sobre a opiniao pessoal do usuario sobre o texto
+
+FORMATO DE SAIDA (JSON):
+{
+  "script": "...",
+  "questions": ["Pergunta 1", "Pergunta 2", "Pergunta 3"]
+}
 
 CONFIGURAÇÕES DO ROTEIRO:
 - Tom: ${toneMap[parameters.tone] || parameters.tone}
@@ -163,15 +180,23 @@ CONFIGURAÇÕES DO ROTEIRO:
 - ${durationInstruction}
 ${ctaInstruction}
 
-Escreva um roteiro contínuo, coeso e envolvente baseado nas notícias abaixo. Conecte as informações de forma natural, criando transições fluidas entre os assuntos.`;
+Escreva um roteiro cont��nuo, coeso e envolvente baseado nas not��cias abaixo. Conecte as informa����es de forma natural, criando transi����es fluidas entre os assuntos.`;
 
       userPrompt = `Com base nas seguintes notícias, crie o roteiro conforme as configurações acima:
 
 ${newsContext}
 
-Lembre-se: retorne APENAS o texto do roteiro com as marcações de pausa. Nada mais.`;
+Lembre-se: retorne APENAS o JSON solicitado.`;
     }
 
+    if (feedback && feedback.length > 0) {
+      const feedbackText = feedback
+        .filter((item) => item.question && item.answer)
+        .map((item, index) => `${index + 1}) Q: ${item.question}\nA: ${item.answer}`)
+        .join("\n");
+      if (feedbackText) {
+        userPrompt += `\n\nRespostas do usuario sobre o texto:\n${feedbackText}\n\nConsidere essas respostas ao ajustar o roteiro.`;
+      }
     console.log(isRefinement ? "Refinando roteiro existente" : "Gerando novo roteiro para", newsItems.length, "notícias");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -208,7 +233,25 @@ Lembre-se: retorne APENAS o texto do roteiro com as marcações de pausa. Nada m
     }
 
     const data = await response.json();
-    const scriptText = data.choices?.[0]?.message?.content || "";
+    const rawContent = data.choices?.[0]?.message?.content || "";
+    let scriptText = rawContent;
+    let questions: string[] = [];
+
+    const cleaned = rawContent.trim().replace(/^```json/i, "```").replace(/^```/, "").replace(/```$/, "").trim();
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (parsed && typeof parsed === "object") {
+        if (typeof parsed.script === "string") {
+          scriptText = parsed.script;
+        }
+        if (Array.isArray(parsed.questions)) {
+          questions = parsed.questions.filter((q) => typeof q === "string").slice(0, 3);
+        }
+      }
+    } catch {
+      // Fallback to raw content if JSON parsing fails
+    }
+    
 
     if (!scriptText) {
       throw new Error("A IA não retornou um roteiro válido");
@@ -233,13 +276,13 @@ Lembre-se: retorne APENAS o texto do roteiro com as marcações de pausa. Nada m
     if (saveError) {
       console.error("Erro ao salvar roteiro:", saveError);
       // Still return the script even if saving fails
-    }
-
+    }
     console.log("Roteiro gerado com sucesso:", scriptText.length, "caracteres");
 
     return new Response(JSON.stringify({ 
       script: scriptText,
-      scriptId: savedScript?.id 
+      scriptId: savedScript?.id,
+      questions,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -252,3 +295,29 @@ Lembre-se: retorne APENAS o texto do roteiro com as marcações de pausa. Nada m
     });
   }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

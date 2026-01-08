@@ -23,6 +23,8 @@ export default function ContentCreator() {
   const [generatedScript, setGeneratedScript] = useState<string>("");
   const [editedScript, setEditedScript] = useState<string>("");
   const [refinementPrompt, setRefinementPrompt] = useState<string>("");
+  const [feedbackQuestions, setFeedbackQuestions] = useState<string[]>([]);
+  const [feedbackAnswers, setFeedbackAnswers] = useState<string[]>([]);
   const [activeScriptNewsIds, setActiveScriptNewsIds] = useState<string[]>([]);
   const [activeScriptParameters, setActiveScriptParameters] = useState<EditorialParametersData | null>(null);
   const [isSavingScript, setIsSavingScript] = useState(false);
@@ -112,6 +114,7 @@ export default function ContentCreator() {
             title: newsItem.title || "Sem título",
             date: createdAt,
             source: extractDomain(newsItem.link_url),
+            linkUrl: newsItem.link_url,
             summary: newsItem.snippet,
             content: item.content_full,
             term: newsItem.alert_query_results?.search_terms?.term ?? null,
@@ -139,12 +142,14 @@ export default function ContentCreator() {
             existing.categories = categories || existing.categories;
             existing.term = newsItem.alert_query_results?.search_terms?.term ?? existing.term;
             existing.date = createdAt;
+            existing.linkUrl = newsItem.link_url || existing.linkUrl;
           } else {
             newsMap.set(newsItem.id, {
               id: newsItem.id,
               title: newsItem.title || "Sem título",
               date: createdAt,
               source: extractDomain(newsItem.link_url),
+            linkUrl: newsItem.link_url,
               summary: item.summary,
               content: fullContent.content_full,
               categories,
@@ -168,6 +173,14 @@ export default function ContentCreator() {
     }));
   };
 
+  const getReferencesForIds = (ids: string[]) => {
+    const selectedNews = newsData?.filter((n) => ids.includes(n.id)) || [];
+    return selectedNews.map((n) => ({
+      title: n.title,
+      url: n.linkUrl || null,
+    }));
+  };
+
   const { data: scriptsData = [], isLoading: scriptsLoading } = useQuery({
     queryKey: ["teleprompter-scripts"],
     queryFn: async () => {
@@ -177,7 +190,8 @@ export default function ContentCreator() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      const uniqueById = new Map((data || []).map((item) => [item.id, item]));
+      return Array.from(uniqueById.values());
     },
   });
 
@@ -193,14 +207,18 @@ export default function ContentCreator() {
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
-      return data.script;
+      return { script: data.script, questions: Array.isArray(data.questions) ? data.questions : [] };
     },
-    onSuccess: (script) => {
+    onSuccess: (result) => {
+      const script = result?.script || "";
+      const questions = Array.isArray(result?.questions) ? result.questions : [];
       setGeneratedScript(script);
       setEditedScript(script);
       setActiveScriptNewsIds([...selectedNewsIds]);
       setActiveScriptParameters(parameters);
       setRefinementPrompt("");
+      setFeedbackQuestions(questions);
+      setFeedbackAnswers(new Array(questions.length).fill(""));
       queryClient.invalidateQueries({ queryKey: ["teleprompter-scripts"] });
       setActiveTab("teleprompter");
       toast({
@@ -224,6 +242,12 @@ export default function ContentCreator() {
       const newsIds = activeScriptNewsIds.length > 0 ? activeScriptNewsIds : selectedNewsIds;
       const params = activeScriptParameters || parameters;
       const newsItems = getNewsItemsForIds(newsIds);
+      const feedbackPayload = feedbackQuestions
+        .map((question, index) => ({
+          question,
+          answer: feedbackAnswers[index] || "",
+        }))
+        .filter((item) => item.answer.trim().length > 0);
 
       const { data, error } = await supabase.functions.invoke("generate-teleprompter-script", {
         body: {
@@ -231,20 +255,24 @@ export default function ContentCreator() {
           parameters: params,
           refinementPrompt: prompt,
           baseScript,
+          feedback: feedbackPayload,
         },
       });
 
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
-      return { script: data.script, params, newsIds };
+      return { script: data.script, params, newsIds, questions: Array.isArray(data.questions) ? data.questions : [] };
     },
-    onSuccess: ({ script, params, newsIds }) => {
+    onSuccess: ({ script, params, newsIds, questions }) => {
+      const nextQuestions = Array.isArray(questions) ? questions : [];
       setGeneratedScript(script);
       setEditedScript(script);
       setActiveScriptNewsIds([...newsIds]);
       setActiveScriptParameters(params);
       setRefinementPrompt("");
+      setFeedbackQuestions(nextQuestions);
+      setFeedbackAnswers(new Array(nextQuestions.length).fill(""));
       queryClient.invalidateQueries({ queryKey: ["teleprompter-scripts"] });
       toast({
         title: "Roteiro atualizado!",
@@ -302,6 +330,13 @@ export default function ContentCreator() {
       setIsSavingScript(false);
     }
   };
+  const handleAnswerChange = (index: number, value: string) => {
+    setFeedbackAnswers((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  };
   const handleGenerate = () => {
     if (selectedNewsIds.length === 0) {
       toast({
@@ -317,6 +352,8 @@ export default function ContentCreator() {
   const canGenerate = selectedNewsIds.length > 0;
   const canSaveScript = editedScript.trim().length > 0;
   const canRegenerate = refinementPrompt.trim().length > 0 && (editedScript.trim() || generatedScript.trim());
+  const referenceIds = activeScriptNewsIds.length > 0 ? activeScriptNewsIds : selectedNewsIds;
+  const referenceItems = editedScript ? getReferencesForIds(referenceIds) : [];
 
   return (
     <div className="space-y-6">
@@ -468,6 +505,8 @@ export default function ContentCreator() {
                                   setActiveScriptNewsIds(parseNewsIds(script.news_ids_json));
                                   setActiveScriptParameters(parseParameters(script.parameters_json));
                                   setRefinementPrompt("");
+                                  setFeedbackQuestions([]);
+                                  setFeedbackAnswers([]);
                                 }}
                               >
                                 {generatedScript === script.script_text ? "Em uso" : "Usar"}
@@ -542,9 +581,34 @@ export default function ContentCreator() {
                 </div>
               </CardContent>
             </Card>
+            {feedbackQuestions.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Perguntas sobre sua opiniao</CardTitle>
+                  <CardDescription>
+                    Responda para ajudar a melhorar a proxima versao.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {feedbackQuestions.map((question, index) => (
+                    <div key={`${index}-${question}`} className="space-y-2">
+                      <p className="text-sm font-medium">
+                        {index + 1}. {question}
+                      </p>
+                      <Textarea
+                        value={feedbackAnswers[index] || ""}
+                        onChange={(e) => handleAnswerChange(index, e.target.value)}
+                        rows={3}
+                        placeholder="Sua resposta..."
+                      />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
 
             {editedScript ? (
-              <TeleprompterDisplay script={editedScript} />
+              <TeleprompterDisplay script={editedScript} references={referenceItems} />
             ) : (
               <Card>
                 <CardContent className="flex items-center justify-center py-12 text-muted-foreground">
@@ -623,6 +687,23 @@ function parseParameters(value: unknown): EditorialParametersData | null {
     ctaText: (obj.ctaText as string) || "",
   };
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

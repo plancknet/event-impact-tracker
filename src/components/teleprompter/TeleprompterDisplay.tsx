@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -23,6 +24,7 @@ import {
 
 interface TeleprompterDisplayProps {
   script: string;
+  references?: { title: string; url?: string | null }[];
 }
 
 const PAUSE_DURATIONS = {
@@ -40,7 +42,7 @@ const FONT_OPTIONS = [
   { label: "Courier", value: "\"Courier New\", monospace" },
 ];
 
-export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
+export function TeleprompterDisplay({ script, references = [] }: TeleprompterDisplayProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [speed, setSpeed] = useState(50); // pixels per second
@@ -310,6 +312,15 @@ export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
     return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   };
 
+  const referencesText = references.length
+    ? references
+        .map((ref, index) => {
+          const url = ref.url ? ` - ${ref.url}` : "";
+          return `${index + 1}. ${ref.title}${url}`;
+        })
+        .join("\n")
+    : "Nenhuma referencia disponivel.";
+
   return (
     <div
       className={`flex flex-col ${isFullscreen ? "h-screen" : ""}`}
@@ -426,6 +437,13 @@ export function TeleprompterDisplay({ script }: TeleprompterDisplayProps) {
               ⏸ Pausa automática ({currentPause.replace("pause-", "").replace("pause", "normal")})
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className={`mb-4 ${isFullscreen ? "absolute top-28 left-4 right-4 z-10 bg-background/80 backdrop-blur" : ""}`}>
+        <CardContent className="py-3">
+          <div className="text-sm text-muted-foreground mb-2">Referencias das noticias</div>
+          <Textarea value={referencesText} readOnly rows={4} className="resize-none" />
         </CardContent>
       </Card>
 
