@@ -136,7 +136,10 @@ ${newsContext}
 Lembre-se: retorne APENAS o texto do roteiro com as marcações de pausa. Nada mais.`;
 
     if (refinementPrompt) {
-      userPrompt += `\n\nTexto atual para refinamento:\n${baseScript || ""}\n\nPedido adicional do usuario:\n${refinementPrompt}\n\nINSTRUCOES DE REFINO:\n- Reescreva o roteiro mantendo o MAXIMO possivel do texto original.\n- Faça apenas as alteracoes estritamente necessarias para atender o pedido adicional.\n- Preserve a ordem dos paragrafós, a estrutura, o tom e as marcacoes de pausa.\n- Nao introduza novos fatos; apenas ajuste estilo/clareza conforme o pedido.\n- Retorne o roteiro completo com pequenas edicoes localizadas.`;
+      if (!baseScript) {
+        throw new Error("Texto base ausente para refinamento");
+      }
+      userPrompt += `\n\nTEXTO ORIGINAL (base obrigatoria):\n${baseScript}\n\nPEDIDO COMPLEMENTAR DO USUARIO:\n${refinementPrompt}\n\nINSTRUCOES DE REFINO:\n- O novo texto DEVE ser baseado no texto original acima.\n- Mantenha o MAXIMO possivel do texto original e da estrutura.\n- Faça apenas as alteracoes estritamente necessarias para atender o pedido complementar.\n- Preserve ordem, tom, estilo e marcacoes de pausa.\n- Nao introduza novos fatos; apenas ajuste estilo/clareza conforme o pedido.\n- Retorne o roteiro completo com edicoes localizadas.`;
     }
 
     console.log("Gerando roteiro para", newsItems.length, "notícias");
