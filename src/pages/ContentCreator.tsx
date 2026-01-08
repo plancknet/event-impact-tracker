@@ -279,8 +279,8 @@ export default function ContentCreator() {
       const { error } = await supabase
         .from("teleprompter_scripts")
         .insert({
-          news_ids_json: newsIds,
-          parameters_json: params,
+          news_ids_json: newsIds as unknown as import("@/integrations/supabase/types").Json,
+          parameters_json: params as unknown as import("@/integrations/supabase/types").Json,
           script_text: scriptText,
         });
 
@@ -466,7 +466,7 @@ export default function ContentCreator() {
                                   setGeneratedScript(script.script_text);
                                   setEditedScript(script.script_text);
                                   setActiveScriptNewsIds(parseNewsIds(script.news_ids_json));
-                                  setActiveScriptParameters(script.parameters_json || null);
+                                  setActiveScriptParameters(parseParameters(script.parameters_json));
                                   setRefinementPrompt("");
                                 }}
                               >
@@ -607,6 +607,21 @@ function getScriptPreview(text: string, maxLength = 140): string {
   const condensed = text.replace(/\s+/g, " ").trim();
   if (condensed.length <= maxLength) return condensed;
   return `${condensed.slice(0, maxLength)}...`;
+}
+
+function parseParameters(value: unknown): EditorialParametersData | null {
+  if (!value || typeof value !== "object") return null;
+  const obj = value as Record<string, unknown>;
+  return {
+    tone: (obj.tone as string) || "jornalistico",
+    audience: (obj.audience as string) || "publico_geral",
+    language: (obj.language as string) || "Português",
+    duration: (obj.duration as string) || "5",
+    durationUnit: (obj.durationUnit as "minutes" | "words") || "minutes",
+    scriptType: (obj.scriptType as string) || "video_longo",
+    includeCta: Boolean(obj.includeCta),
+    ctaText: (obj.ctaText as string) || "",
+  };
 }
 
 

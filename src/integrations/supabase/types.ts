@@ -57,6 +57,7 @@ export type Database = {
       }
       alert_query_results: {
         Row: {
+          content_language: string
           id: string
           queried_at: string
           raw_html: string | null
@@ -64,6 +65,7 @@ export type Database = {
           term_id: string
         }
         Insert: {
+          content_language?: string
           id?: string
           queried_at?: string
           raw_html?: string | null
@@ -71,6 +73,7 @@ export type Database = {
           term_id: string
         }
         Update: {
+          content_language?: string
           id?: string
           queried_at?: string
           raw_html?: string | null
