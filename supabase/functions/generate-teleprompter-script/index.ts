@@ -106,7 +106,43 @@ serve(async (req) => {
       ? `Inclua ao final uma chamada para ação (CTA) baseada em: "${parameters.ctaText}"`
       : '';
 
-    const systemPrompt = `Você é um roteirista profissional especializado em criar textos para leitura em voz alta.
+    let systemPrompt: string;
+    let userPrompt: string;
+
+    // Check if this is a refinement request
+    const isRefinement = refinementPrompt && baseScript;
+
+    if (isRefinement) {
+      // Refinement mode: focus on modifying the existing script
+      systemPrompt = `Você é um editor profissional especializado em refinar roteiros para leitura em voz alta.
+
+TAREFA: Modificar o roteiro existente conforme as instruções do usuário.
+
+REGRAS ABSOLUTAS PARA REFINAMENTO:
+1. O roteiro refinado DEVE ser baseado no texto original fornecido
+2. Mantenha a MAIOR PARTE do texto original - faça APENAS as alterações solicitadas
+3. Preserve a estrutura geral, ordem dos tópicos e marcações de pausa existentes
+4. NÃO adicione informações que não estejam no texto original ou nas notícias
+5. Retorne o roteiro COMPLETO com as edições aplicadas
+6. Mantenha as marcações de pausa: <pause-short>, <pause-medium>, <pause-long>, <topic-change>
+7. O idioma do roteiro deve ser mantido: ${parameters.language}`;
+
+      userPrompt = `ROTEIRO ATUAL (você DEVE partir deste texto):
+---
+${baseScript}
+---
+
+INSTRUÇÕES DE MODIFICAÇÃO DO USUÁRIO:
+${refinementPrompt}
+
+CONTEXTO DAS NOTÍCIAS ORIGINAIS (apenas para referência):
+${newsContext}
+
+Por favor, aplique as modificações solicitadas ao roteiro acima e retorne o roteiro completo refinado.`;
+
+    } else {
+      // Generation mode: create new script from scratch
+      systemPrompt = `Você é um roteirista profissional especializado em criar textos para leitura em voz alta.
 
 REGRAS ABSOLUTAS:
 1. Retorne APENAS o texto do roteiro, sem explicações, comentários, listas ou formatação técnica
@@ -129,20 +165,14 @@ ${ctaInstruction}
 
 Escreva um roteiro contínuo, coeso e envolvente baseado nas notícias abaixo. Conecte as informações de forma natural, criando transições fluidas entre os assuntos.`;
 
-    let userPrompt = `Com base nas seguintes notícias, crie o roteiro conforme as configurações acima:
+      userPrompt = `Com base nas seguintes notícias, crie o roteiro conforme as configurações acima:
 
 ${newsContext}
 
 Lembre-se: retorne APENAS o texto do roteiro com as marcações de pausa. Nada mais.`;
-
-    if (refinementPrompt) {
-      if (!baseScript) {
-        throw new Error("Texto base ausente para refinamento");
-      }
-      userPrompt += `\n\nTEXTO ORIGINAL (base obrigatoria):\n${baseScript}\n\nPEDIDO COMPLEMENTAR DO USUARIO:\n${refinementPrompt}\n\nINSTRUCOES DE REFINO:\n- O novo texto DEVE ser baseado no texto original acima.\n- Mantenha o MAXIMO possivel do texto original e da estrutura.\n- Faça apenas as alteracoes estritamente necessarias para atender o pedido complementar.\n- Preserve ordem, tom, estilo e marcacoes de pausa.\n- Nao introduza novos fatos; apenas ajuste estilo/clareza conforme o pedido.\n- Retorne o roteiro completo com edicoes localizadas.`;
     }
 
-    console.log("Gerando roteiro para", newsItems.length, "notícias");
+    console.log(isRefinement ? "Refinando roteiro existente" : "Gerando novo roteiro para", newsItems.length, "notícias");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -222,10 +252,3 @@ Lembre-se: retorne APENAS o texto do roteiro com as marcações de pausa. Nada m
     });
   }
 });
-
-
-
-
-
-
-
