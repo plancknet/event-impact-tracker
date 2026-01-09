@@ -295,11 +295,13 @@ export default function ContentCreator() {
 
       const { items } = await runNewsPipelineWithTerms(terms, {
         maxItemsPerTerm: 6,
+        minItemsPerTerm: 5,
+        initialWindowHours: 24,
         language: profile.newsLanguage.trim(),
       });
 
       const fetchedAt = new Date().toISOString();
-      const recentItems = filterNewsLast24Hours(items.map((item) => ({ ...item, fetchedAt })));
+      const recentItems = items.map((item) => ({ ...item, fetchedAt }));
       // TODO: Enrich selected items with Firecrawl full text when available.
       setNewsItems(recentItems);
       setStep(2);
@@ -360,8 +362,35 @@ export default function ContentCreator() {
       if (!result.script) {
         throw new Error("No script returned.");
       }
-      setGeneratedScript(result.script);
-      setEditedScript(result.script);
+      const hasComplementary = scriptIncludesComplementaryPrompt(result.script, complementaryPrompt);
+      let finalScript = result.script;
+
+      if (!hasComplementary && complementaryPrompt.trim()) {
+        const keywords = extractComplementaryKeywords(complementaryPrompt);
+        const refinementPrompt =
+          keywords.length > 0
+            ? `Revise o roteiro para incluir explicitamente elementos do prompt complementar e mencione: ${keywords.join(", ")}.`
+            : "Revise o roteiro para incluir explicitamente elementos do prompt complementar.";
+
+        const refined = await generateTeleprompterScript(newsItems, parameters, {
+          refinementPrompt,
+          baseScript: result.script,
+        });
+        if (!refined.script) {
+          throw new Error("No script returned.");
+        }
+        finalScript = refined.script;
+      }
+
+      if (!scriptIncludesComplementaryPrompt(finalScript, complementaryPrompt)) {
+        setGenerationError(
+          "O roteiro gerado não inclui elementos do prompt complementar. Ajuste o prompt e tente novamente.",
+        );
+        return false;
+      }
+
+      setGeneratedScript(finalScript);
+      setEditedScript(finalScript);
       await loadScriptHistory();
       return true;
     } catch (error) {
@@ -702,7 +731,7 @@ export default function ContentCreator() {
 
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <p className="text-muted-foreground">
-                {filteredAndSortedNews.length} de {newsItems.length} noticias nas ultimas 24 horas
+                {filteredAndSortedNews.length} de {newsItems.length} noticias nas ultimas 24h (ou mais)
               </p>
             </div>
 
@@ -953,17 +982,6 @@ function buildTermsFromSubject(subject: string): NewsSearchTerm[] {
   return uniqueTerms.map((term) => ({ term }));
 }
 
-function filterNewsLast24Hours(items: FullArticle[]): FullArticle[] {
-  const now = Date.now();
-  const cutoff = now - 24 * 60 * 60 * 1000;
-  return items.filter((item) => {
-    if (!item.publishedAt) return false;
-    const publishedTime = new Date(item.publishedAt).getTime();
-    if (Number.isNaN(publishedTime)) return false;
-    return publishedTime >= cutoff && publishedTime <= now;
-  });
-}
-
 function formatSource(source?: string, link?: string): string {
   if (source && source.trim()) {
     return source.trim();
@@ -1000,6 +1018,78 @@ function getNewsCount(value: unknown): number {
     }
   }
   return 0;
+}
+
+function scriptIncludesComplementaryPrompt(script: string, prompt: string): boolean {
+  if (!prompt.trim()) return true;
+  const keywords = extractComplementaryKeywords(prompt);
+  if (keywords.length === 0) return true;
+  const haystack = normalizeText(script);
+  return keywords.some((keyword) => haystack.includes(normalizeText(keyword)));
+}
+
+function extractComplementaryKeywords(prompt: string): string[] {
+  const stopwords = new Set([
+    "a",
+    "o",
+    "os",
+    "as",
+    "um",
+    "uma",
+    "uns",
+    "umas",
+    "de",
+    "da",
+    "do",
+    "das",
+    "dos",
+    "em",
+    "no",
+    "na",
+    "nos",
+    "nas",
+    "para",
+    "por",
+    "com",
+    "sem",
+    "e",
+    "ou",
+    "que",
+    "se",
+    "nao",
+    "não",
+    "the",
+    "and",
+    "or",
+    "to",
+    "of",
+    "for",
+    "with",
+    "without",
+  ]);
+
+  const tokens = prompt
+    .replace(/[.,;:!?()\[\]{}]/g, " ")
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .filter((token) => token.length >= 3);
+
+  const keywords: string[] = [];
+  const seen = new Set<string>();
+  tokens.forEach((token) => {
+    const normalized = normalizeText(token);
+    if (stopwords.has(normalized)) return;
+    if (seen.has(normalized)) return;
+    seen.add(normalized);
+    keywords.push(token);
+  });
+
+  return keywords;
+}
+
+function normalizeText(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
 function buildTeleprompterParameters(
