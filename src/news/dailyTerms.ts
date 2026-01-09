@@ -108,7 +108,11 @@ function extractTermsFromAi(response: AiTermsResponse | null): string[] {
   if (Array.isArray(response.terms)) return response.terms;
   const raw = response.output || response.result;
   if (!raw) return [];
-  return raw
+  const cleaned = stripCodeFences(raw);
+  const jsonTerms = tryParseJsonArray(cleaned);
+  if (jsonTerms.length > 0) return jsonTerms;
+
+  return cleaned
     .split(/\r?\n/)
     .map((line) => line.replace(/^[-*]\s*/, "").trim())
     .filter(Boolean);
@@ -137,7 +141,7 @@ function sanitizeValues(values: string[]): string[] {
 
 function sanitizeTerms(terms: string[]): string[] {
   return terms
-    .map((term) => term.replace(/^["']|["']$/g, "").trim())
+    .map((term) => term.replace(/^["']|["']$/g, "").replace(/^[\[\],]+|[\[\],]+$/g, "").trim())
     .filter(Boolean);
 }
 
@@ -166,4 +170,23 @@ function normalizeDateInput(value: Date | string): string {
     return new Date().toISOString().slice(0, 10);
   }
   return parsed.toISOString().slice(0, 10);
+}
+
+function stripCodeFences(value: string): string {
+  return value.replace(/```[\s\S]*?```/g, (match) => {
+    const withoutFence = match.replace(/^```[\w-]*\s*/i, "").replace(/```\s*$/i, "");
+    return withoutFence.trim();
+  });
+}
+
+function tryParseJsonArray(value: string): string[] {
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((item) => typeof item === "string") as string[];
+    }
+  } catch {
+    // ignore JSON parsing errors
+  }
+  return [];
 }
