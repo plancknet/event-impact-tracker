@@ -28,6 +28,8 @@ type StepId = 1 | 2 | 3;
 
 type SortField = "published_at" | "title";
 
+type ScriptSortField = "created_at" | "title";
+
 type WritingProfile = {
   mainSubject: string;
   tone: string;
@@ -71,6 +73,12 @@ export default function ContentCreator() {
     key: "published_at",
     direction: "desc",
   });
+  const [scriptTitleFilter, setScriptTitleFilter] = useState("");
+  const [scriptDateFilter, setScriptDateFilter] = useState("");
+  const [scriptSort, setScriptSort] = useState<{ key: ScriptSortField; direction: SortDirection }>({
+    key: "created_at",
+    direction: "desc",
+  });
   const [generationPayload, setGenerationPayload] = useState("");
   const [generatedScript, setGeneratedScript] = useState("");
   const [editedScript, setEditedScript] = useState("");
@@ -96,6 +104,14 @@ export default function ContentCreator() {
   );
 
   const termOptions = useMemo(() => searchTerms.map((term) => term.term), [searchTerms]);
+  const sourceOptions = useMemo(() => {
+    const set = new Set<string>();
+    newsItems.forEach((item) => {
+      const source = formatSource(item.source, item.link);
+      if (source) set.add(source);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [newsItems]);
 
   const termFilteredResults = useMemo(() => {
     if (termFilter.length === 0) return newsItems;
@@ -123,7 +139,11 @@ export default function ContentCreator() {
     }
 
     if (categoryFilter.length > 0) {
-      filtered = filtered.filter((item) => item.source && categoryFilter.includes(item.source));
+      const categorySet = new Set(categoryFilter.map((c) => c.toLowerCase()));
+      filtered = filtered.filter((item) => {
+        const source = formatSource(item.source, item.link).toLowerCase();
+        return source ? categorySet.has(source) : false;
+      });
     }
 
     const creationFilterDate = parseFilterDate(dateFilter);
@@ -172,6 +192,39 @@ export default function ContentCreator() {
     currentSort,
   ]);
 
+  const filteredScripts = useMemo(() => {
+    let filtered = scriptHistory;
+
+    if (scriptTitleFilter.trim()) {
+      filtered = filtered.filter((script) =>
+        script.script_text.toLowerCase().includes(scriptTitleFilter.toLowerCase().trim()),
+      );
+    }
+
+    const creationFilterDate = parseFilterDate(scriptDateFilter);
+    if (creationFilterDate) {
+      filtered = filtered.filter((script) => {
+        const scriptDate = new Date(script.created_at);
+        return (
+          scriptDate.getDate() === creationFilterDate.getDate() &&
+          scriptDate.getMonth() === creationFilterDate.getMonth() &&
+          scriptDate.getFullYear() === creationFilterDate.getFullYear()
+        );
+      });
+    }
+
+    return [...filtered].sort((a, b) => {
+      if (scriptSort.key === "created_at") {
+        return scriptSort.direction === "asc"
+          ? a.created_at.localeCompare(b.created_at)
+          : b.created_at.localeCompare(a.created_at);
+      }
+      const aVal = getScriptPreview(a.script_text).toLowerCase();
+      const bVal = getScriptPreview(b.script_text).toLowerCase();
+      return scriptSort.direction === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+  }, [scriptHistory, scriptTitleFilter, scriptDateFilter, scriptSort]);
+
   const canContinueFromProfile =
     profile.mainSubject.trim() &&
     profile.tone.trim() &&
@@ -202,6 +255,13 @@ export default function ContentCreator() {
 
   const handleSort = (key: SortField) => {
     setCurrentSort((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const handleScriptSort = (key: ScriptSortField) => {
+    setScriptSort((prev) => ({
       key,
       direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
@@ -348,12 +408,16 @@ export default function ContentCreator() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Content Creator Workflow</h1>
-        <p className="text-muted-foreground">
-          Build a writing profile, add news context, and generate a spoken-first script.
-        </p>
-      </div>
+      <Card className="border bg-gradient-to-br from-card via-background to-muted/60">
+        <CardContent className="py-6">
+          <div>
+            <h1 className="text-2xl font-bold">Content Creator Workflow</h1>
+            <p className="text-muted-foreground">
+              Build a writing profile, add news context, and generate a spoken-first script.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -371,45 +435,86 @@ export default function ContentCreator() {
               Nenhum roteiro gerado ainda.
             </div>
           ) : (
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[140px]">Data</TableHead>
-                    <TableHead className="w-[120px]">Noticias</TableHead>
-                    <TableHead>Preview</TableHead>
-                    <TableHead className="w-[120px]">Acoes</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {scriptHistory.map((script) => (
-                    <TableRow key={script.id}>
-                      <TableCell className="font-mono text-xs whitespace-nowrap">
-                        {format(new Date(script.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {getNewsCount(script.news_ids_json)}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {getScriptPreview(script.script_text)}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant={generatedScript === script.script_text ? "secondary" : "outline"}
-                          onClick={() => {
-                            setGeneratedScript(script.script_text);
-                            setEditedScript(script.script_text);
-                          }}
-                        >
-                          {generatedScript === script.script_text ? "Em uso" : "Usar"}
-                        </Button>
-                      </TableCell>
+            <>
+              <div className="flex gap-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <DateFilter
+                    value={scriptDateFilter}
+                    onChange={setScriptDateFilter}
+                    placeholder="Criacao dd/mm/aaaa"
+                  />
+                </div>
+                <div className="relative flex-1">
+                  <Input
+                    placeholder="Filtrar por conteudo..."
+                    value={scriptTitleFilter}
+                    onChange={(e) => setScriptTitleFilter(e.target.value)}
+                    className="pl-3"
+                    maxLength={120}
+                  />
+                </div>
+              </div>
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <SortableTableHead
+                        sortKey="created_at"
+                        currentSort={scriptSort}
+                        onSort={handleScriptSort}
+                        className="w-[140px]"
+                      >
+                        Data
+                      </SortableTableHead>
+                      <TableHead className="w-[120px]">Noticias</TableHead>
+                      <SortableTableHead
+                        sortKey="title"
+                        currentSort={scriptSort}
+                        onSort={handleScriptSort}
+                      >
+                        Preview
+                      </SortableTableHead>
+                      <TableHead className="w-[120px]">Acoes</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredScripts.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          Nenhum roteiro encontrado
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredScripts.map((script) => (
+                        <TableRow key={script.id}>
+                          <TableCell className="font-mono text-xs whitespace-nowrap">
+                            {format(new Date(script.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {getNewsCount(script.news_ids_json)}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {getScriptPreview(script.script_text)}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant={generatedScript === script.script_text ? "secondary" : "outline"}
+                              onClick={() => {
+                                setGeneratedScript(script.script_text);
+                                setEditedScript(script.script_text);
+                              }}
+                            >
+                              {generatedScript === script.script_text ? "Em uso" : "Usar"}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -561,7 +666,7 @@ export default function ContentCreator() {
                   <div className="flex flex-col gap-2 w-[60%]">
                     <div className="flex items-center gap-2">
                       <LocalTermFilter value={termFilter} options={termOptions} onChange={setTermFilter} />
-                      <CategoryFilter value={categoryFilter} options={[]} onChange={setCategoryFilter} />
+                      <CategoryFilter value={categoryFilter} options={sourceOptions} onChange={setCategoryFilter} />
                       <DateFilter
                         value={dateFilter}
                         onChange={setDateFilter}
@@ -624,13 +729,14 @@ export default function ContentCreator() {
                         >
                           Titulo
                         </SortableTableHead>
+                        <TableHead className="w-[140px]">Fonte</TableHead>
                         <TableHead>Link</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredAndSortedNews.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                             Nenhuma noticia encontrada
                           </TableCell>
                         </TableRow>
@@ -650,6 +756,9 @@ export default function ContentCreator() {
                             </TableCell>
                             <TableCell className="max-w-[400px] truncate font-medium">
                               {item.title}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {formatSource(item.source, item.link)}
                             </TableCell>
                             <TableCell>
                               {item.link ? (
@@ -793,6 +902,19 @@ function filterNewsLast24Hours(items: FullArticle[]): FullArticle[] {
     if (Number.isNaN(publishedTime)) return false;
     return publishedTime >= cutoff && publishedTime <= now;
   });
+}
+
+function formatSource(source?: string, link?: string): string {
+  if (source && source.trim()) {
+    return source.trim();
+  }
+  if (!link) return "-";
+  try {
+    const domain = new URL(link).hostname;
+    return domain.replace("www.", "");
+  } catch {
+    return "-";
+  }
 }
 
 function parseFilterDate(dateStr: string): Date | null {

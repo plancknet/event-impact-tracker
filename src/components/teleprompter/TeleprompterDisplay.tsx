@@ -326,8 +326,15 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
       className={`flex flex-col ${isFullscreen ? "h-screen" : ""}`}
       style={isFullscreen ? { backgroundColor } : undefined}
     >
-      {/* Controls */}
       <Card className={`mb-4 ${isFullscreen ? "absolute top-4 left-4 right-4 z-10 bg-background/80 backdrop-blur" : ""}`}>
+        <CardContent className="py-3">
+          <div className="text-sm text-muted-foreground mb-2">Referencias das noticias</div>
+          <Textarea value={referencesText} readOnly rows={4} className="resize-none" />
+        </CardContent>
+      </Card>
+
+      {/* Controls */}
+      <Card className={`mb-4 ${isFullscreen ? "absolute top-28 left-4 right-4 z-10 bg-background/80 backdrop-blur" : ""}`}>
         <CardContent className="py-3">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-2">
@@ -437,13 +444,6 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
               ⏸ Pausa automática ({currentPause.replace("pause-", "").replace("pause", "normal")})
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      <Card className={`mb-4 ${isFullscreen ? "absolute top-28 left-4 right-4 z-10 bg-background/80 backdrop-blur" : ""}`}>
-        <CardContent className="py-3">
-          <div className="text-sm text-muted-foreground mb-2">Referencias das noticias</div>
-          <Textarea value={referencesText} readOnly rows={4} className="resize-none" />
         </CardContent>
       </Card>
 
