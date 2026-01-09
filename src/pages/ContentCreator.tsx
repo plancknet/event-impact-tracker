@@ -311,9 +311,9 @@ export default function ContentCreator() {
     }
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async (): Promise<boolean> => {
     // NOTE: This restores the teleprompter Edge Function behavior from the old branch.
-    void generateScriptFromSelection();
+    return generateScriptFromSelection();
   };
 
   const handleSaveScript = async () => {
@@ -344,7 +344,7 @@ export default function ContentCreator() {
     }
   };
 
-  const generateScriptFromSelection = async () => {
+  const generateScriptFromSelection = async (): Promise<boolean> => {
     setGenerationError(null);
     setIsGenerating(true);
     try {
@@ -363,9 +363,11 @@ export default function ContentCreator() {
       setGeneratedScript(result.script);
       setEditedScript(result.script);
       await loadScriptHistory();
+      return true;
     } catch (error) {
       console.error("Failed to generate teleprompter script:", error);
       setGenerationError("Unable to generate script. Please try again.");
+      return false;
     } finally {
       setIsGenerating(false);
     }
@@ -841,9 +843,11 @@ export default function ContentCreator() {
                 Back to profile
               </Button>
               <Button
-                onClick={() => {
-                  handleGenerate();
-                  setStep(3);
+                onClick={async () => {
+                  const success = await handleGenerate();
+                  if (success) {
+                    setStep(3);
+                  }
                 }}
                 disabled={!canGenerateFromNews || isGenerating}
               >
