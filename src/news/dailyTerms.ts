@@ -141,7 +141,7 @@ function sanitizeValues(values: string[]): string[] {
 
 function sanitizeTerms(terms: string[]): string[] {
   return terms
-    .map((term) => term.replace(/^["']|["']$/g, "").replace(/^[\[\],]+|[\[\],]+$/g, "").trim())
+    .map((term) => cleanTerm(term))
     .filter(Boolean);
 }
 
@@ -189,4 +189,14 @@ function tryParseJsonArray(value: string): string[] {
     // ignore JSON parsing errors
   }
   return [];
+}
+
+function cleanTerm(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  const withoutNewlines = trimmed.replace(/[\r\n]+/g, " ");
+  const withoutFenceChars = withoutNewlines.replace(/^[\[\],]+|[\[\],]+$/g, "");
+  const withoutQuotes = withoutFenceChars.replace(/^["']|["']$/g, "");
+  const withoutTrailingPunctuation = withoutQuotes.replace(/[,;:]+$/g, "");
+  return withoutTrailingPunctuation.trim();
 }
