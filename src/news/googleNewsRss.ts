@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import type { RssItem } from "./types";
 
 type GoogleNewsRssOptions = {
@@ -24,13 +25,23 @@ export async function fetchGoogleNewsRss(
   term: string,
   options: GoogleNewsRssOptions = {},
 ): Promise<RssItem[]> {
-  const url = buildGoogleNewsRssUrl(term, options);
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Google News RSS request failed (${response.status})`);
+  const { data, error } = await supabase.functions.invoke("google-news-rss", {
+    body: {
+      term,
+      language: options.language ?? "en",
+      region: options.region ?? "US",
+    },
+  });
+
+  if (error) {
+    throw error;
   }
 
-  const xml = await response.text();
+  const xml = (data as { xml?: string } | null)?.xml;
+  if (!xml) {
+    throw new Error("Google News RSS proxy returned no XML");
+  }
+
   return parseGoogleNewsRss(xml, options.maxItems);
 }
 
