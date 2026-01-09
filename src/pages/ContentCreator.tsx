@@ -42,12 +42,12 @@ const SYSTEM_PROMPT_GUIDANCE = [
 export default function ContentCreator() {
   const [step, setStep] = useState<StepId>(1);
   const [profile, setProfile] = useState<WritingProfile>({
-    mainAreaChips: [],
-    tone: "",
-    audience: "",
-    duration: "",
-    platform: "",
-    goal: "",
+    mainAreaChips: [MAIN_AREA_OPTIONS[0]],
+    tone: "Calm",
+    audience: "Creators",
+    duration: "60s",
+    platform: "YouTube",
+    goal: "Entertain",
   });
   const [dailyTerms, setDailyTerms] = useState<NewsSearchTerm[]>([]);
   const [newsItems, setNewsItems] = useState<FullArticle[]>([]);
