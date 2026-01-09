@@ -10,7 +10,8 @@ import { WordCloud } from "@/components/WordCloud";
 import { DateFilter } from "@/components/DateFilter";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { LocalTermFilter } from "@/components/LocalTermFilter";
-import { FileText, Loader2, Monitor, Wand2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChevronDown, ChevronUp, FileText, Loader2, Monitor, Wand2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { TeleprompterDisplay } from "@/components/teleprompter/TeleprompterDisplay";
 import { runNewsPipelineWithTerms } from "@/news/pipeline";
@@ -37,15 +38,9 @@ type WritingProfile = {
   duration: string;
   platform: string;
   goal: string;
+  newsLanguage: string;
+  scriptLanguage: string;
 };
-
-const SYSTEM_PROMPT_GUIDANCE = [
-  "Optimize for speech, not reading.",
-  "Preserve the creator's voice and intent.",
-  "Keep structure visible and easy to follow.",
-  "Be concise and practical.",
-  "Do not invent facts; flag uncertainty.",
-];
 
 export default function ContentCreator() {
   const [step, setStep] = useState<StepId>(1);
@@ -56,6 +51,8 @@ export default function ContentCreator() {
     duration: "60s",
     platform: "YouTube",
     goal: "Entertain",
+    newsLanguage: "en",
+    scriptLanguage: "English",
   });
   const [searchTerms, setSearchTerms] = useState<NewsSearchTerm[]>([]);
   const [newsItems, setNewsItems] = useState<FullArticle[]>([]);
@@ -79,7 +76,6 @@ export default function ContentCreator() {
     key: "created_at",
     direction: "desc",
   });
-  const [generationPayload, setGenerationPayload] = useState("");
   const [generatedScript, setGeneratedScript] = useState("");
   const [editedScript, setEditedScript] = useState("");
   const [generationError, setGenerationError] = useState<string | null>(null);
@@ -88,6 +84,13 @@ export default function ContentCreator() {
     { id: string; created_at: string; script_text: string; news_ids_json: unknown }[]
   >([]);
   const [scriptsLoading, setScriptsLoading] = useState(false);
+  const [isScriptsCollapsed, setIsScriptsCollapsed] = useState(true);
+
+  const scriptLanguageOptions = [
+    { label: "English", value: "English" },
+    { label: "Portuguese", value: "Portuguese" },
+    { label: "Spanish", value: "Spanish" },
+  ];
 
   const selectedNews = useMemo(
     () => newsItems.filter((item) => selectedNewsIds.includes(item.id)),
@@ -231,9 +234,11 @@ export default function ContentCreator() {
     profile.audience.trim() &&
     profile.duration.trim() &&
     profile.platform.trim() &&
-    profile.goal.trim();
+    profile.goal.trim() &&
+    profile.newsLanguage.trim();
 
   const canContinueFromNews = selectedNewsIds.length > 0;
+  const canGenerateFromNews = canContinueFromNews && profile.scriptLanguage.trim();
 
   const handleToggleNews = (id: string) => {
     setSelectedNewsIds((prev) =>
@@ -288,6 +293,7 @@ export default function ContentCreator() {
 
       const { items } = await runNewsPipelineWithTerms(terms, {
         maxItemsPerTerm: 6,
+        language: profile.newsLanguage.trim(),
       });
 
       const fetchedAt = new Date().toISOString();
@@ -303,40 +309,7 @@ export default function ContentCreator() {
     }
   };
 
-  const buildGenerationPayload = () => {
-    const newsBlocks = selectedNews
-      .map((item) => {
-        const fullText = item.fullText || item.summary || "";
-        return [
-          `Title: ${item.title}`,
-          `Published: ${item.publishedAt ?? "Unknown"}`,
-          `URL: ${item.link}`,
-          `Full text: ${fullText || "Not available."}`,
-        ].join("\n");
-      })
-      .join("\n\n");
-
-    return [
-      "Writing profile:",
-      `Main subject: ${profile.mainSubject}`,
-      `Tone: ${profile.tone}`,
-      `Audience: ${profile.audience}`,
-      `Duration: ${profile.duration}`,
-      `Platform: ${profile.platform}`,
-      `Goal: ${profile.goal}`,
-      "",
-      "News context:",
-      newsBlocks || "No news selected.",
-      "",
-      "Complementary prompt:",
-      complementaryPrompt.trim() || "None.",
-    ].join("\n");
-  };
-
   const handleGenerate = () => {
-    const payload = buildGenerationPayload();
-    setGenerationPayload(payload);
-
     // NOTE: This restores the teleprompter Edge Function behavior from the old branch.
     void generateScriptFromSelection();
   };
@@ -421,10 +394,23 @@ export default function ContentCreator() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent scripts</CardTitle>
-          <CardDescription>Textos gerados em execucoes anteriores.</CardDescription>
+          <button
+            type="button"
+            className="flex items-center justify-between w-full text-left"
+            onClick={() => setIsScriptsCollapsed((prev) => !prev)}
+          >
+            <div>
+              <CardTitle>Recent scripts</CardTitle>
+              <CardDescription>Textos gerados em execucoes anteriores.</CardDescription>
+            </div>
+            {isScriptsCollapsed ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
         </CardHeader>
-        <CardContent>
+        {!isScriptsCollapsed && <CardContent>
           {scriptsLoading ? (
             <div className="flex items-center justify-center py-8 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin mr-2" />
@@ -516,7 +502,7 @@ export default function ContentCreator() {
               </div>
             </>
           )}
-        </CardContent>
+        </CardContent>}
       </Card>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -604,6 +590,14 @@ export default function ContentCreator() {
                   value={profile.goal}
                   onChange={(event) => setProfile((prev) => ({ ...prev, goal: event.target.value }))}
                   placeholder="Teach, persuade, entertain, sell"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <p className="text-sm font-medium">News language</p>
+                <Input
+                  value={profile.newsLanguage}
+                  onChange={(event) => setProfile((prev) => ({ ...prev, newsLanguage: event.target.value }))}
+                  placeholder="en, pt-BR, es"
                 />
               </div>
             </div>
@@ -793,11 +787,36 @@ export default function ContentCreator() {
               />
             </div>
 
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Script language</p>
+              <Select
+                value={profile.scriptLanguage}
+                onValueChange={(value) => setProfile((prev) => ({ ...prev, scriptLanguage: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {scriptLanguageOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="flex flex-wrap justify-between gap-2">
               <Button variant="outline" onClick={() => setStep(1)}>
                 Back to profile
               </Button>
-              <Button onClick={() => setStep(3)} disabled={!canContinueFromNews}>
+              <Button
+                onClick={() => {
+                  handleGenerate();
+                  setStep(3);
+                }}
+                disabled={!canGenerateFromNews || isGenerating}
+              >
                 Continue to generate
               </Button>
             </div>
@@ -813,29 +832,13 @@ export default function ContentCreator() {
               <CardDescription>Compose inputs and generate the script.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-lg border p-4 text-sm text-muted-foreground">
-                <p className="font-medium text-foreground">System guidance</p>
-                <ul className="list-disc pl-5">
-                  {SYSTEM_PROMPT_GUIDANCE.map((line) => (
-                    <li key={line}>{line}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <Button onClick={handleGenerate} disabled={!canContinueFromNews || isGenerating}>
+              <Button onClick={handleGenerate} disabled={!canGenerateFromNews || isGenerating}>
                 <Wand2 className="mr-2 h-4 w-4" />
                 {isGenerating ? "Generating..." : "Generate script"}
               </Button>
               {generationError && (
                 <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm">
                   {generationError}
-                </div>
-              )}
-
-              {generationPayload && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Generation payload</p>
-                  <Textarea value={generationPayload} readOnly rows={8} />
                 </div>
               )}
             </CardContent>
@@ -957,7 +960,7 @@ function buildTeleprompterParameters(
   return {
     tone: profile.tone,
     audience: profile.audience,
-    language: "English",
+    language: profile.scriptLanguage.trim() || "English",
     duration: profile.duration,
     durationUnit,
     scriptType,
@@ -968,6 +971,8 @@ function buildTeleprompterParameters(
       mainSubject: profile.mainSubject,
       goal: profile.goal,
       platform: profile.platform,
+      newsLanguage: profile.newsLanguage,
+      scriptLanguage: profile.scriptLanguage,
     },
     complementaryPrompt,
   };

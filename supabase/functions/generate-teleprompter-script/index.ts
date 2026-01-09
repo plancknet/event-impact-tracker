@@ -168,6 +168,7 @@ REGRAS ABSOLUTAS:
 6. Coloque pausas naturais onde um apresentador respiraria ou daria enfase
 7. O idioma do roteiro deve ser: ${parameters.language}
 8. Gere exatamente 3 perguntas sobre a opiniao pessoal do usuario sobre o texto
+9. Aplique obrigatoriamente o prompt complementar do usuário, se fornecido
 
 FORMATO DE SAIDA (JSON):
 {
@@ -195,7 +196,7 @@ Lembre-se: retorne APENAS o JSON solicitado.`;
         complementaryPrompt ||
         (parameters as unknown as { complementaryPrompt?: string })?.complementaryPrompt;
       if (extraPrompt && typeof extraPrompt === "string" && extraPrompt.trim()) {
-        userPrompt += `\n\nObservações adicionais do usuário:\n${extraPrompt.trim()}\n`;
+        userPrompt += `\n\nObservações adicionais do usuário (aplicar obrigatoriamente):\n${extraPrompt.trim()}\n`;
       }
     }
 
