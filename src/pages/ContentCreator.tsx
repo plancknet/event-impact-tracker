@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FileText, Loader2, Monitor, Wand2 } from "lucide-react";
 import { TeleprompterDisplay } from "@/components/teleprompter/TeleprompterDisplay";
-import { ensureDailySearchTerms } from "@/news/dailyTerms";
 import { runNewsPipelineWithTerms } from "@/news/pipeline";
 import type { FullArticle, NewsSearchTerm } from "@/news/types";
 
@@ -38,7 +37,7 @@ export default function ContentCreator() {
     platform: "YouTube",
     goal: "Entertain",
   });
-  const [dailyTerms, setDailyTerms] = useState<NewsSearchTerm[]>([]);
+  const [searchTerms, setSearchTerms] = useState<NewsSearchTerm[]>([]);
   const [newsItems, setNewsItems] = useState<FullArticle[]>([]);
   const [selectedNewsIds, setSelectedNewsIds] = useState<string[]>([]);
   const [complementaryPrompt, setComplementaryPrompt] = useState("");
@@ -82,16 +81,16 @@ export default function ContentCreator() {
     setNewsError(null);
     setNewsLoading(true);
     setSelectedNewsIds([]);
-    setDailyTerms([]);
+    setSearchTerms([]);
     setNewsItems([]);
     try {
-      const terms = await ensureDailySearchTerms(profile.mainSubject);
+      const terms = buildTermsFromSubject(profile.mainSubject);
       if (terms.length === 0) {
-        setNewsError("Add a main subject to generate daily terms.");
+        setNewsError("Add a main subject to generate search terms.");
         return;
       }
 
-      setDailyTerms(terms);
+      setSearchTerms(terms);
 
       const { items } = await runNewsPipelineWithTerms(terms, {
         maxItemsPerTerm: 6,
@@ -222,11 +221,11 @@ export default function ContentCreator() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <p className="text-sm font-medium">Main Subject</p>
+              <p className="text-sm font-medium">Main Subject (comma-separated)</p>
               <Input
                 value={profile.mainSubject}
                 onChange={(event) => setProfile((prev) => ({ ...prev, mainSubject: event.target.value }))}
-                placeholder="Bitcoin, creator economy, climate policy"
+                placeholder="Bitcoin, crypto market, fear & greed index"
               />
             </div>
 
@@ -302,11 +301,11 @@ export default function ContentCreator() {
               </div>
             )}
 
-            {dailyTerms.length > 0 && (
+            {searchTerms.length > 0 && (
               <div className="rounded-lg border p-4">
-                <p className="text-sm font-medium">Daily terms used</p>
+                <p className="text-sm font-medium">Search terms used</p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {dailyTerms.map((term) => (
+                  {searchTerms.map((term) => (
                     <span key={term.term} className="rounded-full bg-muted px-3 py-1 text-xs">
                       {term.term}
                     </span>
@@ -318,7 +317,7 @@ export default function ContentCreator() {
             <div className="grid gap-4 lg:grid-cols-2">
               {newsItems.length === 0 ? (
                 <div className="rounded-lg border p-6 text-sm text-muted-foreground">
-                  No news found yet. Try again or adjust the main subject.
+                  No news found yet. Try again or adjust the main subject terms.
                 </div>
               ) : (
                 newsItems.map((item) => {
@@ -437,4 +436,20 @@ export default function ContentCreator() {
       )}
     </div>
   );
+}
+
+function buildTermsFromSubject(subject: string): NewsSearchTerm[] {
+  const rawTerms = subject
+    .split(",")
+    .map((term) => term.trim())
+    .filter(Boolean);
+  const seen = new Set<string>();
+  const uniqueTerms: string[] = [];
+  rawTerms.forEach((term) => {
+    const key = term.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    uniqueTerms.push(term);
+  });
+  return uniqueTerms.map((term) => ({ term }));
 }
