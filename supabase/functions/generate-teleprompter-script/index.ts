@@ -48,7 +48,9 @@ serve(async (req) => {
     } = await req.json();
 
     if (!newsItems || newsItems.length === 0) {
-      throw new Error("Nenhuma notícia selecionada");
+      if (!complementaryPrompt || !complementaryPrompt.trim()) {
+        throw new Error("Nenhuma noticia selecionada e nenhum prompt complementar informado");
+      }
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -57,17 +59,19 @@ serve(async (req) => {
     }
 
     // Build news context
-    const newsContext = newsItems.map((news, index) => {
-      let content = `### Notícia ${index + 1}\n`;
-      content += `**Título:** ${news.title}\n`;
-      if (news.summary) {
-        content += `**Resumo:** ${news.summary}\n`;
-      }
-      if (news.content) {
-        content += `**Conteúdo:** ${news.content}\n`;
-      }
-      return content;
-    }).join('\n\n');
+    const newsContext = newsItems.length > 0
+      ? newsItems.map((news, index) => {
+          let content = `### Noticia ${index + 1}\n`;
+          content += `**Titulo:** ${news.title}\n`;
+          if (news.summary) {
+            content += `**Resumo:** ${news.summary}\n`;
+          }
+          if (news.content) {
+            content += `**Conteudo:** ${news.content}\n`;
+          }
+          return content;
+        }).join('\n\n')
+      : "Nenhuma noticia selecionada.";
 
     // Build duration instruction
     let durationInstruction = '';
@@ -168,7 +172,8 @@ REGRAS ABSOLUTAS:
 6. Coloque pausas naturais onde um apresentador respiraria ou daria enfase
 7. O idioma do roteiro deve ser: ${parameters.language}
 8. Gere exatamente 3 perguntas sobre a opiniao pessoal do usuario sobre o texto
-9. Aplique obrigatoriamente o prompt complementar do usuário, se fornecido
+9. Use o prompt complementar do usuario como guia principal, se fornecido
+10. Use as noticias como contexto quando estiverem disponiveis, sem se limitar a elas
 
 FORMATO DE SAIDA (JSON):
 {

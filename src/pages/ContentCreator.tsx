@@ -238,8 +238,10 @@ export default function ContentCreator() {
     profile.goal.trim() &&
     profile.newsLanguage.trim();
 
+  const hasComplementaryPrompt = complementaryPrompt.trim().length > 0;
   const canContinueFromNews = selectedNewsIds.length > 0;
-  const canGenerateFromNews = canContinueFromNews && profile.scriptLanguage.trim();
+  const canGenerateFromNews =
+    profile.scriptLanguage.trim() && (canContinueFromNews || hasComplementaryPrompt);
   const canSaveScript = editedScript.trim().length > 0;
 
   const handleToggleNews = (id: string) => {
@@ -350,6 +352,12 @@ export default function ContentCreator() {
     setGenerationError(null);
     setIsGenerating(true);
     try {
+      if (selectedNews.length === 0 && !hasComplementaryPrompt) {
+        setGenerationError(
+          "Selecione ao menos uma noticia ou preencha o prompt complementar para gerar o roteiro.",
+        );
+        return false;
+      }
       const newsItems = selectedNews.map((item) => ({
         id: item.id,
         title: item.title,

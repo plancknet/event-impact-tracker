@@ -27,12 +27,14 @@ interface TeleprompterDisplayProps {
   references?: { title: string; url?: string | null }[];
 }
 
-const PAUSE_DURATIONS = {
+const DEFAULT_PAUSE_DURATIONS = {
   "pause-short": 1500,
   "pause-medium": 3500,
   "pause-long": 6000,
   "pause": 2500,
-};
+} as const;
+
+type PauseType = keyof typeof DEFAULT_PAUSE_DURATIONS;
 
 const FONT_OPTIONS = [
   { label: "Inter", value: "Inter, system-ui, sans-serif" },
@@ -49,6 +51,9 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showPauseTags, setShowPauseTags] = useState(true);
   const [currentPause, setCurrentPause] = useState<string | null>(null);
+  const [pauseDurations, setPauseDurations] = useState<Record<PauseType, number>>({
+    ...DEFAULT_PAUSE_DURATIONS,
+  });
   const [fontFamily, setFontFamily] = useState(FONT_OPTIONS[0].value);
   const [fontSize, setFontSize] = useState(28);
   const [textColor, setTextColor] = useState("#ffffff");
@@ -104,6 +109,16 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
 
   const parsedScript = parseScript(script);
 
+  const handlePause = useCallback((pauseType: PauseType) => {
+    setIsPaused(true);
+    setCurrentPause(pauseType);
+    
+    pauseTimeoutRef.current = setTimeout(() => {
+      setIsPaused(false);
+      setCurrentPause(null);
+    }, pauseDurations[pauseType]);
+  }, [pauseDurations]);
+
   // Animate scrolling
   const animate = useCallback((timestamp: number) => {
     if (!lastTimeRef.current) lastTimeRef.current = timestamp;
@@ -131,7 +146,7 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
         const triggerPoint = containerRect.top + containerRect.height * 0.3;
         
         if (rect.top <= triggerPoint && rect.bottom >= triggerPoint - 50) {
-          const pauseType = el.getAttribute("data-pause") as keyof typeof PAUSE_DURATIONS;
+          const pauseType = el.getAttribute("data-pause") as PauseType;
           if (pauseType && !el.hasAttribute("data-triggered")) {
             el.setAttribute("data-triggered", "true");
             handlePause(pauseType);
@@ -143,17 +158,7 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
     if (isPlaying) {
       animationRef.current = requestAnimationFrame(animate);
     }
-  }, [speed, isPaused, isPlaying]);
-
-  const handlePause = (pauseType: keyof typeof PAUSE_DURATIONS) => {
-    setIsPaused(true);
-    setCurrentPause(pauseType);
-    
-    pauseTimeoutRef.current = setTimeout(() => {
-      setIsPaused(false);
-      setCurrentPause(null);
-    }, PAUSE_DURATIONS[pauseType]);
-  };
+  }, [speed, isPaused, isPlaying, handlePause]);
 
   useEffect(() => {
     if (isPlaying && !isPaused) {
@@ -225,6 +230,16 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
 
   const handleSpeedChange = (delta: number) => {
     setSpeed((prev) => Math.max(10, Math.min(200, prev + delta)));
+  };
+
+  const handlePauseDurationChange = (pauseType: PauseType, seconds: number) => {
+    const clampedSeconds = Math.max(0.5, Math.min(20, seconds));
+    const nextMs = Math.round(clampedSeconds * 1000);
+    setPauseDurations((prev) => ({
+      ...prev,
+      [pauseType]: nextMs,
+      ...(pauseType === "pause-medium" ? { "pause": nextMs } : {}),
+    }));
   };
 
   const toggleFullscreen = async () => {
@@ -436,6 +451,48 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
                 className="h-8 w-10 rounded border border-border bg-transparent p-0"
                 aria-label="Cor do fundo"
               />
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground">Pausas (s)</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Curta</span>
+                <input
+                  type="number"
+                  min={0.5}
+                  max={20}
+                  step={0.5}
+                  value={pauseDurations["pause-short"] / 1000}
+                  onChange={(event) => handlePauseDurationChange("pause-short", Number(event.target.value))}
+                  className="h-8 w-16 rounded border border-border bg-transparent px-2 text-xs"
+                  aria-label="Pausa curta em segundos"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Media</span>
+                <input
+                  type="number"
+                  min={0.5}
+                  max={20}
+                  step={0.5}
+                  value={pauseDurations["pause-medium"] / 1000}
+                  onChange={(event) => handlePauseDurationChange("pause-medium", Number(event.target.value))}
+                  className="h-8 w-16 rounded border border-border bg-transparent px-2 text-xs"
+                  aria-label="Pausa media em segundos"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Longa</span>
+                <input
+                  type="number"
+                  min={0.5}
+                  max={20}
+                  step={0.5}
+                  value={pauseDurations["pause-long"] / 1000}
+                  onChange={(event) => handlePauseDurationChange("pause-long", Number(event.target.value))}
+                  className="h-8 w-16 rounded border border-border bg-transparent px-2 text-xs"
+                  aria-label="Pausa longa em segundos"
+                />
+              </div>
             </div>
           </div>
 
