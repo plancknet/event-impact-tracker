@@ -205,18 +205,24 @@ export type Database = {
       }
       search_terms: {
         Row: {
+          collection_date: string | null
           created_at: string
           id: string
+          main_area: string | null
           term: string
         }
         Insert: {
+          collection_date?: string | null
           created_at?: string
           id?: string
+          main_area?: string | null
           term: string
         }
         Update: {
+          collection_date?: string | null
           created_at?: string
           id?: string
+          main_area?: string | null
           term?: string
         }
         Relationships: []
