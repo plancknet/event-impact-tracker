@@ -10,16 +10,13 @@ type AiTermsResponse = {
 const FALLBACK_SUFFIXES = ["news", "latest", "update", "trends", "insights"];
 
 export async function ensureDailySearchTerms(
-  mainAreaChips: string[],
+  mainSubject: string,
   today?: Date | string,
 ): Promise<NewsSearchTerm[]> {
-  const sanitizedChips = sanitizeValues(mainAreaChips);
-  if (sanitizedChips.length === 0) {
+  const primary = mainSubject.trim();
+  if (!primary) {
     return [];
   }
-
-  // Assumption: the first chip is the primary main_area for term generation.
-  const primary = sanitizedChips[0];
   const collectionDate = normalizeDateInput(today ?? new Date());
 
   const { data: existing, error } = await supabase
@@ -67,16 +64,19 @@ export async function ensureDailySearchTerms(
   }));
 }
 
-async function generateTermsWithAi(mainArea: string): Promise<string[]> {
+async function generateTermsWithAi(mainSubject: string): Promise<string[]> {
   const prompt = [
     "Task:",
     "Generate search queries to find recent news relevant to the creator's topic.",
     "",
     "Inputs:",
-    `- Creator topic focus: ${mainArea}`,
+    `- Creator topic focus: ${mainSubject}`,
     "- Audience and region: general audience, global",
     "- Desired freshness window: 30 days",
     "- Platform and content goal: spoken content",
+    "",
+    "Examples:",
+    "- If the subject is Bitcoin, include correlated terms like Crypto, Crypto Market, Crypto Exchange, Fear & Greed Index, Bitcoin Dominance.",
     "",
     "Rules:",
     "- Prefer 5-10 short queries.",
@@ -91,7 +91,7 @@ async function generateTermsWithAi(mainArea: string): Promise<string[]> {
   const { data, error } = await supabase.functions.invoke("generate-news-search-terms", {
     body: {
       prompt,
-      mainArea,
+      mainSubject,
       count: 5,
     },
   });
@@ -118,17 +118,17 @@ function extractTermsFromAi(response: AiTermsResponse | null): string[] {
     .filter(Boolean);
 }
 
-function normalizeToFiveTerms(mainArea: string, terms: string[]): string[] {
+function normalizeToFiveTerms(mainSubject: string, terms: string[]): string[] {
   const sanitized = sanitizeTerms(terms);
   const unique = uniqueTerms(sanitized);
 
-  const fallback = FALLBACK_SUFFIXES.map((suffix) => `${mainArea} ${suffix}`);
+  const fallback = FALLBACK_SUFFIXES.map((suffix) => `${mainSubject} ${suffix}`);
   const combined = unique.concat(fallback);
   const finalTerms = uniqueTerms(combined).slice(0, 5);
 
   if (finalTerms.length < 5) {
     while (finalTerms.length < 5) {
-      finalTerms.push(`${mainArea} news ${finalTerms.length + 1}`);
+      finalTerms.push(`${mainSubject} news ${finalTerms.length + 1}`);
     }
   }
 

@@ -12,24 +12,13 @@ import type { FullArticle, NewsSearchTerm } from "@/news/types";
 type StepId = 1 | 2 | 3;
 
 type WritingProfile = {
-  mainAreaChips: string[];
+  mainSubject: string;
   tone: string;
   audience: string;
   duration: string;
   platform: string;
   goal: string;
 };
-
-const MAIN_AREA_OPTIONS = [
-  "Marketing",
-  "Fintech",
-  "Climate",
-  "AI",
-  "Healthcare",
-  "Education",
-  "Sports",
-  "Politics",
-];
 
 const SYSTEM_PROMPT_GUIDANCE = [
   "Optimize for speech, not reading.",
@@ -42,7 +31,7 @@ const SYSTEM_PROMPT_GUIDANCE = [
 export default function ContentCreator() {
   const [step, setStep] = useState<StepId>(1);
   const [profile, setProfile] = useState<WritingProfile>({
-    mainAreaChips: [MAIN_AREA_OPTIONS[0]],
+    mainSubject: "Bitcoin",
     tone: "Calm",
     audience: "Creators",
     duration: "60s",
@@ -74,7 +63,7 @@ export default function ContentCreator() {
   );
 
   const canContinueFromProfile =
-    profile.mainAreaChips.length > 0 &&
+    profile.mainSubject.trim() &&
     profile.tone.trim() &&
     profile.audience.trim() &&
     profile.duration.trim() &&
@@ -82,18 +71,6 @@ export default function ContentCreator() {
     profile.goal.trim();
 
   const canContinueFromNews = selectedNewsIds.length > 0;
-
-  const handleToggleChip = (chip: string) => {
-    setProfile((prev) => {
-      const exists = prev.mainAreaChips.includes(chip);
-      return {
-        ...prev,
-        mainAreaChips: exists
-          ? prev.mainAreaChips.filter((item) => item !== chip)
-          : [...prev.mainAreaChips, chip],
-      };
-    });
-  };
 
   const handleToggleNews = (id: string) => {
     setSelectedNewsIds((prev) =>
@@ -108,9 +85,9 @@ export default function ContentCreator() {
     setDailyTerms([]);
     setNewsItems([]);
     try {
-      const terms = await ensureDailySearchTerms(profile.mainAreaChips);
+      const terms = await ensureDailySearchTerms(profile.mainSubject);
       if (terms.length === 0) {
-        setNewsError("Add at least one main area to generate daily terms.");
+        setNewsError("Add a main subject to generate daily terms.");
         return;
       }
 
@@ -146,7 +123,7 @@ export default function ContentCreator() {
 
     return [
       "Writing profile:",
-      `Main areas: ${profile.mainAreaChips.join(", ")}`,
+      `Main subject: ${profile.mainSubject}`,
       `Tone: ${profile.tone}`,
       `Audience: ${profile.audience}`,
       `Duration: ${profile.duration}`,
@@ -172,7 +149,7 @@ export default function ContentCreator() {
 
     return [
       "Hook:",
-      `Today, here's what matters in ${profile.mainAreaChips.join(", ")}.`,
+      `Today, here's what matters in ${profile.mainSubject}.`,
       "",
       "Main points:",
       mainPoints.length > 0 ? mainPoints.join("\n") : "- No news selected.",
@@ -245,23 +222,12 @@ export default function ContentCreator() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <p className="text-sm font-medium">Main areas</p>
-              <div className="flex flex-wrap gap-2">
-                {MAIN_AREA_OPTIONS.map((chip) => {
-                  const selected = profile.mainAreaChips.includes(chip);
-                  return (
-                    <Button
-                      key={chip}
-                      type="button"
-                      variant={selected ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handleToggleChip(chip)}
-                    >
-                      {chip}
-                    </Button>
-                  );
-                })}
-              </div>
+              <p className="text-sm font-medium">Main Subject</p>
+              <Input
+                value={profile.mainSubject}
+                onChange={(event) => setProfile((prev) => ({ ...prev, mainSubject: event.target.value }))}
+                placeholder="Bitcoin, creator economy, climate policy"
+              />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -352,7 +318,7 @@ export default function ContentCreator() {
             <div className="grid gap-4 lg:grid-cols-2">
               {newsItems.length === 0 ? (
                 <div className="rounded-lg border p-6 text-sm text-muted-foreground">
-                  No news found yet. Try again or adjust the main area.
+                  No news found yet. Try again or adjust the main subject.
                 </div>
               ) : (
                 newsItems.map((item) => {
