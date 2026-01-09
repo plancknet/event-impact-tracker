@@ -80,6 +80,7 @@ export default function ContentCreator() {
   const [editedScript, setEditedScript] = useState("");
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSavingScript, setIsSavingScript] = useState(false);
   const [scriptHistory, setScriptHistory] = useState<
     { id: string; created_at: string; script_text: string; news_ids_json: unknown }[]
   >([]);
@@ -239,6 +240,7 @@ export default function ContentCreator() {
 
   const canContinueFromNews = selectedNewsIds.length > 0;
   const canGenerateFromNews = canContinueFromNews && profile.scriptLanguage.trim();
+  const canSaveScript = editedScript.trim().length > 0;
 
   const handleToggleNews = (id: string) => {
     setSelectedNewsIds((prev) =>
@@ -312,6 +314,34 @@ export default function ContentCreator() {
   const handleGenerate = () => {
     // NOTE: This restores the teleprompter Edge Function behavior from the old branch.
     void generateScriptFromSelection();
+  };
+
+  const handleSaveScript = async () => {
+    const scriptText = editedScript.trim();
+    if (!scriptText) {
+      setGenerationError("Edite o roteiro antes de salvar.");
+      return;
+    }
+
+    setIsSavingScript(true);
+    try {
+      const parameters = buildTeleprompterParameters(profile, complementaryPrompt);
+      const { error } = await supabase
+        .from("teleprompter_scripts")
+        .insert({
+          news_ids_json: selectedNewsIds as unknown as import("@/integrations/supabase/types").Json,
+          parameters_json: parameters as unknown as import("@/integrations/supabase/types").Json,
+          script_text: scriptText,
+        });
+
+      if (error) throw error;
+      await loadScriptHistory();
+    } catch (error) {
+      console.error("Failed to save teleprompter script:", error);
+      setGenerationError("Nao foi possivel salvar o roteiro.");
+    } finally {
+      setIsSavingScript(false);
+    }
   };
 
   const generateScriptFromSelection = async () => {
@@ -817,7 +847,7 @@ export default function ContentCreator() {
                 }}
                 disabled={!canGenerateFromNews || isGenerating}
               >
-                Continue to generate
+                Generate script
               </Button>
             </div>
           </CardContent>
@@ -832,10 +862,6 @@ export default function ContentCreator() {
               <CardDescription>Compose inputs and generate the script.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button onClick={handleGenerate} disabled={!canGenerateFromNews || isGenerating}>
-                <Wand2 className="mr-2 h-4 w-4" />
-                {isGenerating ? "Generating..." : "Generate script"}
-              </Button>
               {generationError && (
                 <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm">
                   {generationError}
@@ -856,6 +882,9 @@ export default function ContentCreator() {
                 rows={10}
                 placeholder="Generated script appears here..."
               />
+              <Button onClick={handleSaveScript} disabled={!canSaveScript || isSavingScript}>
+                {isSavingScript ? "Saving..." : "Save changes"}
+              </Button>
             </CardContent>
           </Card>
 
