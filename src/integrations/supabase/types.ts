@@ -25,7 +25,6 @@ export type Database = {
           snippet: string | null
           source_raw: string | null
           title: string | null
-          title_norm: string | null
         }
         Insert: {
           created_at?: string
@@ -37,7 +36,6 @@ export type Database = {
           snippet?: string | null
           source_raw?: string | null
           title?: string | null
-          title_norm?: string | null
         }
         Update: {
           created_at?: string
@@ -49,7 +47,6 @@ export type Database = {
           snippet?: string | null
           source_raw?: string | null
           title?: string | null
-          title_norm?: string | null
         }
         Relationships: [
           {
@@ -66,9 +63,7 @@ export type Database = {
           content_language: string
           id: string
           queried_at: string
-          query_type: string | null
           raw_html: string | null
-          rss_url: string | null
           status: string
           term_id: string
         }
@@ -76,9 +71,7 @@ export type Database = {
           content_language?: string
           id?: string
           queried_at?: string
-          query_type?: string | null
           raw_html?: string | null
-          rss_url?: string | null
           status?: string
           term_id: string
         }
@@ -86,9 +79,7 @@ export type Database = {
           content_language?: string
           id?: string
           queried_at?: string
-          query_type?: string | null
           raw_html?: string | null
-          rss_url?: string | null
           status?: string
           term_id?: string
         }
@@ -214,24 +205,18 @@ export type Database = {
       }
       search_terms: {
         Row: {
-          collection_date: string | null
           created_at: string
           id: string
-          main_area: string | null
           term: string
         }
         Insert: {
-          collection_date?: string | null
           created_at?: string
           id?: string
-          main_area?: string | null
           term: string
         }
         Update: {
-          collection_date?: string | null
           created_at?: string
           id?: string
-          main_area?: string | null
           term?: string
         }
         Relationships: []
