@@ -37,12 +37,14 @@ serve(async (req) => {
       refinementPrompt,
       baseScript,
       feedback,
+      complementaryPrompt,
     }: {
       newsItems: NewsItem[];
       parameters: EditorialParameters;
       refinementPrompt?: string;
       baseScript?: string;
       feedback?: { question: string; answer: string }[];
+      complementaryPrompt?: string;
     } = await req.json();
 
     if (!newsItems || newsItems.length === 0) {
@@ -187,6 +189,14 @@ Escreva um roteiro contínuo, coeso e envolvente baseado nas notícias abaixo. C
 ${newsContext}
 
 Lembre-se: retorne APENAS o JSON solicitado.`;
+
+      // Added for ThinkAndTalk: include user complementary prompt in generation.
+      const extraPrompt =
+        complementaryPrompt ||
+        (parameters as unknown as { complementaryPrompt?: string })?.complementaryPrompt;
+      if (extraPrompt && typeof extraPrompt === "string" && extraPrompt.trim()) {
+        userPrompt += `\n\nObservações adicionais do usuário:\n${extraPrompt.trim()}\n`;
+      }
     }
 
     if (feedback && feedback.length > 0) {

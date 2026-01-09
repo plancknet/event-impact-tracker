@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,12 @@ import { FileText, Loader2, Monitor, Wand2 } from "lucide-react";
 import { TeleprompterDisplay } from "@/components/teleprompter/TeleprompterDisplay";
 import { runNewsPipelineWithTerms } from "@/news/pipeline";
 import type { FullArticle, NewsSearchTerm } from "@/news/types";
+import {
+  fetchLatestTeleprompterScript,
+  generateTeleprompterScript,
+  type TeleprompterNewsItem,
+  type TeleprompterParameters,
+} from "@/services/teleprompter/generateTeleprompterScript";
 
 type StepId = 1 | 2 | 3;
 
@@ -46,6 +52,8 @@ export default function ContentCreator() {
   const [generationPayload, setGenerationPayload] = useState("");
   const [generatedScript, setGeneratedScript] = useState("");
   const [editedScript, setEditedScript] = useState("");
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const selectedNews = useMemo(
     () => newsItems.filter((item) => selectedNewsIds.includes(item.id)),
@@ -137,42 +145,58 @@ export default function ContentCreator() {
     ].join("\n");
   };
 
-  const buildScript = () => {
-    const mainPoints = selectedNews.map((item) => {
-      const baseText = item.fullText || item.summary || "";
-      const firstSentence = baseText.split(".")[0]?.trim();
-      const source = item.link ? ` [Source: ${item.link}]` : "";
-      const sentence = firstSentence ? `${firstSentence}.` : "No summary available.";
-      return `- ${sentence}${source}`;
-    });
-
-    return [
-      "Hook:",
-      `Today, here's what matters in ${profile.mainSubject}.`,
-      "",
-      "Main points:",
-      mainPoints.length > 0 ? mainPoints.join("\n") : "- No news selected.",
-      "",
-      "Transitions:",
-      "Now let's connect this to what it means for you.",
-      "",
-      "CTA:",
-      `If you want more ${profile.goal.toLowerCase()} content like this, follow for the next update.`,
-      "",
-      "Optional alt hook:",
-      `Quick update for ${profile.audience}: here's what's changing.`,
-    ].join("\n");
-  };
-
   const handleGenerate = () => {
     const payload = buildGenerationPayload();
     setGenerationPayload(payload);
 
-    // TODO: Replace with Lovable function call using prompts/system.md guidance.
-    const script = buildScript();
-    setGeneratedScript(script);
-    setEditedScript(script);
+    // NOTE: This restores the teleprompter Edge Function behavior from the old branch.
+    void generateScriptFromSelection();
   };
+
+  const generateScriptFromSelection = async () => {
+    setGenerationError(null);
+    setIsGenerating(true);
+    try {
+      const newsItems = selectedNews.map((item) => ({
+        id: item.id,
+        title: item.title,
+        summary: item.summary,
+        content: item.fullText || item.summary || null,
+      })) satisfies TeleprompterNewsItem[];
+
+      const parameters = buildTeleprompterParameters(profile, complementaryPrompt);
+      const result = await generateTeleprompterScript(newsItems, parameters);
+      if (!result.script) {
+        throw new Error("No script returned.");
+      }
+      setGeneratedScript(result.script);
+      setEditedScript(result.script);
+    } catch (error) {
+      console.error("Failed to generate teleprompter script:", error);
+      setGenerationError("Unable to generate script. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  useEffect(() => {
+    let isActive = true;
+    const loadLatest = async () => {
+      try {
+        const script = await fetchLatestTeleprompterScript();
+        if (isActive && script && !generatedScript) {
+          setGeneratedScript(script);
+          setEditedScript(script);
+        }
+      } catch (error) {
+        console.error("Failed to load last teleprompter script:", error);
+      }
+    };
+    void loadLatest();
+    return () => {
+      isActive = false;
+    };
+  }, [generatedScript]);
 
   return (
     <div className="space-y-6">
@@ -388,10 +412,15 @@ export default function ContentCreator() {
                 </ul>
               </div>
 
-              <Button onClick={handleGenerate} disabled={!canContinueFromNews}>
+              <Button onClick={handleGenerate} disabled={!canContinueFromNews || isGenerating}>
                 <Wand2 className="mr-2 h-4 w-4" />
-                Generate script
+                {isGenerating ? "Generating..." : "Generate script"}
               </Button>
+              {generationError && (
+                <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm">
+                  {generationError}
+                </div>
+              )}
 
               {generationPayload && (
                 <div className="space-y-2">
@@ -452,4 +481,35 @@ function buildTermsFromSubject(subject: string): NewsSearchTerm[] {
     uniqueTerms.push(term);
   });
   return uniqueTerms.map((term) => ({ term }));
+}
+
+function buildTeleprompterParameters(
+  profile: WritingProfile,
+  complementaryPrompt: string,
+): TeleprompterParameters {
+  const durationUnit = profile.duration.toLowerCase().includes("word") ? "words" : "minutes";
+  const platform = profile.platform.toLowerCase();
+  const scriptType = platform.includes("podcast")
+    ? "podcast"
+    : platform.includes("tiktok") || platform.includes("reel") || platform.includes("short")
+      ? "video_curto"
+      : "video_longo";
+
+  return {
+    tone: profile.tone,
+    audience: profile.audience,
+    language: "English",
+    duration: profile.duration,
+    durationUnit,
+    scriptType,
+    includeCta: false,
+    ctaText: "",
+    // Extra metadata persisted in parameters_json for this flow.
+    profile: {
+      mainSubject: profile.mainSubject,
+      goal: profile.goal,
+      platform: profile.platform,
+    },
+    complementaryPrompt,
+  };
 }
