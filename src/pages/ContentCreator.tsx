@@ -3,8 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, Monitor, Wand2 } from "lucide-react";
+import { FileText, Loader2, Monitor, Wand2 } from "lucide-react";
 import { TeleprompterDisplay } from "@/components/teleprompter/TeleprompterDisplay";
+import { ensureDailySearchTerms } from "@/news/dailyTerms";
+import { runNewsPipelineWithTerms } from "@/news/pipeline";
+import type { FullArticle, NewsSearchTerm } from "@/news/types";
 
 type StepId = 1 | 2 | 3;
 
@@ -17,15 +20,6 @@ type WritingProfile = {
   goal: string;
 };
 
-type NewsItem = {
-  id: string;
-  title: string;
-  summary: string;
-  url: string;
-  fullText: string;
-  publishedAt: string;
-};
-
 const MAIN_AREA_OPTIONS = [
   "Marketing",
   "Fintech",
@@ -35,42 +29,6 @@ const MAIN_AREA_OPTIONS = [
   "Education",
   "Sports",
   "Politics",
-];
-
-// TODO: Replace mock news with RSS ingestion aligned with docs/news-pipeline.md.
-// TODO: Add Firecrawl full-text extraction once RSS items are fetched.
-// TODO: Persist news with dedupe rules (URL + canonical title) in Lovable DB.
-const MOCK_NEWS: NewsItem[] = [
-  {
-    id: "news-1",
-    title: "Local startups use AI to speed up medical imaging reviews",
-    summary: "Hospitals report shorter wait times as AI tools assist radiologists.",
-    url: "https://example.com/ai-imaging",
-    fullText:
-      "Hospitals across the region are deploying AI-assisted imaging review tools. " +
-      "Early pilots show reductions in turnaround time for routine scans while keeping doctors in the loop.",
-    publishedAt: "2026-01-06",
-  },
-  {
-    id: "news-2",
-    title: "New education policy expands access to online certifications",
-    summary: "A new framework funds short-form credentials for working adults.",
-    url: "https://example.com/education-policy",
-    fullText:
-      "The education ministry announced expanded funding for micro-credentials. " +
-      "The policy emphasizes skills-based learning and partnerships with employers.",
-    publishedAt: "2026-01-05",
-  },
-  {
-    id: "news-3",
-    title: "Fintech regulators propose faster approval for digital wallets",
-    summary: "A draft proposal outlines a streamlined compliance checklist.",
-    url: "https://example.com/fintech-wallets",
-    fullText:
-      "Regulators released a draft proposal to simplify the approval process for digital wallets. " +
-      "The checklist focuses on consumer protections and data security.",
-    publishedAt: "2026-01-03",
-  },
 ];
 
 const SYSTEM_PROMPT_GUIDANCE = [
@@ -91,22 +49,26 @@ export default function ContentCreator() {
     platform: "",
     goal: "",
   });
+  const [dailyTerms, setDailyTerms] = useState<NewsSearchTerm[]>([]);
+  const [newsItems, setNewsItems] = useState<FullArticle[]>([]);
   const [selectedNewsIds, setSelectedNewsIds] = useState<string[]>([]);
   const [complementaryPrompt, setComplementaryPrompt] = useState("");
+  const [newsLoading, setNewsLoading] = useState(false);
+  const [newsError, setNewsError] = useState<string | null>(null);
   const [generationPayload, setGenerationPayload] = useState("");
   const [generatedScript, setGeneratedScript] = useState("");
   const [editedScript, setEditedScript] = useState("");
 
   const selectedNews = useMemo(
-    () => MOCK_NEWS.filter((item) => selectedNewsIds.includes(item.id)),
-    [selectedNewsIds],
+    () => newsItems.filter((item) => selectedNewsIds.includes(item.id)),
+    [newsItems, selectedNewsIds],
   );
 
   const references = useMemo(
     () =>
       selectedNews.map((item) => ({
         title: item.title,
-        url: item.url,
+        url: item.link,
       })),
     [selectedNews],
   );
@@ -139,14 +101,45 @@ export default function ContentCreator() {
     );
   };
 
+  const handleContinueToNews = async () => {
+    setNewsError(null);
+    setNewsLoading(true);
+    setSelectedNewsIds([]);
+    setDailyTerms([]);
+    setNewsItems([]);
+    try {
+      const terms = await ensureDailySearchTerms(profile.mainAreaChips);
+      if (terms.length === 0) {
+        setNewsError("Add at least one main area to generate daily terms.");
+        return;
+      }
+
+      setDailyTerms(terms);
+
+      const { items } = await runNewsPipelineWithTerms(terms, {
+        maxItemsPerTerm: 6,
+      });
+
+      // TODO: Enrich selected items with Firecrawl full text when available.
+      setNewsItems(items);
+      setStep(2);
+    } catch (error) {
+      console.error("Failed to load news context:", error);
+      setNewsError("Unable to load news context. Please try again.");
+    } finally {
+      setNewsLoading(false);
+    }
+  };
+
   const buildGenerationPayload = () => {
     const newsBlocks = selectedNews
       .map((item) => {
+        const fullText = item.fullText || item.summary || "";
         return [
           `Title: ${item.title}`,
-          `Published: ${item.publishedAt}`,
-          `URL: ${item.url}`,
-          `Full text: ${item.fullText}`,
+          `Published: ${item.publishedAt ?? "Unknown"}`,
+          `URL: ${item.link}`,
+          `Full text: ${fullText || "Not available."}`,
         ].join("\n");
       })
       .join("\n\n");
@@ -170,9 +163,11 @@ export default function ContentCreator() {
 
   const buildScript = () => {
     const mainPoints = selectedNews.map((item) => {
-      const firstSentence = item.fullText.split(".")[0]?.trim() || item.summary;
-      const source = item.url ? ` [Source: ${item.url}]` : "";
-      return `- ${firstSentence}.${source}`;
+      const baseText = item.fullText || item.summary || "";
+      const firstSentence = baseText.split(".")[0]?.trim();
+      const source = item.link ? ` [Source: ${item.link}]` : "";
+      const sentence = firstSentence ? `${firstSentence}.` : "No summary available.";
+      return `- ${sentence}${source}`;
     });
 
     return [
@@ -313,8 +308,15 @@ export default function ContentCreator() {
             </div>
 
             <div className="flex justify-end">
-              <Button onClick={() => setStep(2)} disabled={!canContinueFromProfile}>
-                Continue to news
+              <Button onClick={handleContinueToNews} disabled={!canContinueFromProfile || newsLoading}>
+                {newsLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading news...
+                  </>
+                ) : (
+                  "Continue to news"
+                )}
               </Button>
             </div>
           </CardContent>
@@ -328,33 +330,58 @@ export default function ContentCreator() {
             <CardDescription>Select news and add a complementary prompt.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {newsError && (
+              <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-sm">
+                {newsError}
+              </div>
+            )}
+
+            {dailyTerms.length > 0 && (
+              <div className="rounded-lg border p-4">
+                <p className="text-sm font-medium">Daily terms used</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {dailyTerms.map((term) => (
+                    <span key={term.term} className="rounded-full bg-muted px-3 py-1 text-xs">
+                      {term.term}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid gap-4 lg:grid-cols-2">
-              {MOCK_NEWS.map((item) => {
-                const selected = selectedNewsIds.includes(item.id);
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleToggleNews(item.id)}
-                    className={`rounded-lg border p-4 text-left transition ${
-                      selected ? "border-primary bg-muted" : "border-border"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="space-y-1">
-                        <p className="font-medium">{item.title}</p>
-                        <p className="text-sm text-muted-foreground">{item.summary}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.publishedAt} • {item.url}
-                        </p>
+              {newsItems.length === 0 ? (
+                <div className="rounded-lg border p-6 text-sm text-muted-foreground">
+                  No news found yet. Try again or adjust the main area.
+                </div>
+              ) : (
+                newsItems.map((item) => {
+                  const selected = selectedNewsIds.includes(item.id);
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => handleToggleNews(item.id)}
+                      className={`rounded-lg border p-4 text-left transition ${
+                        selected ? "border-primary bg-muted" : "border-border"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <p className="font-medium">{item.title}</p>
+                          <p className="text-sm text-muted-foreground">{item.summary}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {item.publishedAt ?? "Unknown date"} • {item.link}
+                          </p>
+                        </div>
+                        <span className="text-xs font-medium">
+                          {selected ? "Selected" : "Select"}
+                        </span>
                       </div>
-                      <span className="text-xs font-medium">
-                        {selected ? "Selected" : "Select"}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })
+              )}
             </div>
 
             <div className="space-y-2">

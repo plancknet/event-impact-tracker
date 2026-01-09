@@ -1,5 +1,7 @@
 export type NewsSearchTerm = {
   term: string;
+  mainArea?: string;
+  collectionDate?: string;
   region?: string;
   language?: string;
 };

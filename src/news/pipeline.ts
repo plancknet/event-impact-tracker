@@ -28,21 +28,46 @@ export function buildSearchTerms(topic: string, region?: string): NewsSearchTerm
 export async function runNewsPipeline(input: PipelineInput): Promise<Selection> {
   const terms = buildSearchTerms(input.topic, input.region);
 
+  const items = await fetchRssForTerms(terms, {
+    language: input.language,
+    region: input.region,
+    maxItemsPerTerm: input.maxItemsPerTerm,
+  });
+
+  return { items, terms };
+}
+
+export async function runNewsPipelineWithTerms(
+  terms: NewsSearchTerm[],
+  options?: { language?: string; region?: string; maxItemsPerTerm?: number },
+): Promise<Selection> {
+  const sanitizedTerms = terms.filter((term) => term.term.trim().length > 0);
+  const items = await fetchRssForTerms(sanitizedTerms, {
+    language: options?.language,
+    region: options?.region,
+    maxItemsPerTerm: options?.maxItemsPerTerm,
+  });
+
+  return { items, terms: sanitizedTerms };
+}
+
+async function fetchRssForTerms(
+  terms: NewsSearchTerm[],
+  options: { language?: string; region?: string; maxItemsPerTerm?: number },
+): Promise<FullArticle[]> {
   const results = await Promise.all(
     terms.map((term) =>
       fetchGoogleNewsRss(term.term, {
-        language: input.language,
-        region: input.region,
-        maxItems: input.maxItemsPerTerm,
+        language: options.language,
+        region: options.region,
+        maxItems: options.maxItemsPerTerm,
       }),
     ),
   );
 
   const allItems = results.flat();
   const deduped = dedupeRssItems(allItems);
-  const items = deduped.map(toFullArticle);
-
-  return { items, terms };
+  return deduped.map(toFullArticle);
 }
 
 function dedupeRssItems(items: RssItem[]): RssItem[] {
