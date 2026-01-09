@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.generate-news-search-terms]
 verify_jwt = false
+
+[functions.google-news-rss]
+verify_jwt = false

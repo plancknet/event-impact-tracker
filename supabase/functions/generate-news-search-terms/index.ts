@@ -56,20 +56,55 @@ serve(async (req) => {
 
     // Parse the AI response - expect JSON array
     let terms: string[] = [];
-    try {
-      // Try to parse as JSON array
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed)) {
-        terms = parsed.slice(0, count);
+
+    const tryParseJsonArray = (raw: string): string[] | null => {
+      const cleaned = raw
+        .replace(/```json\s*/gi, "")
+        .replace(/```/g, "")
+        .trim();
+
+      // 1) Direct parse
+      try {
+        const parsed = JSON.parse(cleaned);
+        if (Array.isArray(parsed)) return parsed.map(String);
+      } catch {
+        // ignore
       }
-    } catch {
-      // If not valid JSON, extract terms from text
+
+      // 2) Extract first [...] block
+      const start = cleaned.indexOf("[");
+      const end = cleaned.lastIndexOf("]");
+      if (start >= 0 && end > start) {
+        const slice = cleaned.slice(start, end + 1).replace(/,\s*]/g, "]");
+        try {
+          const parsed = JSON.parse(slice);
+          if (Array.isArray(parsed)) return parsed.map(String);
+        } catch {
+          // ignore
+        }
+      }
+
+      return null;
+    };
+
+    const parsedTerms = tryParseJsonArray(content);
+    if (parsedTerms) {
+      terms = parsedTerms;
+    } else {
+      // Fallback: extract terms from bullet/text output
       terms = content
         .split(/\r?\n/)
         .map((line: string) => line.replace(/^[-*\d.)\]]+\s*/, "").trim())
-        .filter(Boolean)
-        .slice(0, count);
+        .filter((line: string) => {
+          const lower = line.toLowerCase();
+          return Boolean(line) && lower !== "[" && lower !== "]" && lower !== "```" && lower !== "```json" && !lower.startsWith("```");
+        });
     }
+
+    terms = terms
+      .map((t) => t.replace(/^"|"$/g, "").replace(/,$/g, "").trim())
+      .filter(Boolean)
+      .slice(0, count);
 
     console.log("Generated terms:", terms);
 
