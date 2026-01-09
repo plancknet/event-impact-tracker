@@ -538,7 +538,15 @@ export default function ContentCreator() {
       </Card>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Card className={step === 1 ? "border-primary" : ""}>
+        <Card
+          className={`cursor-pointer ${step === 1 ? "border-primary" : ""}`}
+          onClick={() => setStep(1)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") setStep(1);
+          }}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <FileText className="h-4 w-4" />
@@ -547,7 +555,15 @@ export default function ContentCreator() {
             <CardDescription>Writing profile</CardDescription>
           </CardHeader>
         </Card>
-        <Card className={step === 2 ? "border-primary" : ""}>
+        <Card
+          className={`cursor-pointer ${step === 2 ? "border-primary" : ""}`}
+          onClick={() => setStep(2)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") setStep(2);
+          }}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Wand2 className="h-4 w-4" />
@@ -556,7 +572,15 @@ export default function ContentCreator() {
             <CardDescription>News context</CardDescription>
           </CardHeader>
         </Card>
-        <Card className={step === 3 ? "border-primary" : ""}>
+        <Card
+          className={`cursor-pointer ${step === 3 ? "border-primary" : ""}`}
+          onClick={() => setStep(3)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") setStep(3);
+          }}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Monitor className="h-4 w-4" />
