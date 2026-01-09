@@ -191,13 +191,14 @@ ${newsContext}
 
 Lembre-se: retorne APENAS o JSON solicitado.`;
 
-      // Added for ThinkAndTalk: include user complementary prompt in generation.
-      const extraPrompt =
-        complementaryPrompt ||
-        (parameters as unknown as { complementaryPrompt?: string })?.complementaryPrompt;
-      if (extraPrompt && typeof extraPrompt === "string" && extraPrompt.trim()) {
-        userPrompt += `\n\nObservações adicionais do usuário (aplicar obrigatoriamente):\n${extraPrompt.trim()}\n`;
       }
+    }
+
+    const extraPrompt =
+      complementaryPrompt ||
+      (parameters as unknown as { complementaryPrompt?: string })?.complementaryPrompt;
+    if (extraPrompt && typeof extraPrompt === "string" && extraPrompt.trim()) {
+      userPrompt += `\n\nPrompt complementar do usuario (aplicar obrigatoriamente):\n${extraPrompt.trim()}\n`;
     }
 
     if (feedback && feedback.length > 0) {

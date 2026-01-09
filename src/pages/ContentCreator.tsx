@@ -46,13 +46,13 @@ export default function ContentCreator() {
   const [step, setStep] = useState<StepId>(1);
   const [profile, setProfile] = useState<WritingProfile>({
     mainSubject: "Bitcoin",
-    tone: "Calm",
-    audience: "Creators",
+    tone: "Calmo",
+    audience: "Criadores",
     duration: "60s",
     platform: "YouTube",
-    goal: "Entertain",
-    newsLanguage: "en",
-    scriptLanguage: "English",
+    goal: "Entreter",
+    newsLanguage: "pt-BR",
+    scriptLanguage: "Portuguese",
   });
   const [searchTerms, setSearchTerms] = useState<NewsSearchTerm[]>([]);
   const [newsItems, setNewsItems] = useState<FullArticle[]>([]);
@@ -88,9 +88,9 @@ export default function ContentCreator() {
   const [isScriptsCollapsed, setIsScriptsCollapsed] = useState(true);
 
   const scriptLanguageOptions = [
-    { label: "English", value: "English" },
-    { label: "Portuguese", value: "Portuguese" },
-    { label: "Spanish", value: "Spanish" },
+    { label: "Inglês", value: "English" },
+    { label: "Português", value: "Portuguese" },
+    { label: "Espanhol", value: "Spanish" },
   ];
 
   const selectedNews = useMemo(
@@ -287,7 +287,7 @@ export default function ContentCreator() {
     try {
       const terms = buildTermsFromSubject(profile.mainSubject);
       if (terms.length === 0) {
-        setNewsError("Add a main subject to generate search terms.");
+        setNewsError("Adicione um assunto principal para gerar os termos de busca.");
         return;
       }
 
@@ -307,7 +307,7 @@ export default function ContentCreator() {
       setStep(2);
     } catch (error) {
       console.error("Failed to load news context:", error);
-      setNewsError("Unable to load news context. Please try again.");
+      setNewsError("Nao foi possivel carregar o contexto de noticias. Tente novamente.");
     } finally {
       setNewsLoading(false);
     }
@@ -395,7 +395,7 @@ export default function ContentCreator() {
       return true;
     } catch (error) {
       console.error("Failed to generate teleprompter script:", error);
-      setGenerationError("Unable to generate script. Please try again.");
+      setGenerationError("Nao foi possivel gerar o roteiro. Tente novamente.");
       return false;
     } finally {
       setIsGenerating(false);
@@ -445,9 +445,9 @@ export default function ContentCreator() {
       <Card className="border bg-gradient-to-br from-card via-background to-muted/60">
         <CardContent className="py-6">
           <div>
-            <h1 className="text-2xl font-bold">Content Creator Workflow</h1>
+            <h1 className="text-2xl font-bold">Fluxo do Criador de Conteudo</h1>
             <p className="text-muted-foreground">
-              Build a writing profile, add news context, and generate a spoken-first script.
+              Monte o perfil, adicione o contexto de noticias e gere um roteiro para fala.
             </p>
           </div>
         </CardContent>
@@ -461,7 +461,7 @@ export default function ContentCreator() {
             onClick={() => setIsScriptsCollapsed((prev) => !prev)}
           >
             <div>
-              <CardTitle>Recent scripts</CardTitle>
+              <CardTitle>Roteiros recentes</CardTitle>
               <CardDescription>Textos gerados em execucoes anteriores.</CardDescription>
             </div>
             {isScriptsCollapsed ? (
@@ -519,7 +519,7 @@ export default function ContentCreator() {
                         currentSort={scriptSort}
                         onSort={handleScriptSort}
                       >
-                        Preview
+                        Previa
                       </SortableTableHead>
                       <TableHead className="w-[120px]">Acoes</TableHead>
                     </TableRow>
@@ -581,7 +581,7 @@ export default function ContentCreator() {
               <FileText className="h-4 w-4" />
               Step 1
             </CardTitle>
-            <CardDescription>Writing profile</CardDescription>
+            <CardDescription>Perfil de escrita</CardDescription>
           </CardHeader>
         </Card>
         <Card
@@ -598,7 +598,7 @@ export default function ContentCreator() {
               <Wand2 className="h-4 w-4" />
               Step 2
             </CardTitle>
-            <CardDescription>News context</CardDescription>
+            <CardDescription>Contexto de noticias</CardDescription>
           </CardHeader>
         </Card>
         <Card
@@ -615,7 +615,7 @@ export default function ContentCreator() {
               <Monitor className="h-4 w-4" />
               Step 3
             </CardTitle>
-            <CardDescription>Generate script</CardDescription>
+            <CardDescription>Gerar roteiro</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -623,46 +623,46 @@ export default function ContentCreator() {
       {step === 1 && (
         <Card>
           <CardHeader>
-            <CardTitle>Writing Profile</CardTitle>
-            <CardDescription>Minimal fields to set the voice and format.</CardDescription>
+            <CardTitle>Perfil de escrita</CardTitle>
+            <CardDescription>Campos basicos para definir a voz e o formato.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <p className="text-sm font-medium">Main Subject (comma-separated)</p>
+              <p className="text-sm font-medium">Assunto principal (separado por virgulas)</p>
               <Input
                 value={profile.mainSubject}
                 onChange={(event) => setProfile((prev) => ({ ...prev, mainSubject: event.target.value }))}
-                placeholder="Bitcoin, crypto market, fear & greed index"
+                placeholder="Bitcoin, mercado cripto, indice de medo e ganancia"
               />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <p className="text-sm font-medium">Tone</p>
+                <p className="text-sm font-medium">Tom</p>
                 <Input
                   value={profile.tone}
                   onChange={(event) => setProfile((prev) => ({ ...prev, tone: event.target.value }))}
-                  placeholder="Conversational, bold, calm"
+                  placeholder="Conversacional, direto, calmo"
                 />
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-medium">Audience</p>
+                <p className="text-sm font-medium">Publico</p>
                 <Input
                   value={profile.audience}
                   onChange={(event) => setProfile((prev) => ({ ...prev, audience: event.target.value }))}
-                  placeholder="Creators, founders, students"
+                  placeholder="Criadores, fundadores, estudantes"
                 />
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-medium">Duration</p>
+                <p className="text-sm font-medium">Duracao</p>
                 <Input
                   value={profile.duration}
                   onChange={(event) => setProfile((prev) => ({ ...prev, duration: event.target.value }))}
-                  placeholder="60s, 2 minutes, 800 words"
+                  placeholder="60s, 2 minutos, 800 palavras"
                 />
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-medium">Platform</p>
+                <p className="text-sm font-medium">Plataforma</p>
                 <Input
                   value={profile.platform}
                   onChange={(event) => setProfile((prev) => ({ ...prev, platform: event.target.value }))}
@@ -670,19 +670,19 @@ export default function ContentCreator() {
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <p className="text-sm font-medium">Goal</p>
+                <p className="text-sm font-medium">Objetivo</p>
                 <Input
                   value={profile.goal}
                   onChange={(event) => setProfile((prev) => ({ ...prev, goal: event.target.value }))}
-                  placeholder="Teach, persuade, entertain, sell"
+                  placeholder="Ensinar, persuadir, entreter, vender"
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <p className="text-sm font-medium">News language</p>
+                <p className="text-sm font-medium">Idioma das noticias</p>
                 <Input
                   value={profile.newsLanguage}
                   onChange={(event) => setProfile((prev) => ({ ...prev, newsLanguage: event.target.value }))}
-                  placeholder="en, pt-BR, es"
+                  placeholder="pt-BR, en, es"
                 />
               </div>
             </div>
@@ -692,10 +692,10 @@ export default function ContentCreator() {
                 {newsLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Loading news...
+                    Carregando noticias...
                   </>
                 ) : (
-                  "Continue to news"
+                  "Continuar para noticias"
                 )}
               </Button>
             </div>
@@ -706,8 +706,8 @@ export default function ContentCreator() {
       {step === 2 && (
         <Card>
           <CardHeader>
-            <CardTitle>News Context</CardTitle>
-            <CardDescription>Select news and add a complementary prompt.</CardDescription>
+            <CardTitle>Contexto de noticias</CardTitle>
+            <CardDescription>Selecione noticias e adicione um prompt complementar.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {newsError && (
@@ -718,7 +718,7 @@ export default function ContentCreator() {
 
             {searchTerms.length > 0 && (
               <div className="rounded-lg border p-4">
-                <p className="text-sm font-medium">Search terms used</p>
+                <p className="text-sm font-medium">Termos de busca usados</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {searchTerms.map((term) => (
                     <span key={term.term} className="rounded-full bg-muted px-3 py-1 text-xs">
@@ -737,7 +737,7 @@ export default function ContentCreator() {
 
             {newsItems.length === 0 ? (
               <div className="rounded-lg border p-6 text-sm text-muted-foreground">
-                No news found yet. Try again or adjust the main subject terms.
+                Nenhuma noticia encontrada ainda. Tente novamente ou ajuste o assunto principal.
               </div>
             ) : (
               <>
@@ -778,6 +778,16 @@ export default function ContentCreator() {
                       onClear={() => setWordCloudFilter([])}
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Prompt complementar</p>
+                  <Textarea
+                    value={complementaryPrompt}
+                    onChange={(event) => setComplementaryPrompt(event.target.value)}
+                    rows={3}
+                    placeholder="Ex.: foque nos aprendizados para criadores, seja direto e inclua CTA."
+                  />
                 </div>
 
                 <div className="border rounded-lg">
@@ -863,23 +873,13 @@ export default function ContentCreator() {
             )}
 
             <div className="space-y-2">
-              <p className="text-sm font-medium">Complementary prompt</p>
-              <Textarea
-                value={complementaryPrompt}
-                onChange={(event) => setComplementaryPrompt(event.target.value)}
-                rows={3}
-                placeholder="Ex: focus on creator takeaways, keep it punchy, add a CTA."
-              />
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Script language</p>
+              <p className="text-sm font-medium">Idioma do roteiro</p>
               <Select
                 value={profile.scriptLanguage}
                 onValueChange={(value) => setProfile((prev) => ({ ...prev, scriptLanguage: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a language" />
+                  <SelectValue placeholder="Selecione um idioma" />
                 </SelectTrigger>
                 <SelectContent>
                   {scriptLanguageOptions.map((option) => (
@@ -893,7 +893,7 @@ export default function ContentCreator() {
 
             <div className="flex flex-wrap justify-between gap-2">
               <Button variant="outline" onClick={() => setStep(1)}>
-                Back to profile
+                Voltar ao perfil
               </Button>
               <Button
                 onClick={async () => {
@@ -904,7 +904,14 @@ export default function ContentCreator() {
                 }}
                 disabled={!canGenerateFromNews || isGenerating}
               >
-                Generate script
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Gerando roteiro...
+                  </>
+                ) : (
+                  "Gerar roteiro"
+                )}
               </Button>
             </div>
           </CardContent>
@@ -915,8 +922,8 @@ export default function ContentCreator() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Generate</CardTitle>
-              <CardDescription>Compose inputs and generate the script.</CardDescription>
+              <CardTitle>Geracao</CardTitle>
+              <CardDescription>Revise os dados e gere o roteiro.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {generationError && (
@@ -929,18 +936,45 @@ export default function ContentCreator() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Script editor</CardTitle>
-              <CardDescription>Edit before displaying in teleprompter.</CardDescription>
+              <CardTitle>Prompt complementar</CardTitle>
+              <CardDescription>Ajuste o prompt e gere novamente se necessario.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                value={complementaryPrompt}
+                onChange={(event) => setComplementaryPrompt(event.target.value)}
+                rows={3}
+                placeholder="Ex.: foque nos aprendizados para criadores, seja direto e inclua CTA."
+              />
+              <div className="flex justify-end">
+                <Button onClick={handleGenerate} disabled={!canGenerateFromNews || isGenerating}>
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Gerando roteiro...
+                    </>
+                  ) : (
+                    "Gerar novamente"
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Editor do roteiro</CardTitle>
+              <CardDescription>Edite antes de exibir no teleprompter.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea
                 value={editedScript}
                 onChange={(event) => setEditedScript(event.target.value)}
                 rows={10}
-                placeholder="Generated script appears here..."
+                placeholder="O roteiro gerado aparece aqui..."
               />
               <Button onClick={handleSaveScript} disabled={!canSaveScript || isSavingScript}>
-                {isSavingScript ? "Saving..." : "Save changes"}
+                {isSavingScript ? "Salvando..." : "Salvar alteracoes"}
               </Button>
             </CardContent>
           </Card>
@@ -950,14 +984,14 @@ export default function ContentCreator() {
           ) : (
             <Card>
               <CardContent className="py-10 text-center text-muted-foreground">
-                Generate a script to see the teleprompter.
+                Gere um roteiro para ver o teleprompter.
               </CardContent>
             </Card>
           )}
 
           <div className="flex justify-start">
             <Button variant="outline" onClick={() => setStep(2)}>
-              Back to news
+              Voltar as noticias
             </Button>
           </div>
         </div>
@@ -1094,7 +1128,7 @@ function normalizeText(value: string): string {
 
 function buildTeleprompterParameters(
   profile: WritingProfile,
-  complementaryPrompt: string,
+    complementaryPrompt: string,
 ): TeleprompterParameters {
   const durationUnit = profile.duration.toLowerCase().includes("word") ? "words" : "minutes";
   const platform = profile.platform.toLowerCase();
@@ -1107,7 +1141,7 @@ function buildTeleprompterParameters(
   return {
     tone: profile.tone,
     audience: profile.audience,
-    language: profile.scriptLanguage.trim() || "English",
+    language: profile.scriptLanguage.trim() || "Portuguese",
     duration: profile.duration,
     durationUnit,
     scriptType,
