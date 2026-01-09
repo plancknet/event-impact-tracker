@@ -1,9 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SortableTableHead, type SortDirection } from "@/components/SortableTableHead";
+import { WordCloud } from "@/components/WordCloud";
+import { DateFilter } from "@/components/DateFilter";
+import { CategoryFilter } from "@/components/CategoryFilter";
+import { LocalTermFilter } from "@/components/LocalTermFilter";
 import { FileText, Loader2, Monitor, Wand2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { TeleprompterDisplay } from "@/components/teleprompter/TeleprompterDisplay";
 import { runNewsPipelineWithTerms } from "@/news/pipeline";
 import type { FullArticle, NewsSearchTerm } from "@/news/types";
@@ -13,8 +21,12 @@ import {
   type TeleprompterNewsItem,
   type TeleprompterParameters,
 } from "@/services/teleprompter/generateTeleprompterScript";
+import { format, parse, isValid } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 type StepId = 1 | 2 | 3;
+
+type SortField = "published_at" | "title";
 
 type WritingProfile = {
   mainSubject: string;
@@ -49,11 +61,25 @@ export default function ContentCreator() {
   const [complementaryPrompt, setComplementaryPrompt] = useState("");
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsError, setNewsError] = useState<string | null>(null);
+  const [titleFilter, setTitleFilter] = useState("");
+  const [wordCloudFilter, setWordCloudFilter] = useState<string[]>([]);
+  const [dateFilter, setDateFilter] = useState("");
+  const [publishedDateFilter, setPublishedDateFilter] = useState("");
+  const [termFilter, setTermFilter] = useState<string[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+  const [currentSort, setCurrentSort] = useState<{ key: SortField; direction: SortDirection }>({
+    key: "published_at",
+    direction: "desc",
+  });
   const [generationPayload, setGenerationPayload] = useState("");
   const [generatedScript, setGeneratedScript] = useState("");
   const [editedScript, setEditedScript] = useState("");
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [scriptHistory, setScriptHistory] = useState<
+    { id: string; created_at: string; script_text: string; news_ids_json: unknown }[]
+  >([]);
+  const [scriptsLoading, setScriptsLoading] = useState(false);
 
   const selectedNews = useMemo(
     () => newsItems.filter((item) => selectedNewsIds.includes(item.id)),
@@ -69,6 +95,83 @@ export default function ContentCreator() {
     [selectedNews],
   );
 
+  const termOptions = useMemo(() => searchTerms.map((term) => term.term), [searchTerms]);
+
+  const termFilteredResults = useMemo(() => {
+    if (termFilter.length === 0) return newsItems;
+    const termSet = new Set(termFilter.map((t) => t.toLowerCase()));
+    return newsItems.filter((item) => {
+      if (item.term && termSet.has(item.term.toLowerCase())) return true;
+      return termFilter.some((term) => item.title.toLowerCase().includes(term.toLowerCase()));
+    });
+  }, [newsItems, termFilter]);
+
+  const filteredAndSortedNews = useMemo(() => {
+    let filtered = termFilteredResults;
+
+    if (titleFilter.trim()) {
+      filtered = filtered.filter((item) =>
+        item.title.toLowerCase().includes(titleFilter.toLowerCase().trim()),
+      );
+    }
+
+    if (wordCloudFilter.length > 0) {
+      const words = wordCloudFilter.map((w) => w.toLowerCase());
+      filtered = filtered.filter((item) =>
+        words.some((word) => item.title.toLowerCase().includes(word)),
+      );
+    }
+
+    if (categoryFilter.length > 0) {
+      filtered = filtered.filter((item) => item.source && categoryFilter.includes(item.source));
+    }
+
+    const creationFilterDate = parseFilterDate(dateFilter);
+    if (creationFilterDate) {
+      filtered = filtered.filter((item) => {
+        if (!item.fetchedAt) return false;
+        const newsDate = new Date(item.fetchedAt);
+        return (
+          newsDate.getDate() === creationFilterDate.getDate() &&
+          newsDate.getMonth() === creationFilterDate.getMonth() &&
+          newsDate.getFullYear() === creationFilterDate.getFullYear()
+        );
+      });
+    }
+
+    const publicationFilterDate = parseFilterDate(publishedDateFilter);
+    if (publicationFilterDate) {
+      filtered = filtered.filter((item) => {
+        if (!item.publishedAt) return false;
+        const publishedDate = new Date(item.publishedAt);
+        return (
+          publishedDate.getDate() === publicationFilterDate.getDate() &&
+          publishedDate.getMonth() === publicationFilterDate.getMonth() &&
+          publishedDate.getFullYear() === publicationFilterDate.getFullYear()
+        );
+      });
+    }
+
+    return [...filtered].sort((a, b) => {
+      if (currentSort.key === "published_at") {
+        const aVal = a.publishedAt || "";
+        const bVal = b.publishedAt || "";
+        return currentSort.direction === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      }
+      const aVal = a.title.toLowerCase();
+      const bVal = b.title.toLowerCase();
+      return currentSort.direction === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+  }, [
+    termFilteredResults,
+    titleFilter,
+    wordCloudFilter,
+    categoryFilter,
+    dateFilter,
+    publishedDateFilter,
+    currentSort,
+  ]);
+
   const canContinueFromProfile =
     profile.mainSubject.trim() &&
     profile.tone.trim() &&
@@ -83,6 +186,29 @@ export default function ContentCreator() {
     setSelectedNewsIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
+  };
+
+  const toggleSelection = (id: string) => {
+    handleToggleNews(id);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedNewsIds.length === filteredAndSortedNews.length) {
+      setSelectedNewsIds([]);
+    } else {
+      setSelectedNewsIds(filteredAndSortedNews.map((item) => item.id));
+    }
+  };
+
+  const handleSort = (key: SortField) => {
+    setCurrentSort((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const handleWordCloudClick = (word: string) => {
+    setWordCloudFilter((prev) => (prev.includes(word) ? prev.filter((w) => w !== word) : [...prev, word]));
   };
 
   const handleContinueToNews = async () => {
@@ -104,8 +230,10 @@ export default function ContentCreator() {
         maxItemsPerTerm: 6,
       });
 
+      const fetchedAt = new Date().toISOString();
+      const recentItems = filterNewsLast24Hours(items.map((item) => ({ ...item, fetchedAt })));
       // TODO: Enrich selected items with Firecrawl full text when available.
-      setNewsItems(items);
+      setNewsItems(recentItems);
       setStep(2);
     } catch (error) {
       console.error("Failed to load news context:", error);
@@ -171,11 +299,30 @@ export default function ContentCreator() {
       }
       setGeneratedScript(result.script);
       setEditedScript(result.script);
+      await loadScriptHistory();
     } catch (error) {
       console.error("Failed to generate teleprompter script:", error);
       setGenerationError("Unable to generate script. Please try again.");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const loadScriptHistory = async () => {
+    setScriptsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("teleprompter_scripts")
+        .select("id, created_at, script_text, news_ids_json")
+        .order("created_at", { ascending: false })
+        .limit(12);
+
+      if (error) throw error;
+      setScriptHistory(data || []);
+    } catch (error) {
+      console.error("Failed to load teleprompter history:", error);
+    } finally {
+      setScriptsLoading(false);
     }
   };
 
@@ -193,6 +340,7 @@ export default function ContentCreator() {
       }
     };
     void loadLatest();
+    void loadScriptHistory();
     return () => {
       isActive = false;
     };
@@ -206,6 +354,65 @@ export default function ContentCreator() {
           Build a writing profile, add news context, and generate a spoken-first script.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent scripts</CardTitle>
+          <CardDescription>Textos gerados em execucoes anteriores.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {scriptsLoading ? (
+            <div className="flex items-center justify-center py-8 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin mr-2" />
+              Carregando roteiros...
+            </div>
+          ) : scriptHistory.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">
+              Nenhum roteiro gerado ainda.
+            </div>
+          ) : (
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[140px]">Data</TableHead>
+                    <TableHead className="w-[120px]">Noticias</TableHead>
+                    <TableHead>Preview</TableHead>
+                    <TableHead className="w-[120px]">Acoes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {scriptHistory.map((script) => (
+                    <TableRow key={script.id}>
+                      <TableCell className="font-mono text-xs whitespace-nowrap">
+                        {format(new Date(script.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {getNewsCount(script.news_ids_json)}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {getScriptPreview(script.script_text)}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant={generatedScript === script.script_text ? "secondary" : "outline"}
+                          onClick={() => {
+                            setGeneratedScript(script.script_text);
+                            setEditedScript(script.script_text);
+                          }}
+                        >
+                          {generatedScript === script.script_text ? "Em uso" : "Usar"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Card className={step === 1 ? "border-primary" : ""}>
@@ -338,40 +545,134 @@ export default function ContentCreator() {
               </div>
             )}
 
-            <div className="grid gap-4 lg:grid-cols-2">
-              {newsItems.length === 0 ? (
-                <div className="rounded-lg border p-6 text-sm text-muted-foreground">
-                  No news found yet. Try again or adjust the main subject terms.
-                </div>
-              ) : (
-                newsItems.map((item) => {
-                  const selected = selectedNewsIds.includes(item.id);
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => handleToggleNews(item.id)}
-                      className={`rounded-lg border p-4 text-left transition ${
-                        selected ? "border-primary bg-muted" : "border-border"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="space-y-1">
-                          <p className="font-medium">{item.title}</p>
-                          <p className="text-sm text-muted-foreground">{item.summary}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {item.publishedAt ?? "Unknown date"} • {item.link}
-                          </p>
-                        </div>
-                        <span className="text-xs font-medium">
-                          {selected ? "Selected" : "Select"}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })
-              )}
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <p className="text-muted-foreground">
+                {filteredAndSortedNews.length} de {newsItems.length} noticias nas ultimas 24 horas
+              </p>
             </div>
+
+            {newsItems.length === 0 ? (
+              <div className="rounded-lg border p-6 text-sm text-muted-foreground">
+                No news found yet. Try again or adjust the main subject terms.
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-4 mb-4">
+                  <div className="flex flex-col gap-2 w-[60%]">
+                    <div className="flex items-center gap-2">
+                      <LocalTermFilter value={termFilter} options={termOptions} onChange={setTermFilter} />
+                      <CategoryFilter value={categoryFilter} options={[]} onChange={setCategoryFilter} />
+                      <DateFilter
+                        value={dateFilter}
+                        onChange={setDateFilter}
+                        placeholder="Criacao dd/mm/aaaa"
+                      />
+                      <DateFilter
+                        value={publishedDateFilter}
+                        onChange={setPublishedDateFilter}
+                        placeholder="Publicacao dd/mm/aaaa"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Input
+                        placeholder="Filtrar por titulo..."
+                        value={titleFilter}
+                        onChange={(e) => {
+                          setTitleFilter(e.target.value);
+                        }}
+                        className="pl-3"
+                        maxLength={100}
+                      />
+                    </div>
+                  </div>
+                  <div className="w-[40%]">
+                    <WordCloud
+                      compact
+                      titles={termFilteredResults.map((n) => n.title)}
+                      onWordClick={handleWordCloudClick}
+                      activeWords={wordCloudFilter}
+                      onClear={() => setWordCloudFilter([])}
+                    />
+                  </div>
+                </div>
+
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={
+                              selectedNewsIds.length === filteredAndSortedNews.length &&
+                              filteredAndSortedNews.length > 0
+                            }
+                            onCheckedChange={toggleSelectAll}
+                          />
+                        </TableHead>
+                        <SortableTableHead
+                          sortKey="published_at"
+                          currentSort={currentSort}
+                          onSort={handleSort}
+                          className="w-[120px]"
+                        >
+                          Publicacao
+                        </SortableTableHead>
+                        <SortableTableHead
+                          sortKey="title"
+                          currentSort={currentSort}
+                          onSort={handleSort}
+                        >
+                          Titulo
+                        </SortableTableHead>
+                        <TableHead>Link</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAndSortedNews.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                            Nenhuma noticia encontrada
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredAndSortedNews.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedNewsIds.includes(item.id)}
+                                onCheckedChange={() => toggleSelection(item.id)}
+                              />
+                            </TableCell>
+                            <TableCell className="font-mono text-xs whitespace-nowrap">
+                              {item.publishedAt
+                                ? format(new Date(item.publishedAt), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                                : "-"}
+                            </TableCell>
+                            <TableCell className="max-w-[400px] truncate font-medium">
+                              {item.title}
+                            </TableCell>
+                            <TableCell>
+                              {item.link ? (
+                                <a
+                                  href={item.link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
+                                >
+                                  Ver original
+                                </a>
+                              ) : (
+                                "-"
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
 
             <div className="space-y-2">
               <p className="text-sm font-medium">Complementary prompt</p>
@@ -481,6 +782,42 @@ function buildTermsFromSubject(subject: string): NewsSearchTerm[] {
     uniqueTerms.push(term);
   });
   return uniqueTerms.map((term) => ({ term }));
+}
+
+function filterNewsLast24Hours(items: FullArticle[]): FullArticle[] {
+  const now = Date.now();
+  const cutoff = now - 24 * 60 * 60 * 1000;
+  return items.filter((item) => {
+    if (!item.publishedAt) return false;
+    const publishedTime = new Date(item.publishedAt).getTime();
+    if (Number.isNaN(publishedTime)) return false;
+    return publishedTime >= cutoff && publishedTime <= now;
+  });
+}
+
+function parseFilterDate(dateStr: string): Date | null {
+  if (dateStr.length !== 10) return null;
+  const parsed = parse(dateStr, "dd/MM/yyyy", new Date());
+  return isValid(parsed) ? parsed : null;
+}
+
+function getScriptPreview(text: string, maxLength = 140): string {
+  const condensed = text.replace(/\s+/g, " ").trim();
+  if (condensed.length <= maxLength) return condensed;
+  return `${condensed.slice(0, maxLength)}...`;
+}
+
+function getNewsCount(value: unknown): number {
+  if (Array.isArray(value)) return value.length;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.length : 0;
+    } catch {
+      return 0;
+    }
+  }
+  return 0;
 }
 
 function buildTeleprompterParameters(

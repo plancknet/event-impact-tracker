@@ -56,13 +56,14 @@ async function fetchRssForTerms(
   options: { language?: string; region?: string; maxItemsPerTerm?: number },
 ): Promise<FullArticle[]> {
   const results = await Promise.all(
-    terms.map((term) =>
-      fetchGoogleNewsRss(term.term, {
+    terms.map(async (term) => {
+      const items = await fetchGoogleNewsRss(term.term, {
         language: options.language,
         region: options.region,
         maxItems: options.maxItemsPerTerm,
-      }),
-    ),
+      });
+      return items.map((item) => ({ ...item, term: term.term }));
+    }),
   );
 
   const allItems = results.flat();
@@ -90,5 +91,6 @@ function toFullArticle(item: RssItem): FullArticle {
     publishedAt: item.publishedAt,
     source: item.source,
     summary: item.snippet,
+    term: item.term,
   };
 }

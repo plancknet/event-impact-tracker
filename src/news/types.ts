@@ -13,6 +13,7 @@ export type RssItem = {
   publishedAt?: string;
   source?: string;
   snippet?: string;
+  term?: string;
 };
 
 export type FullArticle = {
@@ -20,9 +21,11 @@ export type FullArticle = {
   title: string;
   link: string;
   publishedAt?: string;
+  fetchedAt?: string;
   source?: string;
   summary?: string;
   fullText?: string;
+  term?: string;
 };
 
 export type Selection = {
