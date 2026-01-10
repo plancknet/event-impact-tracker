@@ -65,18 +65,20 @@ type WritingProfile = {
   scriptLanguage: string;
 };
 
+const DEFAULT_PROFILE: WritingProfile = {
+  mainSubject: "Bitcoin",
+  tone: "Calmo",
+  audience: "Criadores",
+  duration: "60s",
+  platform: "YouTube",
+  goal: "Entreter",
+  newsLanguage: "pt-BR",
+  scriptLanguage: "Portuguese",
+};
+
 export default function ContentCreator() {
   const [step, setStep] = useState<StepId>(1);
-  const [profile, setProfile] = useState<WritingProfile>({
-    mainSubject: "Bitcoin",
-    tone: "Calmo",
-    audience: "Criadores",
-    duration: "60s",
-    platform: "YouTube",
-    goal: "Entreter",
-    newsLanguage: "pt-BR",
-    scriptLanguage: "Portuguese",
-  });
+  const [profile, setProfile] = useState<WritingProfile>(DEFAULT_PROFILE);
   const [searchTerms, setSearchTerms] = useState<NewsSearchTerm[]>([]);
   const [newsItems, setNewsItems] = useState<FullArticle[]>([]);
   const [selectedNewsIds, setSelectedNewsIds] = useState<string[]>([]);
@@ -105,6 +107,7 @@ export default function ContentCreator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSavingScript, setIsSavingScript] = useState(false);
   const [scriptHistory, setScriptHistory] = useState<ScriptHistoryItem[]>([]);
+  const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
   const [scriptsLoading, setScriptsLoading] = useState(false);
   const [isScriptsCollapsed, setIsScriptsCollapsed] = useState(true);
 
@@ -146,6 +149,11 @@ export default function ContentCreator() {
       return termFilter.some((term) => item.title.toLowerCase().includes(term.toLowerCase()));
     });
   }, [newsItems, termFilter]);
+
+  const wordCloudTitles = useMemo(
+    () => termFilteredResults.map((item) => item.title),
+    [termFilteredResults],
+  );
 
   const filteredAndSortedNews = useMemo(() => {
     let filtered = termFilteredResults;
@@ -334,6 +342,18 @@ export default function ContentCreator() {
     } finally {
       setNewsLoading(false);
     }
+  };
+
+  const resetSelectionToDefaults = () => {
+    setProfile(DEFAULT_PROFILE);
+    setComplementaryPrompt("");
+    setGeneratedScript("");
+    setEditedScript("");
+    setSelectedNewsIds([]);
+    setSearchTerms([]);
+    setNewsItems([]);
+    setNewsError(null);
+    setSelectedScriptId(null);
   };
 
   const handleGenerate = async (): Promise<boolean> => {
@@ -526,6 +546,12 @@ export default function ContentCreator() {
   }, [generatedScript]);
 
   const handleUseScript = async (script: ScriptHistoryItem) => {
+    if (selectedScriptId === script.id) {
+      resetSelectionToDefaults();
+      return;
+    }
+
+    setSelectedScriptId(script.id);
     setGeneratedScript(script.script_text);
     setEditedScript(script.script_text);
 
@@ -660,19 +686,22 @@ export default function ContentCreator() {
                       >
                         Previa
                       </SortableTableHead>
-                      <TableHead className="w-[120px]">Acoes</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredScripts.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
                           Nenhum roteiro encontrado
                         </TableCell>
                       </TableRow>
                     ) : (
                       filteredScripts.map((script) => (
-                        <TableRow key={script.id}>
+                        <TableRow
+                          key={script.id}
+                          className={`cursor-pointer ${selectedScriptId === script.id ? "bg-muted/60" : ""}`}
+                          onClick={() => void handleUseScript(script)}
+                        >
                           <TableCell className="font-mono text-xs whitespace-nowrap">
                             {format(new Date(script.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                           </TableCell>
@@ -681,15 +710,6 @@ export default function ContentCreator() {
                           </TableCell>
                           <TableCell className="text-sm">
                             {getScriptPreview(script.script_text)}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              variant={generatedScript === script.script_text ? "secondary" : "outline"}
-                              onClick={() => void handleUseScript(script)}
-                            >
-                              {generatedScript === script.script_text ? "Em uso" : "Usar"}
-                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -908,7 +928,7 @@ export default function ContentCreator() {
                   <div className="w-[40%]">
                     <WordCloud
                       compact
-                      titles={termFilteredResults.map((n) => n.title)}
+                      titles={wordCloudTitles}
                       onWordClick={handleWordCloudClick}
                       activeWords={wordCloudFilter}
                       onClear={() => setWordCloudFilter([])}
