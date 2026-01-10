@@ -1,7 +1,12 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ChevronDown } from "lucide-react";
 
 interface LocalTermFilterProps {
   value: string[];
@@ -10,55 +15,57 @@ interface LocalTermFilterProps {
 }
 
 export function LocalTermFilter({ value, options, onChange }: LocalTermFilterProps) {
-  const selectedSet = new Set(value);
+  const [open, setOpen] = useState(false);
 
   const toggleTerm = (term: string) => {
-    if (selectedSet.has(term)) {
+    if (value.includes(term)) {
       onChange(value.filter((t) => t !== term));
-      return;
+    } else {
+      onChange([...value, term]);
     }
-    onChange([...value, term]);
   };
 
-  const clearTerms = () => onChange([]);
+  const clearAll = () => {
+    onChange([]);
+  };
 
-  const label = (() => {
-    if (value.length === 0) return "Todos os termos";
-    if (value.length <= 2) return value.join(", ");
-    return `${value.length} termos`;
-  })();
+  if (options.length === 0) {
+    return null;
+  }
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="w-[200px] justify-between" disabled={options.length === 0}>
-          <span className="truncate">{label}</span>
+        <Button variant="outline" size="sm" className="min-w-[120px] justify-between">
+          <span className="truncate">
+            {value.length === 0 ? "Termo" : `${value.length} termo(s)`}
+          </span>
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[260px] p-3">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">Termos</span>
-          <Button variant="ghost" size="sm" onClick={clearTerms} disabled={value.length === 0}>
+      <PopoverContent className="w-[200px] p-2" align="start">
+        <div className="flex flex-col gap-1 max-h-[200px] overflow-y-auto">
+          {options.map((term) => (
+            <div
+              key={term}
+              className="flex items-center gap-2 p-1 rounded hover:bg-muted cursor-pointer"
+              onClick={() => toggleTerm(term)}
+            >
+              <Checkbox checked={value.includes(term)} />
+              <span className="text-sm truncate">{term}</span>
+            </div>
+          ))}
+        </div>
+        {value.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full mt-2"
+            onClick={clearAll}
+          >
             Limpar
           </Button>
-        </div>
-        <ScrollArea className="h-48">
-          <div className="space-y-1 pr-2">
-            {options.length === 0 ? (
-              <div className="text-sm text-muted-foreground">Nenhum termo</div>
-            ) : (
-              options.map((term) => (
-                <label
-                  key={term}
-                  className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted cursor-pointer"
-                >
-                  <Checkbox checked={selectedSet.has(term)} onCheckedChange={() => toggleTerm(term)} />
-                  <span className="text-sm">{term}</span>
-                </label>
-              ))
-            )}
-          </div>
-        </ScrollArea>
+        )}
       </PopoverContent>
     </Popover>
   );
