@@ -31,6 +31,29 @@ type SortField = "published_at" | "title";
 
 type ScriptSortField = "created_at" | "title";
 
+type ScriptHistoryItem = {
+  id: string;
+  created_at: string;
+  script_text: string;
+  news_ids_json: unknown;
+  parameters_json?: unknown;
+};
+
+type ScriptParameters = {
+  tone?: string;
+  audience?: string;
+  duration?: string;
+  language?: string;
+  complementaryPrompt?: string;
+  profile?: {
+    mainSubject?: string;
+    goal?: string;
+    platform?: string;
+    newsLanguage?: string;
+    scriptLanguage?: string;
+  };
+};
+
 type WritingProfile = {
   mainSubject: string;
   tone: string;
@@ -81,9 +104,7 @@ export default function ContentCreator() {
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSavingScript, setIsSavingScript] = useState(false);
-  const [scriptHistory, setScriptHistory] = useState<
-    { id: string; created_at: string; script_text: string; news_ids_json: unknown }[]
-  >([]);
+  const [scriptHistory, setScriptHistory] = useState<ScriptHistoryItem[]>([]);
   const [scriptsLoading, setScriptsLoading] = useState(false);
   const [isScriptsCollapsed, setIsScriptsCollapsed] = useState(true);
 
@@ -320,6 +341,62 @@ export default function ContentCreator() {
     return generateScriptFromSelection();
   };
 
+  const handleRegenerateFromCurrent = async (): Promise<boolean> => {
+    setGenerationError(null);
+    setIsGenerating(true);
+    try {
+      if (!editedScript.trim()) {
+        setGenerationError("Edite o roteiro antes de gerar novamente.");
+        return false;
+      }
+      if (!complementaryPrompt.trim()) {
+        setGenerationError("Preencha o prompt complementar para gerar novamente.");
+        return false;
+      }
+
+      const newsItems = selectedNews.map((item) => ({
+        id: item.id,
+        title: item.title,
+        summary: item.summary,
+        content: item.fullText || item.summary || null,
+      })) satisfies TeleprompterNewsItem[];
+
+      const parameters = buildTeleprompterParameters(profile, complementaryPrompt);
+      const keywords = extractComplementaryKeywords(complementaryPrompt);
+      const refinementPrompt =
+        keywords.length > 0
+          ? `Mantenha o roteiro base ao maximo. Adicione um complemento ao final que atenda ao prompt complementar e inclua: ${keywords.join(", ")}.`
+          : "Mantenha o roteiro base ao maximo. Adicione um complemento ao final que atenda ao prompt complementar.";
+
+      const refined = await generateTeleprompterScript(newsItems, parameters, {
+        refinementPrompt,
+        baseScript: editedScript,
+      });
+
+      if (!refined.script) {
+        throw new Error("No script returned.");
+      }
+
+      if (!scriptIncludesComplementaryPrompt(refined.script, complementaryPrompt)) {
+        setGenerationError(
+          "O roteiro gerado nao inclui elementos do prompt complementar. Ajuste o prompt e tente novamente.",
+        );
+        return false;
+      }
+
+      setGeneratedScript(refined.script);
+      setEditedScript(refined.script);
+      await loadScriptHistory();
+      return true;
+    } catch (error) {
+      console.error("Failed to regenerate teleprompter script:", error);
+      setGenerationError("Nao foi possivel gerar o roteiro novamente. Tente novamente.");
+      return false;
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleSaveScript = async () => {
     const scriptText = editedScript.trim();
     if (!scriptText) {
@@ -415,7 +492,7 @@ export default function ContentCreator() {
     try {
       const { data, error } = await supabase
         .from("teleprompter_scripts")
-        .select("id, created_at, script_text, news_ids_json")
+        .select("id, created_at, script_text, news_ids_json, parameters_json")
         .order("created_at", { ascending: false })
         .limit(12);
 
@@ -447,6 +524,60 @@ export default function ContentCreator() {
       isActive = false;
     };
   }, [generatedScript]);
+
+  const handleUseScript = async (script: ScriptHistoryItem) => {
+    setGeneratedScript(script.script_text);
+    setEditedScript(script.script_text);
+
+    const parameters = parseScriptParameters(script.parameters_json);
+    const newsIds = parseNewsIds(script.news_ids_json);
+
+    if (parameters) {
+      const profileFromParams = parameters.profile || {};
+      setProfile((prev) => ({
+        ...prev,
+        mainSubject: profileFromParams.mainSubject ?? prev.mainSubject,
+        tone: parameters.tone ?? prev.tone,
+        audience: parameters.audience ?? prev.audience,
+        duration: parameters.duration ?? prev.duration,
+        platform: profileFromParams.platform ?? prev.platform,
+        goal: profileFromParams.goal ?? prev.goal,
+        newsLanguage: profileFromParams.newsLanguage ?? prev.newsLanguage,
+        scriptLanguage:
+          profileFromParams.scriptLanguage ?? parameters.language ?? prev.scriptLanguage,
+      }));
+      setComplementaryPrompt(parameters.complementaryPrompt ?? "");
+    }
+
+    setSelectedNewsIds(newsIds);
+
+    const mainSubject = parameters?.profile?.mainSubject ?? profile.mainSubject;
+    const newsLanguage = parameters?.profile?.newsLanguage ?? profile.newsLanguage;
+    const terms = buildTermsFromSubject(mainSubject);
+    if (terms.length > 0) {
+      setNewsError(null);
+      setNewsLoading(true);
+      setSearchTerms(terms);
+      try {
+        const { items } = await runNewsPipelineWithTerms(terms, {
+          maxItemsPerTerm: 6,
+          minItemsPerTerm: 5,
+          initialWindowHours: 24,
+          language: newsLanguage?.trim(),
+        });
+        const fetchedAt = new Date().toISOString();
+        const recentItems = items.map((item) => ({ ...item, fetchedAt }));
+        setNewsItems(recentItems);
+      } catch (error) {
+        console.error("Failed to load news context:", error);
+        setNewsError("Nao foi possivel carregar o contexto de noticias. Tente novamente.");
+      } finally {
+        setNewsLoading(false);
+      }
+    }
+
+    setStep(3);
+  };
 
   return (
     <div className="space-y-6">
@@ -555,10 +686,7 @@ export default function ContentCreator() {
                             <Button
                               size="sm"
                               variant={generatedScript === script.script_text ? "secondary" : "outline"}
-                              onClick={() => {
-                                setGeneratedScript(script.script_text);
-                                setEditedScript(script.script_text);
-                              }}
+                              onClick={() => void handleUseScript(script)}
                             >
                               {generatedScript === script.script_text ? "Em uso" : "Usar"}
                             </Button>
@@ -955,7 +1083,7 @@ export default function ContentCreator() {
                 placeholder="Ex.: foque nos aprendizados para criadores, seja direto e inclua CTA."
               />
               <div className="flex justify-end">
-                <Button onClick={handleGenerate} disabled={!canGenerateFromNews || isGenerating}>
+                <Button onClick={handleRegenerateFromCurrent} disabled={!canGenerateFromNews || isGenerating}>
                   {isGenerating ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1165,4 +1293,46 @@ function buildTeleprompterParameters(
     },
     complementaryPrompt,
   };
+}
+
+function parseNewsIds(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item)).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => String(item)).filter(Boolean);
+      }
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function parseScriptParameters(value: unknown): ScriptParameters | null {
+  if (!value || typeof value !== "object") return null;
+  const data = value as Record<string, unknown>;
+  const profile = data.profile && typeof data.profile === "object" ? (data.profile as Record<string, unknown>) : null;
+  const parsed: ScriptParameters = {
+    tone: typeof data.tone === "string" ? data.tone : undefined,
+    audience: typeof data.audience === "string" ? data.audience : undefined,
+    duration: typeof data.duration === "string" ? data.duration : undefined,
+    language: typeof data.language === "string" ? data.language : undefined,
+    complementaryPrompt:
+      typeof data.complementaryPrompt === "string" ? data.complementaryPrompt : undefined,
+    profile: profile
+      ? {
+          mainSubject: typeof profile.mainSubject === "string" ? profile.mainSubject : undefined,
+          goal: typeof profile.goal === "string" ? profile.goal : undefined,
+          platform: typeof profile.platform === "string" ? profile.platform : undefined,
+          newsLanguage: typeof profile.newsLanguage === "string" ? profile.newsLanguage : undefined,
+          scriptLanguage: typeof profile.scriptLanguage === "string" ? profile.scriptLanguage : undefined,
+        }
+      : undefined,
+  };
+
+  return parsed;
 }

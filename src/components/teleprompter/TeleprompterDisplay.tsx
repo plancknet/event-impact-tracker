@@ -364,12 +364,14 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
       className={`flex flex-col ${isFullscreen ? "h-screen" : ""}`}
       style={isFullscreen ? { backgroundColor } : undefined}
     >
-      <Card className={`mb-4 ${isFullscreen ? "bg-background/80 backdrop-blur" : ""}`}>
-        <CardContent className="py-3">
-          <div className="text-sm text-muted-foreground mb-2">Referencias das noticias</div>
-          <Textarea value={referencesText} readOnly rows={4} className="resize-none" />
-        </CardContent>
-      </Card>
+      {!isFullscreen && (
+        <Card className="mb-4">
+          <CardContent className="py-3">
+            <div className="text-sm text-muted-foreground mb-2">Referencias das noticias</div>
+            <Textarea value={referencesText} readOnly rows={4} className="resize-none" />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Controls */}
       <Card className={`mb-4 ${isFullscreen ? "bg-background/80 backdrop-blur" : ""}`}>
