@@ -10,8 +10,6 @@ import { WordCloud } from "@/components/WordCloud";
 import { DateFilter } from "@/components/DateFilter";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { LocalTermFilter } from "@/components/LocalTermFilter";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, ChevronUp, FileText, Loader2, Monitor, Wand2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -66,26 +64,6 @@ type WritingProfile = {
   newsLanguage: string;
   scriptLanguage: string;
 };
-
-const OTHER_OPTION = "Outro";
-
-const MAIN_SUBJECT_OPTIONS = [
-  "Bitcoin",
-  "Cripto",
-  "Economia",
-  "Mercado financeiro",
-  "Tecnologia",
-  "Inteligencia artificial",
-  "Politica",
-  "Saude",
-  "Educacao",
-  "Esportes",
-  "Clima",
-  "Cultura",
-  "Startups",
-  "Negocios",
-  OTHER_OPTION,
-];
 
 const TONE_OPTIONS = [
   "Calmo",
@@ -142,17 +120,6 @@ const NEWS_LANGUAGE_OPTIONS = [
   { label: "Espanhol (es)", value: "es" },
 ];
 
-const COMPLEMENTARY_PROMPT_OPTIONS = [
-  "Foque em aprendizados para criadores",
-  "Seja direto e objetivo",
-  "Inclua CTA claro",
-  "Use tom didatico",
-  "Traga contexto em 1 frase",
-  "Mencione dados numericos",
-  "Finalize com resumo curto",
-  OTHER_OPTION,
-];
-
 const DEFAULT_PROFILE: WritingProfile = {
   mainSubject: "Bitcoin",
   tone: "Calmo",
@@ -171,10 +138,6 @@ export default function ContentCreator() {
   const [newsItems, setNewsItems] = useState<FullArticle[]>([]);
   const [selectedNewsIds, setSelectedNewsIds] = useState<string[]>([]);
   const [complementaryPrompt, setComplementaryPrompt] = useState("");
-  const [selectedMainSubjects, setSelectedMainSubjects] = useState<string[]>(["Bitcoin"]);
-  const [customMainSubject, setCustomMainSubject] = useState("");
-  const [selectedComplementaryPrompts, setSelectedComplementaryPrompts] = useState<string[]>([]);
-  const [customComplementaryPrompt, setCustomComplementaryPrompt] = useState("");
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsError, setNewsError] = useState<string | null>(null);
   const [titleFilter, setTitleFilter] = useState("");
@@ -208,29 +171,6 @@ export default function ContentCreator() {
     { label: "Português", value: "Portuguese" },
     { label: "Espanhol", value: "Spanish" },
   ];
-
-  const computedMainSubject = useMemo(() => {
-    const base = selectedMainSubjects.filter((item) => item !== OTHER_OPTION);
-    const custom = selectedMainSubjects.includes(OTHER_OPTION) ? customMainSubject.trim() : "";
-    const combined = custom ? [...base, custom] : base;
-    return combined.join(", ");
-  }, [customMainSubject, selectedMainSubjects]);
-
-  const computedComplementaryPrompt = useMemo(() => {
-    const base = selectedComplementaryPrompts.filter((item) => item !== OTHER_OPTION);
-    const custom = selectedComplementaryPrompts.includes(OTHER_OPTION)
-      ? customComplementaryPrompt.trim()
-      : "";
-    return [...base, custom].filter(Boolean).join(" ");
-  }, [customComplementaryPrompt, selectedComplementaryPrompts]);
-
-  useEffect(() => {
-    setProfile((prev) => ({ ...prev, mainSubject: computedMainSubject }));
-  }, [computedMainSubject]);
-
-  useEffect(() => {
-    setComplementaryPrompt(computedComplementaryPrompt);
-  }, [computedComplementaryPrompt]);
 
   const selectedNews = useMemo(
     () => newsItems.filter((item) => selectedNewsIds.includes(item.id)),
@@ -460,13 +400,8 @@ export default function ContentCreator() {
   };
 
   const resetSelectionToDefaults = () => {
-    const mainSelection = buildMainSubjectSelection(DEFAULT_PROFILE.mainSubject, MAIN_SUBJECT_OPTIONS);
     setProfile(DEFAULT_PROFILE);
     setComplementaryPrompt("");
-    setSelectedMainSubjects(mainSelection.selected);
-    setCustomMainSubject(mainSelection.custom);
-    setSelectedComplementaryPrompts([]);
-    setCustomComplementaryPrompt("");
     setGeneratedScript("");
     setEditedScript("");
     setSelectedNewsIds([]);
@@ -692,25 +627,10 @@ export default function ContentCreator() {
         scriptLanguage:
           profileFromParams.scriptLanguage ?? parameters.language ?? prev.scriptLanguage,
       }));
-      const promptSelection = buildComplementarySelection(
-        parameters.complementaryPrompt ?? "",
-        COMPLEMENTARY_PROMPT_OPTIONS,
-      );
-      setSelectedComplementaryPrompts(promptSelection.selected);
-      setCustomComplementaryPrompt(promptSelection.custom);
-      const subjectSelection = buildMainSubjectSelection(
-        profileFromParams.mainSubject ?? DEFAULT_PROFILE.mainSubject,
-        MAIN_SUBJECT_OPTIONS,
-      );
-      setSelectedMainSubjects(subjectSelection.selected);
-      setCustomMainSubject(subjectSelection.custom);
+      setComplementaryPrompt(parameters.complementaryPrompt ?? "");
     } else {
-      const subjectSelection = buildMainSubjectSelection(DEFAULT_PROFILE.mainSubject, MAIN_SUBJECT_OPTIONS);
       setProfile(DEFAULT_PROFILE);
-      setSelectedMainSubjects(subjectSelection.selected);
-      setCustomMainSubject(subjectSelection.custom);
-      setSelectedComplementaryPrompts([]);
-      setCustomComplementaryPrompt("");
+      setComplementaryPrompt("");
     }
 
     setSelectedNewsIds(newsIds);
@@ -922,21 +842,12 @@ export default function ContentCreator() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <p className="text-sm font-medium">Assunto principal</p>
-              <MultiSelect
-                label="Assuntos"
-                options={MAIN_SUBJECT_OPTIONS}
-                value={selectedMainSubjects}
-                onChange={setSelectedMainSubjects}
-                placeholder="Selecione os assuntos"
+              <p className="text-sm font-medium">Assunto principal (separado por virgulas)</p>
+              <Input
+                value={profile.mainSubject}
+                onChange={(event) => setProfile((prev) => ({ ...prev, mainSubject: event.target.value }))}
+                placeholder="Bitcoin, mercado cripto, indice de medo e ganancia"
               />
-              {selectedMainSubjects.includes(OTHER_OPTION) && (
-                <Input
-                  value={customMainSubject}
-                  onChange={(event) => setCustomMainSubject(event.target.value)}
-                  placeholder="Digite um assunto adicional"
-                />
-              )}
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -1145,21 +1056,12 @@ export default function ContentCreator() {
 
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Prompt complementar</p>
-                  <MultiSelect
-                    label="Prompt complementar"
-                    options={COMPLEMENTARY_PROMPT_OPTIONS}
-                    value={selectedComplementaryPrompts}
-                    onChange={setSelectedComplementaryPrompts}
-                    placeholder="Selecione instrucoes"
+                  <Textarea
+                    value={complementaryPrompt}
+                    onChange={(event) => setComplementaryPrompt(event.target.value)}
+                    rows={3}
+                    placeholder="Ex.: foque nos aprendizados para criadores, seja direto e inclua CTA."
                   />
-                  {selectedComplementaryPrompts.includes(OTHER_OPTION) && (
-                    <Textarea
-                      value={customComplementaryPrompt}
-                      onChange={(event) => setCustomComplementaryPrompt(event.target.value)}
-                      rows={3}
-                      placeholder="Digite instrucoes adicionais"
-                    />
-                  )}
                 </div>
 
                 <div className="border rounded-lg">
@@ -1312,21 +1214,12 @@ export default function ContentCreator() {
               <CardDescription>Ajuste o prompt e gere novamente se necessario.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <MultiSelect
-                label="Prompt complementar"
-                options={COMPLEMENTARY_PROMPT_OPTIONS}
-                value={selectedComplementaryPrompts}
-                onChange={setSelectedComplementaryPrompts}
-                placeholder="Selecione instrucoes"
+              <Textarea
+                value={complementaryPrompt}
+                onChange={(event) => setComplementaryPrompt(event.target.value)}
+                rows={3}
+                placeholder="Ex.: foque nos aprendizados para criadores, seja direto e inclua CTA."
               />
-              {selectedComplementaryPrompts.includes(OTHER_OPTION) && (
-                <Textarea
-                  value={customComplementaryPrompt}
-                  onChange={(event) => setCustomComplementaryPrompt(event.target.value)}
-                  rows={3}
-                  placeholder="Digite instrucoes adicionais"
-                />
-              )}
               <div className="flex justify-end">
                 <Button onClick={handleRegenerateFromCurrent} disabled={!canGenerateFromNews || isGenerating}>
                   {isGenerating ? (
@@ -1381,69 +1274,6 @@ export default function ContentCreator() {
   );
 }
 
-type MultiSelectProps = {
-  label: string;
-  options: string[];
-  value: string[];
-  onChange: (value: string[]) => void;
-  placeholder: string;
-};
-
-function MultiSelect({ label, options, value, onChange, placeholder }: MultiSelectProps) {
-  const selectedSet = new Set(value);
-
-  const toggleOption = (option: string) => {
-    if (selectedSet.has(option)) {
-      onChange(value.filter((item) => item !== option));
-      return;
-    }
-    onChange([...value, option]);
-  };
-
-  const clearOptions = () => onChange([]);
-
-  const displayLabel = (() => {
-    if (value.length === 0) return placeholder;
-    if (value.length <= 2) return value.join(", ");
-    return `${value.length} selecionados`;
-  })();
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full justify-between" disabled={options.length === 0}>
-          <span className="truncate">{displayLabel}</span>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-[280px] p-3">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">{label}</span>
-          <Button variant="ghost" size="sm" onClick={clearOptions} disabled={value.length === 0}>
-            Limpar
-          </Button>
-        </div>
-        <ScrollArea className="h-52">
-          <div className="space-y-1 pr-2">
-            {options.length === 0 ? (
-              <div className="text-sm text-muted-foreground">Nenhuma opcao</div>
-            ) : (
-              options.map((option) => (
-                <label
-                  key={option}
-                  className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted cursor-pointer"
-                >
-                  <Checkbox checked={selectedSet.has(option)} onCheckedChange={() => toggleOption(option)} />
-                  <span className="text-sm">{option}</span>
-                </label>
-              ))
-            )}
-          </div>
-        </ScrollArea>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 function ensureOption(options: string[], value: string): string[] {
   if (!value) return options;
   if (options.includes(value)) return options;
@@ -1457,51 +1287,6 @@ function ensureLabeledOption(
   if (!value) return options;
   if (options.some((option) => option.value === value)) return options;
   return [{ label: value, value }, ...options];
-}
-
-function buildMainSubjectSelection(
-  value: string,
-  options: string[],
-): { selected: string[]; custom: string } {
-  if (!value.trim()) return { selected: [], custom: "" };
-  const items = value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-  const optionSet = new Set(options);
-  const matched = items.filter((item) => optionSet.has(item) && item !== OTHER_OPTION);
-  const unknown = items.filter((item) => !optionSet.has(item));
-  const selected = [...matched];
-  const custom = unknown.join(", ");
-  if (custom) selected.push(OTHER_OPTION);
-  return { selected, custom };
-}
-
-function buildComplementarySelection(
-  value: string,
-  options: string[],
-): { selected: string[]; custom: string } {
-  const trimmed = value.trim();
-  if (!trimmed) return { selected: [], custom: "" };
-  const baseOptions = options.filter((option) => option !== OTHER_OPTION);
-  const matched = baseOptions.filter((option) =>
-    trimmed.toLowerCase().includes(option.toLowerCase()),
-  );
-  let remainder = trimmed;
-  matched.forEach((option) => {
-    const pattern = new RegExp(escapeRegExp(option), "ig");
-    remainder = remainder.replace(pattern, "");
-  });
-  remainder = remainder.replace(/[.;,]+/g, " ").replace(/\s+/g, " ").trim();
-  const selected = [...matched];
-  if (remainder) {
-    selected.push(OTHER_OPTION);
-  }
-  return { selected, custom: remainder };
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function buildTermsFromSubject(subject: string): NewsSearchTerm[] {
