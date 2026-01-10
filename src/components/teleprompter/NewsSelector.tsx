@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { format, isValid, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CheckSquare, Square, Search } from "lucide-react";
-import { TermFilter } from "@/components/TermFilter";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { DateFilter } from "@/components/DateFilter";
 
@@ -31,7 +30,6 @@ interface NewsSelectorProps {
 
 export function NewsSelector({ news, selectedIds, onSelectionChange }: NewsSelectorProps) {
   const [titleWordFilter, setTitleWordFilter] = useState("");
-  const [termFilter, setTermFilter] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState("");
   const [publishedDateFilter, setPublishedDateFilter] = useState("");
@@ -55,13 +53,6 @@ export function NewsSelector({ news, selectedIds, onSelectionChange }: NewsSelec
 
   const filteredNews = useMemo(() => {
     let filtered = news;
-
-    if (termFilter.length > 0) {
-      const termSet = new Set(termFilter.map((t) => t.toLowerCase()));
-      filtered = filtered.filter((item) =>
-        item.term ? termSet.has(item.term.toLowerCase()) : false
-      );
-    }
 
     if (categoryFilter.length > 0) {
       const categorySet = new Set(categoryFilter.map((c) => c.toLowerCase()));
@@ -101,7 +92,7 @@ export function NewsSelector({ news, selectedIds, onSelectionChange }: NewsSelec
       });
     }
     return filtered;
-  }, [news, termFilter, categoryFilter, titleWordFilter, dateFilter, publishedDateFilter]);
+  }, [news, categoryFilter, titleWordFilter, dateFilter, publishedDateFilter]);
 
   const handleToggle = (id: string) => {
     if (selectedIds.includes(id)) {
@@ -142,7 +133,6 @@ export function NewsSelector({ news, selectedIds, onSelectionChange }: NewsSelec
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-3">
-          <TermFilter value={termFilter} onChange={setTermFilter} />
           <CategoryFilter
             value={categoryFilter}
             options={categoryOptions}
@@ -200,7 +190,7 @@ export function NewsSelector({ news, selectedIds, onSelectionChange }: NewsSelec
                     {item.publishedAt && (
                       <span>Publicacao: {format(item.publishedAt, "dd/MM/yyyy", { locale: ptBR })}</span>
                     )}
-                    <span>ƒ?½</span>
+                    <span>â€¢</span>
                     <span className="truncate">{item.source}</span>
                   </div>
                   {item.summary && (
@@ -217,14 +207,3 @@ export function NewsSelector({ news, selectedIds, onSelectionChange }: NewsSelec
     </Card>
   );
 }
-
-
-
-
-
-
-
-
-
-
-

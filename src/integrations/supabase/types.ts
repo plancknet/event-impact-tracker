@@ -14,30 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      stripe_subscription_events: {
-        Row: {
-          created_at: string
-          event_type: string
-          id: string
-          payload: Json
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          event_type: string
-          id?: string
-          payload: Json
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          event_type?: string
-          id?: string
-          payload?: Json
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       teleprompter_scripts: {
         Row: {
           created_at: string
@@ -62,69 +38,6 @@ export type Database = {
           parameters_json?: Json
           raw_ai_response?: string | null
           script_text?: string
-        }
-        Relationships: []
-      }
-      users: {
-        Row: {
-          created_at: string
-          current_period_end: string | null
-          email: string | null
-          id: string
-          is_premium: boolean
-          last_accessed_at: string | null
-          last_subscription_check: string | null
-          plan_confirmed: boolean
-          premium_type: string | null
-          purchase_date: string | null
-          stripe_customer_id: string | null
-          stripe_latest_invoice_id: string | null
-          stripe_session_id: string | null
-          stripe_subscription_id: string | null
-          subscription_status: string
-          subscription_tier: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          current_period_end?: string | null
-          email?: string | null
-          id?: string
-          is_premium?: boolean
-          last_accessed_at?: string | null
-          last_subscription_check?: string | null
-          plan_confirmed?: boolean
-          premium_type?: string | null
-          purchase_date?: string | null
-          stripe_customer_id?: string | null
-          stripe_latest_invoice_id?: string | null
-          stripe_session_id?: string | null
-          stripe_subscription_id?: string | null
-          subscription_status?: string
-          subscription_tier?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          current_period_end?: string | null
-          email?: string | null
-          id?: string
-          is_premium?: boolean
-          last_accessed_at?: string | null
-          last_subscription_check?: string | null
-          plan_confirmed?: boolean
-          premium_type?: string | null
-          purchase_date?: string | null
-          stripe_customer_id?: string | null
-          stripe_latest_invoice_id?: string | null
-          stripe_session_id?: string | null
-          stripe_subscription_id?: string | null
-          subscription_status?: string
-          subscription_tier?: string
-          updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }
