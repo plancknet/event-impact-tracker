@@ -195,8 +195,6 @@ Escreva um roteiro contínuo, coeso e envolvente baseado nas notícias abaixo. C
 ${newsContext}
 
 Lembre-se: retorne APENAS o JSON solicitado.`;
-
-      }
     }
 
     const extraPrompt =
