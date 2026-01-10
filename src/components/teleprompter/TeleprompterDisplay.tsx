@@ -21,6 +21,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TeleprompterDisplayProps {
   script: string;
@@ -61,6 +62,8 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
   const [textColor, setTextColor] = useState("#ffffff");
   const [backgroundColor, setBackgroundColor] = useState("#000000");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [settingsUserId, setSettingsUserId] = useState<string | null>(null);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -69,6 +72,7 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
   const lastTimeRef = useRef<number>();
   const pauseTimeoutRef = useRef<NodeJS.Timeout>();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const settingsSaveRef = useRef<number>();
 
   // Parse script to identify pause positions
   const parseScript = useCallback((text: string) => {
@@ -268,6 +272,94 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setSettingsLoaded(true);
+          return;
+        }
+        setSettingsUserId(user.id);
+        const { data, error } = await supabase
+          .from("teleprompter_settings")
+          .select("settings_json")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (error) throw error;
+        const settings = data?.settings_json as Partial<{
+          speed: number;
+          showPauseTags: boolean;
+          pauseDurations: Record<PauseType, number>;
+          fontFamily: string;
+          fontSize: number;
+          textColor: string;
+          backgroundColor: string;
+        }> | undefined;
+        if (settings) {
+          if (typeof settings.speed === "number") setSpeed(settings.speed);
+          if (typeof settings.showPauseTags === "boolean") setShowPauseTags(settings.showPauseTags);
+          if (settings.pauseDurations) setPauseDurations(settings.pauseDurations);
+          if (typeof settings.fontFamily === "string") setFontFamily(settings.fontFamily);
+          if (typeof settings.fontSize === "number") setFontSize(settings.fontSize);
+          if (typeof settings.textColor === "string") setTextColor(settings.textColor);
+          if (typeof settings.backgroundColor === "string") setBackgroundColor(settings.backgroundColor);
+        }
+      } catch (error) {
+        console.error("Failed to load teleprompter settings:", error);
+      } finally {
+        setSettingsLoaded(true);
+      }
+    };
+
+    void loadSettings();
+  }, []);
+
+  useEffect(() => {
+    if (!settingsLoaded || !settingsUserId) return;
+    if (settingsSaveRef.current) {
+      window.clearTimeout(settingsSaveRef.current);
+    }
+    settingsSaveRef.current = window.setTimeout(async () => {
+      try {
+        const settings = {
+          speed,
+          showPauseTags,
+          pauseDurations,
+          fontFamily,
+          fontSize,
+          textColor,
+          backgroundColor,
+        };
+        const { error } = await supabase
+          .from("teleprompter_settings")
+          .upsert({
+            user_id: settingsUserId,
+            settings_json: settings as unknown as import("@/integrations/supabase/types").Json,
+          });
+        if (error) throw error;
+      } catch (error) {
+        console.error("Failed to save teleprompter settings:", error);
+      }
+    }, 800);
+
+    return () => {
+      if (settingsSaveRef.current) {
+        window.clearTimeout(settingsSaveRef.current);
+      }
+    };
+  }, [
+    backgroundColor,
+    fontFamily,
+    fontSize,
+    pauseDurations,
+    settingsLoaded,
+    settingsUserId,
+    showPauseTags,
+    speed,
+    textColor,
+  ]);
 
   useEffect(() => {
     if (countdown === null) return;

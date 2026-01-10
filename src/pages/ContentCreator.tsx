@@ -161,6 +161,7 @@ export default function ContentCreator() {
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSavingScript, setIsSavingScript] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [scriptHistory, setScriptHistory] = useState<ScriptHistoryItem[]>([]);
   const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
   const [scriptsLoading, setScriptsLoading] = useState(false);
@@ -411,6 +412,12 @@ export default function ContentCreator() {
     setSelectedScriptId(null);
   };
 
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setCurrentUserId(user?.id ?? null);
+    });
+  }, []);
+
   const handleGenerate = async (): Promise<boolean> => {
     // NOTE: This restores the teleprompter Edge Function behavior from the old branch.
     return generateScriptFromSelection();
@@ -481,6 +488,16 @@ export default function ContentCreator() {
 
     setIsSavingScript(true);
     try {
+      let userId = currentUserId;
+      if (!userId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        userId = user?.id ?? null;
+        setCurrentUserId(userId);
+      }
+      if (!userId) {
+        setGenerationError("Voce precisa estar logado para salvar.");
+        return;
+      }
       const parameters = buildTeleprompterParameters(profile, complementaryPrompt);
       const { error } = await supabase
         .from("teleprompter_scripts")
@@ -488,6 +505,7 @@ export default function ContentCreator() {
           news_ids_json: selectedNewsIds as unknown as import("@/integrations/supabase/types").Json,
           parameters_json: parameters as unknown as import("@/integrations/supabase/types").Json,
           script_text: scriptText,
+          user_id: userId,
         });
 
       if (error) throw error;
@@ -563,11 +581,13 @@ export default function ContentCreator() {
   };
 
   const loadScriptHistory = async () => {
+    if (!currentUserId) return;
     setScriptsLoading(true);
     try {
       const { data, error } = await supabase
         .from("teleprompter_scripts")
         .select("id, created_at, script_text, news_ids_json, parameters_json")
+        .eq("user_id", currentUserId)
         .order("created_at", { ascending: false })
         .limit(12);
 
@@ -584,10 +604,12 @@ export default function ContentCreator() {
     let isActive = true;
     const loadLatest = async () => {
       try {
-        const script = await fetchLatestTeleprompterScript();
-        if (isActive && script && !generatedScript) {
-          setGeneratedScript(script);
-          setEditedScript(script);
+        if (currentUserId) {
+          const script = await fetchLatestTeleprompterScript(currentUserId);
+          if (isActive && script && !generatedScript) {
+            setGeneratedScript(script);
+            setEditedScript(script);
+          }
         }
       } catch (error) {
         console.error("Failed to load last teleprompter script:", error);
@@ -598,7 +620,7 @@ export default function ContentCreator() {
     return () => {
       isActive = false;
     };
-  }, [generatedScript]);
+  }, [generatedScript, currentUserId]);
 
   const handleUseScript = async (script: ScriptHistoryItem) => {
     if (selectedScriptId === script.id) {
