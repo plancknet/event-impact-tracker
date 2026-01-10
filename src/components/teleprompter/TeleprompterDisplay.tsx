@@ -47,6 +47,8 @@ const FONT_OPTIONS = [
 export function TeleprompterDisplay({ script, references = [] }: TeleprompterDisplayProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isUserPaused, setIsUserPaused] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [speed, setSpeed] = useState(50); // pixels per second
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showPauseTags, setShowPauseTags] = useState(true);
@@ -181,7 +183,7 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
       timerRef.current = null;
     }
 
-    if (isPlaying && !isPaused) {
+    if (isPlaying && !isUserPaused) {
       timerRef.current = setInterval(() => {
         setElapsedSeconds((prev) => prev + 1);
       }, 1000);
@@ -193,11 +195,14 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
         timerRef.current = null;
       }
     };
-  }, [isPlaying, isPaused]);
+  }, [isPlaying, isUserPaused]);
 
   const handleStart = () => {
-    setIsPlaying(true);
+    if (countdown !== null) return;
+    setIsPlaying(false);
     setIsPaused(false);
+    setIsUserPaused(false);
+    setCountdown(3);
   };
 
   const handlePauseToggle = () => {
@@ -206,18 +211,22 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
         clearTimeout(pauseTimeoutRef.current);
       }
       setIsPaused(false);
+      setIsUserPaused(false);
       setCurrentPause(null);
     } else {
       setIsPaused(true);
+      setIsUserPaused(true);
     }
   };
 
   const handleRestart = () => {
     setIsPlaying(false);
     setIsPaused(false);
+    setIsUserPaused(false);
     setCurrentPause(null);
     scrollPositionRef.current = 0;
     setElapsedSeconds(0);
+    setCountdown(null);
     if (containerRef.current) {
       containerRef.current.scrollTop = 0;
     }
@@ -259,6 +268,20 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
+
+  useEffect(() => {
+    if (countdown === null) return;
+    const timeoutId = window.setTimeout(() => {
+      if (countdown === 1) {
+        setCountdown(null);
+        setIsPlaying(true);
+        return;
+      }
+      setCountdown((prev) => (prev === null ? prev : prev - 1));
+    }, 1000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [countdown]);
 
   const renderContent = () => {
     return parsedScript.map((part, index) => {
@@ -341,7 +364,7 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
       className={`flex flex-col ${isFullscreen ? "h-screen" : ""}`}
       style={isFullscreen ? { backgroundColor } : undefined}
     >
-      <Card className={`mb-4 ${isFullscreen ? "absolute top-4 left-4 right-4 z-10 bg-background/80 backdrop-blur" : ""}`}>
+      <Card className={`mb-4 ${isFullscreen ? "bg-background/80 backdrop-blur" : ""}`}>
         <CardContent className="py-3">
           <div className="text-sm text-muted-foreground mb-2">Referencias das noticias</div>
           <Textarea value={referencesText} readOnly rows={4} className="resize-none" />
@@ -349,14 +372,14 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
       </Card>
 
       {/* Controls */}
-      <Card className={`mb-4 ${isFullscreen ? "absolute top-28 left-4 right-4 z-10 bg-background/80 backdrop-blur" : ""}`}>
+      <Card className={`mb-4 ${isFullscreen ? "bg-background/80 backdrop-blur" : ""}`}>
         <CardContent className="py-3">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               {!isPlaying ? (
-                <Button onClick={handleStart} size="sm">
+                <Button onClick={handleStart} size="sm" disabled={countdown !== null}>
                   <Play className="w-4 h-4 mr-1" />
-                  Iniciar
+                  {countdown !== null ? "Preparando" : "Iniciar"}
                 </Button>
               ) : (
                 <Button onClick={handlePauseToggle} size="sm" variant={isPaused ? "default" : "secondary"}>
@@ -532,6 +555,14 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
           className="absolute inset-x-0 bottom-0 h-24 z-10 pointer-events-none"
           style={{ background: `linear-gradient(to top, ${backgroundColor}, transparent)` }}
         />
+
+        {countdown !== null && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+            <div className="rounded-full bg-black/60 px-10 py-6 text-6xl font-bold tracking-wide text-white">
+              {countdown}
+            </div>
+          </div>
+        )}
         
         {/* Center line indicator */}
         <div className="absolute inset-x-0 top-[30%] h-0.5 bg-primary/30 z-10 pointer-events-none" />
