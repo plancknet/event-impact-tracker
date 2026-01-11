@@ -316,22 +316,46 @@ FORMATO DE SAIDA (JSON):
 {
   "script": "...",
   "questions": ["Pergunta 1", "Pergunta 2", "Pergunta 3"]
-}
+}`;
 
-CONFIGURAÇÕES DO ROTEIRO:
-- Tom: ${toneMap[parameters.tone] || parameters.tone}
-- Público-alvo: ${audienceMap[parameters.audience] || parameters.audience}
-- Tipo de roteiro: ${scriptTypeMap[parameters.scriptType] || parameters.scriptType}
-- ${durationInstruction}
-${ctaInstruction}
+      // Build detailed user prompt with all configurations
+      const configDetails = `
+=== CONFIGURAÇÕES OBRIGATÓRIAS DO ROTEIRO ===
 
-Escreva um roteiro contínuo, coeso e envolvente baseado nas notícias abaixo. Conecte as informações de forma natural, criando transições fluidas entre os assuntos.`;
+🎭 TOM E ESTILO: ${toneMap[parameters.tone] || parameters.tone}
+   - Escreva TODO o texto neste tom específico
 
-      userPrompt = `Com base nas seguintes notícias, crie o roteiro conforme as configurações acima:
+🧑 PÚBLICO-ALVO: ${audienceMap[parameters.audience] || parameters.audience}
+   - Adapte a linguagem, vocabulário e complexidade para este público
+
+🌍 IDIOMA: ${parameters.language}
+   - O roteiro DEVE ser escrito inteiramente neste idioma
+
+⏱️ DURAÇÃO: ${durationInstruction}
+   - ESTA É UMA REGRA CRÍTICA: o roteiro DEVE ter exatamente esta duração
+   - ${parameters.durationUnit === 'minutes' 
+       ? `Para ${parameters.duration} minutos, escreva aproximadamente ${parseInt(parameters.duration) * 150} palavras (considerando 150 palavras/minuto)`
+       : `Conte as palavras e garanta que o texto tenha ${parameters.duration} palavras`}
+
+🎥 TIPO DE ROTEIRO: ${scriptTypeMap[parameters.scriptType] || parameters.scriptType}
+   - Adapte o formato, ritmo e estrutura para este tipo de conteúdo
+
+${parameters.includeCta && parameters.ctaText ? `📣 CHAMADA PARA AÇÃO (CTA): ${parameters.ctaText}
+   - Inclua esta CTA de forma natural ao final do roteiro` : ''}
+
+=== FIM DAS CONFIGURAÇÕES ===
+`;
+
+      userPrompt = `${configDetails}
+
+Com base nas CONFIGURAÇÕES OBRIGATÓRIAS acima e nas seguintes notícias, crie o roteiro:
 
 ${newsContext}
 
-Lembre-se: retorne APENAS o JSON solicitado.`;
+IMPORTANTE: 
+- Siga RIGOROSAMENTE todas as configurações especificadas acima
+- A duração é OBRIGATÓRIA: ${durationInstruction}
+- Retorne APENAS o JSON solicitado.`;
     }
 
     const extraPrompt =
