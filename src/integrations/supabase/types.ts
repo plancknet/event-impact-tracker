@@ -22,6 +22,7 @@ export type Database = {
           parameters_json: Json
           raw_ai_response: string | null
           script_text: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -30,6 +31,7 @@ export type Database = {
           parameters_json: Json
           raw_ai_response?: string | null
           script_text: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -38,6 +40,7 @@ export type Database = {
           parameters_json?: Json
           raw_ai_response?: string | null
           script_text?: string
+          user_id?: string | null
         }
         Relationships: []
       }
