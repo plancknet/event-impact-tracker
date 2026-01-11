@@ -83,63 +83,6 @@ export type Database = {
         }
         Relationships: []
       }
-      shared_news_items: {
-        Row: {
-          created_at: string
-          fetched_at: string
-          id: string
-          language: string | null
-          link_url: string
-          published_at: string | null
-          region: string | null
-          rss_id: string | null
-          rss_url: string | null
-          source: string | null
-          summary: string | null
-          term: string | null
-          title: string
-          title_norm: string
-          topic: string
-          topic_norm: string
-        }
-        Insert: {
-          created_at?: string
-          fetched_at?: string
-          id?: string
-          language?: string | null
-          link_url: string
-          published_at?: string | null
-          region?: string | null
-          rss_id?: string | null
-          rss_url?: string | null
-          source?: string | null
-          summary?: string | null
-          term?: string | null
-          title: string
-          title_norm: string
-          topic: string
-          topic_norm: string
-        }
-        Update: {
-          created_at?: string
-          fetched_at?: string
-          id?: string
-          language?: string | null
-          link_url?: string
-          published_at?: string | null
-          region?: string | null
-          rss_id?: string | null
-          rss_url?: string | null
-          source?: string | null
-          summary?: string | null
-          term?: string | null
-          title?: string
-          title_norm?: string
-          topic?: string
-          topic_norm?: string
-        }
-        Relationships: []
-      }
       teleprompter_scripts: {
         Row: {
           created_at: string
