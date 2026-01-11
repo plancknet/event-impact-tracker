@@ -200,14 +200,17 @@ export function TeleprompterDisplay({
       
       containerRef.current.scrollTop = scrollPositionRef.current;
 
-      // Check for pause markers in view
+      // Check for pause markers reaching the first line (top) of the display
       const pauseElements = contentRef.current.querySelectorAll("[data-pause]");
       pauseElements.forEach((el) => {
         const rect = el.getBoundingClientRect();
         const containerRect = containerRef.current!.getBoundingClientRect();
-        const triggerPoint = containerRect.top + containerRect.height * 0.3;
+        // Trigger when pause tag reaches the top of the visible area (first line)
+        // Allow a small tolerance of ~30px for the first line area
+        const firstLineTop = containerRect.top;
+        const firstLineBottom = containerRect.top + 50;
         
-        if (rect.top <= triggerPoint && rect.bottom >= triggerPoint - 50) {
+        if (rect.top <= firstLineBottom && rect.bottom >= firstLineTop) {
           const pauseType = el.getAttribute("data-pause") as PauseType;
           if (pauseType && !el.hasAttribute("data-triggered")) {
             el.setAttribute("data-triggered", "true");
