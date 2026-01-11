@@ -34,25 +34,15 @@ serve(async (req) => {
     const body = await req.json();
     
     // Validate and sanitize term
-    let term = body.term;
-    if (typeof term !== "string" || term.trim().length === 0) {
+    let term = typeof body.term === "string" ? body.term : "";
+    term = term.replace(/\s+/g, " ").trim();
+    if (term.length > MAX_TERM_LENGTH) {
+      term = term.slice(0, MAX_TERM_LENGTH).trim();
+    }
+    if (!term) {
       return new Response(JSON.stringify({ error: "Invalid term", xml: "" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    }
-    
-    // Validate term length
-    term = term.trim();
-    if (term.length > MAX_TERM_LENGTH) {
-      return new Response(
-        JSON.stringify({
-          error: `Term too long. Maximum is ${MAX_TERM_LENGTH} characters`,
-          xml: "",
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
     }
 
     // Validate and sanitize language
