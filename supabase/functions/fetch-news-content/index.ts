@@ -1,6 +1,7 @@
 // Security: Restrict CORS to allowed origins
 const ALLOWED_ORIGINS = [
   'https://bficxnetrsuyzygutztn.lovableproject.com',
+  'https://thinkandtalk.lovable.app',
   'http://localhost:5173',
   'http://localhost:3000',
 ];
