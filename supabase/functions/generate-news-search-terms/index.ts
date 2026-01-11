@@ -1,20 +1,64 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Security: Restrict CORS to allowed origins
+const ALLOWED_ORIGINS = [
+  'https://bficxnetrsuyzygutztn.lovableproject.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.some(o => origin.startsWith(o.replace(/\/$/, ''))) 
+    ? origin 
+    : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
+
+// Input validation constants
+const MAX_PROMPT_LENGTH = 2000;
+const MAX_MAIN_AREA_LENGTH = 200;
+const MAX_COUNT = 20;
+const MIN_COUNT = 1;
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { prompt, mainArea, count = 5 } = await req.json();
+    const body = await req.json();
+    
+    // Validate and sanitize inputs
+    let prompt = body.prompt;
+    if (typeof prompt !== 'string' || prompt.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Prompt is required", terms: [] }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    prompt = prompt.trim().slice(0, MAX_PROMPT_LENGTH);
+    
+    let mainArea = body.mainArea;
+    if (typeof mainArea === 'string') {
+      mainArea = mainArea.trim().slice(0, MAX_MAIN_AREA_LENGTH);
+    } else {
+      mainArea = '';
+    }
+    
+    let count = body.count;
+    if (typeof count !== 'number' || isNaN(count)) {
+      count = 5;
+    }
+    count = Math.max(MIN_COUNT, Math.min(MAX_COUNT, Math.floor(count)));
 
-    console.log("Generating search terms for:", mainArea);
+    console.log("Generating search terms for:", mainArea || 'general');
 
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!lovableApiKey) {
@@ -115,9 +159,10 @@ serve(async (req) => {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Error generating search terms:", message);
+    const origin = req.headers.get('origin');
     return new Response(
       JSON.stringify({ error: message, terms: [] }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
     );
   }
 });

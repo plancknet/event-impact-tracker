@@ -2,10 +2,28 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Security: Restrict CORS to allowed origins
+const ALLOWED_ORIGINS = [
+  'https://bficxnetrsuyzygutztn.lovableproject.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.some(o => origin.startsWith(o.replace(/\/$/, ''))) 
+    ? origin 
+    : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
+
+// Input validation constants
+const MAX_NEWS_ITEMS = 50;
+const MAX_TITLE_LENGTH = 500;
+const MAX_CONTENT_LENGTH = 50000;
+const MAX_PROMPT_LENGTH = 5000;
 
 interface NewsItem {
   id: string;
@@ -25,29 +43,139 @@ interface EditorialParameters {
   ctaText?: string;
 }
 
+// Input validation helper
+function validateNewsItem(item: unknown, index: number): NewsItem {
+  if (typeof item !== 'object' || item === null) {
+    throw new Error(`News item ${index} is invalid`);
+  }
+  const obj = item as Record<string, unknown>;
+  
+  if (typeof obj.id !== 'string' || obj.id.length > 100) {
+    throw new Error(`News item ${index} has invalid id`);
+  }
+  if (typeof obj.title !== 'string' || obj.title.length > MAX_TITLE_LENGTH) {
+    throw new Error(`News item ${index} has invalid or too long title`);
+  }
+  
+  return {
+    id: obj.id,
+    title: obj.title.slice(0, MAX_TITLE_LENGTH),
+    summary: typeof obj.summary === 'string' ? obj.summary.slice(0, MAX_CONTENT_LENGTH) : undefined,
+    content: typeof obj.content === 'string' ? obj.content.slice(0, MAX_CONTENT_LENGTH) : undefined,
+  };
+}
+
+function validateParameters(params: unknown): EditorialParameters {
+  if (typeof params !== 'object' || params === null) {
+    throw new Error('Invalid parameters');
+  }
+  const obj = params as Record<string, unknown>;
+  
+  const validTones = ['neutro', 'jornalistico', 'educativo', 'tecnico', 'humoristico', 'descontraido', 'storytelling'];
+  const validAudiences = ['criancas', 'adolescentes', 'adultos', 'publico_geral', 'especialistas'];
+  const validScriptTypes = ['video_curto', 'video_longo', 'telejornal', 'podcast', 'narracao_simples'];
+  const validDurationUnits = ['minutes', 'words'];
+  
+  const tone = typeof obj.tone === 'string' && validTones.includes(obj.tone) ? obj.tone : 'neutro';
+  const audience = typeof obj.audience === 'string' && validAudiences.includes(obj.audience) ? obj.audience : 'publico_geral';
+  const scriptType = typeof obj.scriptType === 'string' && validScriptTypes.includes(obj.scriptType) ? obj.scriptType : 'narracao_simples';
+  const durationUnit = typeof obj.durationUnit === 'string' && validDurationUnits.includes(obj.durationUnit) ? obj.durationUnit : 'minutes';
+  
+  return {
+    tone,
+    audience,
+    language: typeof obj.language === 'string' ? obj.language.slice(0, 10) : 'pt-BR',
+    duration: typeof obj.duration === 'string' ? obj.duration.slice(0, 10) : '3',
+    durationUnit,
+    scriptType,
+    includeCta: obj.includeCta === true,
+    ctaText: typeof obj.ctaText === 'string' ? obj.ctaText.slice(0, 500) : undefined,
+  };
+}
+
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const {
-      newsItems,
-      parameters,
-      refinementPrompt,
-      baseScript,
-      feedback,
-      complementaryPrompt,
-    }: {
-      newsItems: NewsItem[];
-      parameters: EditorialParameters;
-      refinementPrompt?: string;
-      baseScript?: string;
-      feedback?: { question: string; answer: string }[];
-      complementaryPrompt?: string;
-    } = await req.json();
+    // Security: Validate authentication before processing
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: Missing or invalid authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    
+    // Verify user with anon key first
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    });
+    
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Authentication failed:', authError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log('Authenticated user:', user.id);
 
-    if (!newsItems || newsItems.length === 0) {
+    const body = await req.json();
+    
+    // Validate and sanitize inputs
+    const rawNewsItems = body.newsItems;
+    const rawParameters = body.parameters;
+    const refinementPrompt = typeof body.refinementPrompt === 'string' 
+      ? body.refinementPrompt.slice(0, MAX_PROMPT_LENGTH) 
+      : undefined;
+    const baseScript = typeof body.baseScript === 'string' 
+      ? body.baseScript.slice(0, MAX_CONTENT_LENGTH) 
+      : undefined;
+    const complementaryPrompt = typeof body.complementaryPrompt === 'string' 
+      ? body.complementaryPrompt.slice(0, MAX_PROMPT_LENGTH) 
+      : undefined;
+    
+    // Validate feedback array
+    let feedback: { question: string; answer: string }[] | undefined;
+    if (Array.isArray(body.feedback)) {
+      feedback = body.feedback
+        .slice(0, 10)
+        .filter((f: unknown) => 
+          typeof f === 'object' && f !== null &&
+          typeof (f as Record<string, unknown>).question === 'string' &&
+          typeof (f as Record<string, unknown>).answer === 'string'
+        )
+        .map((f: Record<string, unknown>) => ({
+          question: String(f.question).slice(0, 500),
+          answer: String(f.answer).slice(0, 1000),
+        }));
+    }
+
+    // Validate news items array
+    let newsItems: NewsItem[] = [];
+    if (Array.isArray(rawNewsItems)) {
+      if (rawNewsItems.length > MAX_NEWS_ITEMS) {
+        throw new Error(`Too many news items. Maximum is ${MAX_NEWS_ITEMS}`);
+      }
+      newsItems = rawNewsItems.map((item, index) => validateNewsItem(item, index));
+    }
+
+    // Validate parameters
+    const parameters = validateParameters(rawParameters);
+
+    if (newsItems.length === 0) {
       if (!complementaryPrompt || !complementaryPrompt.trim()) {
         throw new Error("Nenhuma noticia selecionada e nenhum prompt complementar informado");
       }
@@ -273,14 +401,14 @@ Lembre-se: retorne APENAS o JSON solicitado.`;
       throw new Error("A IA não retornou um roteiro válido");
     }
 
-    // Save to database
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Save to database using service role (after authentication is verified)
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { data: savedScript, error: saveError } = await supabase
       .from("teleprompter_scripts")
       .insert({
+        user_id: user.id, // Now we have verified user from auth
         news_ids_json: newsItems.map(n => n.id),
         parameters_json: parameters,
         script_text: scriptText,
@@ -305,9 +433,10 @@ Lembre-se: retorne APENAS o JSON solicitado.`;
 
   } catch (error) {
     console.error("Erro na função generate-teleprompter-script:", error);
+    const origin = req.headers.get('origin');
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Erro desconhecido" }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
     });
   }
 });

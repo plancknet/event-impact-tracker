@@ -1,7 +1,23 @@
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Security: Restrict CORS to allowed origins
+const ALLOWED_ORIGINS = [
+  'https://bficxnetrsuyzygutztn.lovableproject.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.some(o => origin.startsWith(o.replace(/\/$/, ''))) 
+    ? origin 
+    : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
+
+// Input validation constants
+const MAX_URL_LENGTH = 2048;
+const ALLOWED_PROTOCOLS = ['http:', 'https:'];
 
 // Extract real URL from Google News redirect
 function extractRealUrl(url: string): string {
@@ -87,6 +103,58 @@ function extractContentSimple(html: string): string {
     .trim();
 
   return content;
+}
+
+// URL validation helper
+function validateUrl(url: string): { valid: boolean; error?: string } {
+  if (typeof url !== 'string' || url.length === 0) {
+    return { valid: false, error: 'URL is required' };
+  }
+  
+  if (url.length > MAX_URL_LENGTH) {
+    return { valid: false, error: `URL too long. Maximum is ${MAX_URL_LENGTH} characters` };
+  }
+  
+  try {
+    const parsedUrl = new URL(url);
+    if (!ALLOWED_PROTOCOLS.includes(parsedUrl.protocol)) {
+      return { valid: false, error: 'Invalid URL protocol. Only http and https are allowed' };
+    }
+    
+    // Block internal/private IP ranges (basic SSRF protection)
+    const hostname = parsedUrl.hostname.toLowerCase();
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('10.') ||
+      hostname.startsWith('172.16.') ||
+      hostname.startsWith('172.17.') ||
+      hostname.startsWith('172.18.') ||
+      hostname.startsWith('172.19.') ||
+      hostname.startsWith('172.20.') ||
+      hostname.startsWith('172.21.') ||
+      hostname.startsWith('172.22.') ||
+      hostname.startsWith('172.23.') ||
+      hostname.startsWith('172.24.') ||
+      hostname.startsWith('172.25.') ||
+      hostname.startsWith('172.26.') ||
+      hostname.startsWith('172.27.') ||
+      hostname.startsWith('172.28.') ||
+      hostname.startsWith('172.29.') ||
+      hostname.startsWith('172.30.') ||
+      hostname.startsWith('172.31.') ||
+      hostname === '0.0.0.0' ||
+      hostname.endsWith('.local') ||
+      hostname.endsWith('.internal')
+    ) {
+      return { valid: false, error: 'Access to internal URLs is not allowed' };
+    }
+    
+    return { valid: true };
+  } catch {
+    return { valid: false, error: 'Invalid URL format' };
+  }
 }
 
 // Firecrawl scraping
@@ -178,16 +246,22 @@ async function scrapeSimple(url: string): Promise<{ success: boolean; content?: 
 }
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { url } = await req.json();
+    const body = await req.json();
+    const url = body.url;
 
-    if (!url) {
+    // Validate URL
+    const validation = validateUrl(url);
+    if (!validation.valid) {
       return new Response(
-        JSON.stringify({ success: false, error: 'URL is required' }),
+        JSON.stringify({ success: false, error: validation.error }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -235,12 +309,13 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error('Handler error:', error);
+    const origin = req.headers.get('origin');
     return new Response(
       JSON.stringify({ 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
       }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
     );
   }
 });

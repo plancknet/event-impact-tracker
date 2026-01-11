@@ -1,29 +1,66 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Security: Restrict CORS to allowed origins
+const ALLOWED_ORIGINS = [
+  'https://bficxnetrsuyzygutztn.lovableproject.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.some(o => origin.startsWith(o.replace(/\/$/, ''))) 
+    ? origin 
+    : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
+
+// Input validation constants
+const MAX_TERM_LENGTH = 200;
+const MAX_TERM_ID_LENGTH = 100;
+const MAX_LANGUAGE_LENGTH = 10;
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { termId, term, language } = await req.json();
-
-    if (!termId || !term) {
+    const body = await req.json();
+    
+    // Validate and sanitize inputs
+    let termId = body.termId;
+    let term = body.term;
+    let language = body.language;
+    
+    if (typeof termId !== 'string' || termId.trim().length === 0) {
       return new Response(
-        JSON.stringify({ success: false, error: "termId and term are required" }),
+        JSON.stringify({ success: false, error: "termId is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    termId = termId.trim().slice(0, MAX_TERM_ID_LENGTH);
+    
+    if (typeof term !== 'string' || term.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ success: false, error: "term is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    term = term.trim().slice(0, MAX_TERM_LENGTH);
 
     console.log(`Querying Google News for term: ${term}`);
 
-    // Use Google News RSS feed - more reliable than Alerts API
-    const languageKey = typeof language === "string" && language ? language : "pt-BR";
+    // Validate and sanitize language
+    const languageKey = typeof language === "string" && language.trim() 
+      ? language.trim().slice(0, MAX_LANGUAGE_LENGTH) 
+      : "pt-BR";
+      
     const languageMap: Record<string, { hl: string; gl: string; ceid: string; accept: string }> = {
       "pt-BR": { hl: "pt-BR", gl: "BR", ceid: "BR:pt", accept: "pt-BR,pt;q=0.8,en-US;q=0.5" },
       "en-US": { hl: "en-US", gl: "US", ceid: "US:en", accept: "en-US,en;q=0.7" },
@@ -90,9 +127,10 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Error in google-alerts-query:", error);
+    const origin = req.headers.get('origin');
     return new Response(
       JSON.stringify({ success: false, error: error instanceof Error ? error.message : String(error) }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" } }
     );
   }
 });
