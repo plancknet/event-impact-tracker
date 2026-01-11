@@ -53,9 +53,14 @@ export async function fetchGoogleNewsRss(
     throw new Error(message);
   }
 
-  const xml = (data as { xml?: string } | null)?.xml;
+  const payload = (data as { xml?: string; error?: string } | null) || {};
+  if (payload.error) {
+    console.warn("Google News RSS proxy error:", payload.error);
+    return [];
+  }
+  const xml = payload.xml ?? "";
   if (!xml) {
-    throw new Error("Google News RSS proxy returned no XML");
+    return [];
   }
 
   return parseGoogleNewsRss(xml, options.maxItems);

@@ -36,8 +36,7 @@ serve(async (req) => {
     // Validate and sanitize term
     let term = body.term;
     if (typeof term !== "string" || term.trim().length === 0) {
-      return new Response(JSON.stringify({ error: "Invalid term" }), {
-        status: 400,
+      return new Response(JSON.stringify({ error: "Invalid term", xml: "" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -45,10 +44,15 @@ serve(async (req) => {
     // Validate term length
     term = term.trim();
     if (term.length > MAX_TERM_LENGTH) {
-      return new Response(JSON.stringify({ error: `Term too long. Maximum is ${MAX_TERM_LENGTH} characters` }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          error: `Term too long. Maximum is ${MAX_TERM_LENGTH} characters`,
+          xml: "",
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Validate and sanitize language

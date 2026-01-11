@@ -77,11 +77,17 @@ async function fetchRssForTerms(
     terms.map(async (term) => {
       const minItems = options.minItemsPerTerm ?? 0;
       const fetchMaxItems = Math.max(options.maxItemsPerTerm ?? 0, minItems * 6 || 0);
-      const items = await fetchGoogleNewsRss(term.term, {
-        language: options.language,
-        region: options.region,
-        maxItems: fetchMaxItems || options.maxItemsPerTerm,
-      });
+      let items: RssItem[] = [];
+      try {
+        items = await fetchGoogleNewsRss(term.term, {
+          language: options.language,
+          region: options.region,
+          maxItems: fetchMaxItems || options.maxItemsPerTerm,
+        });
+      } catch (error) {
+        console.warn("Failed to fetch RSS for term:", term.term, error);
+        items = [];
+      }
       const windowedItems = filterItemsByWindow(items, {
         minItemsPerTerm: minItems,
         initialWindowHours: options.initialWindowHours ?? 24,
