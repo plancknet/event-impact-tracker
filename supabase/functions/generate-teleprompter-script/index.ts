@@ -298,6 +298,21 @@ Por favor, aplique as modificações solicitadas ao roteiro acima e retorne o ro
       // FASE 1: Engenheiro de Prompt - Cria o prompt ideal
       // ============================================================
       
+      // Calcular número de palavras baseado na duração
+      // Média de leitura para teleprompter: 130-150 palavras/minuto
+      // Usando 140 palavras/minuto como base
+      const WORDS_PER_MINUTE = 140;
+      const durationMinutes = parameters.durationUnit === 'minutes' 
+        ? parseInt(parameters.duration) || 3 
+        : Math.ceil((parseInt(parameters.duration) || 420) / WORDS_PER_MINUTE);
+      const targetWordCount = parameters.durationUnit === 'words'
+        ? parseInt(parameters.duration) || 420
+        : durationMinutes * WORDS_PER_MINUTE;
+      
+      // Definir ranges de palavras para dar flexibilidade
+      const minWords = Math.floor(targetWordCount * 0.9);
+      const maxWords = Math.ceil(targetWordCount * 1.1);
+      
       const promptEngineerSystem = `Você é um ENGENHEIRO DE PROMPTS especializado em criar instruções precisas para geração de roteiros de vídeo/áudio.
 
 SEU OBJETIVO: Criar um prompt detalhado e otimizado que será usado por um editor especializado para gerar o roteiro final.
@@ -307,6 +322,7 @@ VOCÊ DEVE:
 2. Analisar as notícias/tema disponíveis
 3. Criar um prompt ÚNICO e COMPLETO que contenha todas as instruções necessárias
 4. O prompt deve ser auto-contido - o editor não terá acesso às configurações originais
+5. ⚠️ ENFATIZAR A DURAÇÃO DO ROTEIRO - Este é o requisito mais crítico!
 
 FORMATO DE SAÍDA (retorne APENAS o prompt, sem explicações):
 Um texto detalhado com todas as instruções para o editor criar o roteiro.`;
@@ -322,10 +338,13 @@ Um texto detalhado com todas as instruções para o editor criar o roteiro.`;
 🎭 TOM E ESTILO: ${toneMap[parameters.tone] || parameters.tone}
 🧑 PÚBLICO-ALVO: ${audienceMap[parameters.audience] || parameters.audience}
 🌍 IDIOMA: ${parameters.language}
-⏱️ DURAÇÃO: ${durationInstruction}
-   - ${parameters.durationUnit === 'minutes' 
-       ? `Para ${parameters.duration} minutos, escreva aproximadamente ${parseInt(parameters.duration) * 150} palavras (considerando 150 palavras/minuto)`
-       : `O texto deve ter exatamente ${parameters.duration} palavras`}
+
+⚠️⚠️⚠️ REQUISITO CRÍTICO - DURAÇÃO DO ROTEIRO: ⚠️⚠️⚠️
+- DURAÇÃO SOLICITADA: ${parameters.duration} ${parameters.durationUnit === 'minutes' ? 'MINUTOS' : 'PALAVRAS'}
+- CONTAGEM DE PALAVRAS OBRIGATÓRIA: entre ${minWords} e ${maxWords} palavras
+- Taxa de leitura: ${WORDS_PER_MINUTE} palavras por minuto
+- Tempo estimado: ${durationMinutes} minutos
+
 🎥 TIPO DE ROTEIRO: ${scriptTypeMap[parameters.scriptType] || parameters.scriptType}
 ${parameters.includeCta && parameters.ctaText ? `📣 CTA: ${parameters.ctaText}` : ''}
 
@@ -334,15 +353,23 @@ ${newsContext}` : 'NOTA: Não há notícias selecionadas. O roteiro deve ser bas
 
 ${complementaryPrompt ? `INSTRUÇÕES ADICIONAIS DO USUÁRIO: ${complementaryPrompt}` : ''}
 
-Crie um prompt detalhado e otimizado para um editor especializado gerar o roteiro. O prompt deve incluir:
-1. Instruções claras sobre tom, estilo e linguagem
-2. Especificação exata da duração (em palavras e tempo)
-3. Estrutura sugerida para o roteiro
+Crie um prompt detalhado e otimizado para um editor especializado gerar o roteiro. O prompt DEVE incluir:
+
+1. ⚠️ INSTRUÇÃO OBRIGATÓRIA DE EXTENSÃO: O roteiro DEVE ter EXATAMENTE entre ${minWords} e ${maxWords} palavras (para ${durationMinutes} minutos de leitura)
+2. Instruções claras sobre tom, estilo e linguagem
+3. Estrutura detalhada para o roteiro (com tempo/palavras por seção):
+   - Hook/Abertura: ~${Math.floor(targetWordCount * 0.1)} palavras
+   - Desenvolvimento: ~${Math.floor(targetWordCount * 0.75)} palavras (dividido em pontos principais)
+   - CTA/Fechamento: ~${Math.floor(targetWordCount * 0.15)} palavras
 4. Como usar as notícias (se houver) ou desenvolver o tema
 5. Regras de formatação (pausas, marcações)
-6. CTA se aplicável`;
+6. CTA se aplicável
+
+IMPORTANTE: O prompt que você criar DEVE enfatizar que o editor precisa escrever um texto LONGO o suficiente para ${durationMinutes} minutos de leitura!`;
 
       console.log("FASE 1: Gerando prompt otimizado com Engenheiro de Prompts...");
+      console.log(`Duração solicitada: ${parameters.duration} ${parameters.durationUnit}`);
+      console.log(`Contagem alvo de palavras: ${targetWordCount} (${minWords}-${maxWords})`);
       
       const promptEngineerResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -383,16 +410,29 @@ Crie um prompt detalhado e otimizado para um editor especializado gerar o roteir
 
       systemPrompt = `Você é um EDITOR PROFISSIONAL ${editorSpecialty}, especialista em criar roteiros para leitura em voz alta.
 
+⚠️⚠️⚠️ REQUISITO CRÍTICO DE EXTENSÃO ⚠️⚠️⚠️
+O roteiro DEVE ter entre ${minWords} e ${maxWords} palavras.
+Isso equivale a ${durationMinutes} minutos de leitura (${WORDS_PER_MINUTE} palavras/minuto).
+SE O ROTEIRO TIVER MENOS QUE ${minWords} PALAVRAS, VOCÊ FALHOU NA TAREFA!
+
 REGRAS ABSOLUTAS:
 1. Retorne um JSON válido com as chaves "script" e "questions"
-2. O texto deve ser escrito como será LIDO EM VOZ ALTA (teleprompter)
-3. NÃO invente fatos - use apenas as informações fornecidas
-4. Insira marcações de pausa:
+2. O texto DEVE ter entre ${minWords} e ${maxWords} palavras - CONTE AS PALAVRAS!
+3. O texto deve ser escrito como será LIDO EM VOZ ALTA (teleprompter)
+4. NÃO invente fatos - use apenas as informações fornecidas
+5. Desenvolva cada ponto com profundidade - não seja superficial
+6. Insira marcações de pausa:
    - <pause-short> para pausas breves (1-2 segundos)
    - <pause-medium> para pausas médias (3-4 segundos)
    - <pause-long> para pausas longas (5-6 segundos)
    - <topic-change> para mudança de assunto
-5. Gere exatamente 3 perguntas sobre a opinião pessoal do usuário sobre o texto
+7. Gere exatamente 3 perguntas sobre a opinião pessoal do usuário sobre o texto
+
+DICAS PARA ATINGIR A EXTENSÃO:
+- Desenvolva cada tópico com exemplos e contexto
+- Use frases de transição entre pontos
+- Elabore a abertura e o fechamento
+- Não tenha pressa - o texto precisa ter ${durationMinutes} minutos de leitura
 
 FORMATO DE SAÍDA (JSON):
 {
@@ -405,7 +445,9 @@ FORMATO DE SAÍDA (JSON):
 ${newsItems.length > 0 ? `NOTÍCIAS PARA REFERÊNCIA:
 ${newsContext}` : ''}
 
-IMPORTANTE: Siga TODAS as instruções do prompt acima. Retorne APENAS o JSON solicitado.`;
+⚠️ LEMBRETE FINAL: O roteiro DEVE ter entre ${minWords} e ${maxWords} palavras. Isso é OBRIGATÓRIO!
+
+Retorne APENAS o JSON solicitado.`;
     }
 
     // Adicionar prompt complementar e feedback (aplicável a ambos os modos)
