@@ -56,11 +56,10 @@ export async function generateTeleprompterScript(
   };
 }
 
-export async function fetchLatestTeleprompterScript(userId: string): Promise<string | null> {
+export async function fetchLatestTeleprompterScript(): Promise<string | null> {
   const { data, error } = await supabase
     .from("teleprompter_scripts")
     .select("script_text")
-    .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
