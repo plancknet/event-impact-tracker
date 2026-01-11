@@ -22,9 +22,41 @@ import {
   EyeOff,
 } from "lucide-react";
 
+export interface TeleprompterSettings {
+  speed: number;
+  fontFamily: string;
+  fontSize: number;
+  textColor: string;
+  backgroundColor: string;
+  showPauseTags: boolean;
+  pauseDurations: {
+    "pause-short": number;
+    "pause-medium": number;
+    "pause-long": number;
+    "pause": number;
+  };
+}
+
+export const DEFAULT_TELEPROMPTER_SETTINGS: TeleprompterSettings = {
+  speed: 50,
+  fontFamily: "Inter, system-ui, sans-serif",
+  fontSize: 28,
+  textColor: "#ffffff",
+  backgroundColor: "#000000",
+  showPauseTags: true,
+  pauseDurations: {
+    "pause-short": 1500,
+    "pause-medium": 3500,
+    "pause-long": 6000,
+    "pause": 2500,
+  },
+};
+
 interface TeleprompterDisplayProps {
   script: string;
   references?: { title: string; url?: string | null }[];
+  settings?: TeleprompterSettings;
+  onSettingsChange?: (settings: TeleprompterSettings) => void;
 }
 
 const DEFAULT_PAUSE_DURATIONS = {
@@ -44,23 +76,49 @@ const FONT_OPTIONS = [
   { label: "Courier", value: "\"Courier New\", monospace" },
 ];
 
-export function TeleprompterDisplay({ script, references = [] }: TeleprompterDisplayProps) {
+export function TeleprompterDisplay({ 
+  script, 
+  references = [],
+  settings,
+  onSettingsChange,
+}: TeleprompterDisplayProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isUserPaused, setIsUserPaused] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
-  const [speed, setSpeed] = useState(50); // pixels per second
+  const [speed, setSpeed] = useState(settings?.speed ?? DEFAULT_TELEPROMPTER_SETTINGS.speed);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showPauseTags, setShowPauseTags] = useState(true);
+  const [showPauseTags, setShowPauseTags] = useState(settings?.showPauseTags ?? DEFAULT_TELEPROMPTER_SETTINGS.showPauseTags);
   const [currentPause, setCurrentPause] = useState<string | null>(null);
-  const [pauseDurations, setPauseDurations] = useState<Record<PauseType, number>>({
-    ...DEFAULT_PAUSE_DURATIONS,
-  });
-  const [fontFamily, setFontFamily] = useState(FONT_OPTIONS[0].value);
-  const [fontSize, setFontSize] = useState(28);
-  const [textColor, setTextColor] = useState("#ffffff");
-  const [backgroundColor, setBackgroundColor] = useState("#000000");
+  const [pauseDurations, setPauseDurations] = useState<Record<PauseType, number>>(
+    settings?.pauseDurations ?? { ...DEFAULT_PAUSE_DURATIONS }
+  );
+  const [fontFamily, setFontFamily] = useState(settings?.fontFamily ?? DEFAULT_TELEPROMPTER_SETTINGS.fontFamily);
+  const [fontSize, setFontSize] = useState(settings?.fontSize ?? DEFAULT_TELEPROMPTER_SETTINGS.fontSize);
+  const [textColor, setTextColor] = useState(settings?.textColor ?? DEFAULT_TELEPROMPTER_SETTINGS.textColor);
+  const [backgroundColor, setBackgroundColor] = useState(settings?.backgroundColor ?? DEFAULT_TELEPROMPTER_SETTINGS.backgroundColor);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  // Notify parent of settings changes
+  const notifySettingsChange = useCallback(() => {
+    if (onSettingsChange) {
+      onSettingsChange({
+        speed,
+        fontFamily,
+        fontSize,
+        textColor,
+        backgroundColor,
+        showPauseTags,
+        pauseDurations: pauseDurations as TeleprompterSettings["pauseDurations"],
+      });
+    }
+  }, [onSettingsChange, speed, fontFamily, fontSize, textColor, backgroundColor, showPauseTags, pauseDurations]);
+
+  // Debounce settings change notifications
+  useEffect(() => {
+    const timeout = setTimeout(notifySettingsChange, 300);
+    return () => clearTimeout(timeout);
+  }, [notifySettingsChange]);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
