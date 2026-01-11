@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ChevronDown, ChevronUp, FileText, Loader2, LogOut, Monitor, Wand2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { TeleprompterDisplay } from "@/components/teleprompter/TeleprompterDisplay";
+import { TeleprompterDisplay, DEFAULT_TELEPROMPTER_SETTINGS, type TeleprompterSettings } from "@/components/teleprompter/TeleprompterDisplay";
 import { runNewsPipelineWithTerms } from "@/news/pipeline";
 import type { FullArticle, NewsSearchTerm } from "@/news/types";
 import {
@@ -53,6 +53,7 @@ type ScriptParameters = {
     newsLanguage?: string;
     scriptLanguage?: string;
   };
+  teleprompterSettings?: TeleprompterSettings;
 };
 
 type WritingProfile = {
@@ -167,6 +168,7 @@ export default function ContentCreator() {
   const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
   const [scriptsLoading, setScriptsLoading] = useState(false);
   const [isScriptsCollapsed, setIsScriptsCollapsed] = useState(true);
+  const [teleprompterSettings, setTeleprompterSettings] = useState<TeleprompterSettings>(DEFAULT_TELEPROMPTER_SETTINGS);
 
   const scriptLanguageOptions = [
     { label: "Inglês", value: "English" },
@@ -411,6 +413,7 @@ export default function ContentCreator() {
     setNewsItems([]);
     setNewsError(null);
     setSelectedScriptId(null);
+    setTeleprompterSettings(DEFAULT_TELEPROMPTER_SETTINGS);
   };
 
   const handleGenerate = async (): Promise<boolean> => {
@@ -488,7 +491,7 @@ export default function ContentCreator() {
 
     setIsSavingScript(true);
     try {
-      const parameters = buildTeleprompterParameters(profile, complementaryPrompt);
+      const parameters = buildTeleprompterParameters(profile, complementaryPrompt, teleprompterSettings);
       
       if (selectedScriptId) {
         // Update existing record
@@ -656,9 +659,15 @@ export default function ContentCreator() {
           profileFromParams.scriptLanguage ?? parameters.language ?? prev.scriptLanguage,
       }));
       setComplementaryPrompt(parameters.complementaryPrompt ?? "");
+      if (parameters.teleprompterSettings) {
+        setTeleprompterSettings(parameters.teleprompterSettings);
+      } else {
+        setTeleprompterSettings(DEFAULT_TELEPROMPTER_SETTINGS);
+      }
     } else {
       setProfile(DEFAULT_PROFILE);
       setComplementaryPrompt("");
+      setTeleprompterSettings(DEFAULT_TELEPROMPTER_SETTINGS);
     }
 
     setSelectedNewsIds(newsIds);
@@ -1293,7 +1302,12 @@ export default function ContentCreator() {
           </Card>
 
           {editedScript ? (
-            <TeleprompterDisplay script={editedScript} references={references} />
+            <TeleprompterDisplay 
+              script={editedScript} 
+              references={references}
+              settings={teleprompterSettings}
+              onSettingsChange={setTeleprompterSettings}
+            />
           ) : (
             <Card>
               <CardContent className="py-10 text-center text-muted-foreground">
@@ -1456,8 +1470,9 @@ function normalizeText(value: string): string {
 
 function buildTeleprompterParameters(
   profile: WritingProfile,
-    complementaryPrompt: string,
-): TeleprompterParameters {
+  complementaryPrompt: string,
+  teleprompterSettings?: TeleprompterSettings,
+): TeleprompterParameters & { teleprompterSettings?: TeleprompterSettings } {
   const durationUnit = profile.duration.toLowerCase().includes("word") ? "words" : "minutes";
   const platform = profile.platform.toLowerCase();
   const scriptType = platform.includes("podcast")
@@ -1484,6 +1499,7 @@ function buildTeleprompterParameters(
       scriptLanguage: profile.scriptLanguage,
     },
     complementaryPrompt,
+    teleprompterSettings,
   };
 }
 
@@ -1508,6 +1524,10 @@ function parseScriptParameters(value: unknown): ScriptParameters | null {
   if (!value || typeof value !== "object") return null;
   const data = value as Record<string, unknown>;
   const profile = data.profile && typeof data.profile === "object" ? (data.profile as Record<string, unknown>) : null;
+  const teleprompterSettingsRaw = data.teleprompterSettings && typeof data.teleprompterSettings === "object" 
+    ? (data.teleprompterSettings as Record<string, unknown>) 
+    : null;
+  
   const parsed: ScriptParameters = {
     tone: typeof data.tone === "string" ? data.tone : undefined,
     audience: typeof data.audience === "string" ? data.audience : undefined,
@@ -1522,6 +1542,19 @@ function parseScriptParameters(value: unknown): ScriptParameters | null {
           platform: typeof profile.platform === "string" ? profile.platform : undefined,
           newsLanguage: typeof profile.newsLanguage === "string" ? profile.newsLanguage : undefined,
           scriptLanguage: typeof profile.scriptLanguage === "string" ? profile.scriptLanguage : undefined,
+        }
+      : undefined,
+    teleprompterSettings: teleprompterSettingsRaw
+      ? {
+          speed: typeof teleprompterSettingsRaw.speed === "number" ? teleprompterSettingsRaw.speed : DEFAULT_TELEPROMPTER_SETTINGS.speed,
+          fontFamily: typeof teleprompterSettingsRaw.fontFamily === "string" ? teleprompterSettingsRaw.fontFamily : DEFAULT_TELEPROMPTER_SETTINGS.fontFamily,
+          fontSize: typeof teleprompterSettingsRaw.fontSize === "number" ? teleprompterSettingsRaw.fontSize : DEFAULT_TELEPROMPTER_SETTINGS.fontSize,
+          textColor: typeof teleprompterSettingsRaw.textColor === "string" ? teleprompterSettingsRaw.textColor : DEFAULT_TELEPROMPTER_SETTINGS.textColor,
+          backgroundColor: typeof teleprompterSettingsRaw.backgroundColor === "string" ? teleprompterSettingsRaw.backgroundColor : DEFAULT_TELEPROMPTER_SETTINGS.backgroundColor,
+          showPauseTags: typeof teleprompterSettingsRaw.showPauseTags === "boolean" ? teleprompterSettingsRaw.showPauseTags : DEFAULT_TELEPROMPTER_SETTINGS.showPauseTags,
+          pauseDurations: teleprompterSettingsRaw.pauseDurations && typeof teleprompterSettingsRaw.pauseDurations === "object"
+            ? (teleprompterSettingsRaw.pauseDurations as TeleprompterSettings["pauseDurations"])
+            : DEFAULT_TELEPROMPTER_SETTINGS.pauseDurations,
         }
       : undefined,
   };
