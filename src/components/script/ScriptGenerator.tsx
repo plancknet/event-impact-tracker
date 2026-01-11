@@ -1,30 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Sparkles, Newspaper } from "lucide-react";
 import { CreatorProfile } from "@/types/creatorProfile";
 import { ContextSummary } from "./ContextSummary";
 import { ScriptOutput } from "./ScriptOutput";
 import { ScriptControls } from "./ScriptControls";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { NewsGrid } from "./NewsGrid";
+import { ScriptHistory } from "./ScriptHistory";
+import { supabase } from "@/integrations/supabase/client";
+import type { FullArticle } from "@/news/types";
 
 interface ScriptGeneratorProps {
   profile: CreatorProfile;
   onEditProfile: () => void;
   generatedScript: string;
   isGenerating: boolean;
-  onGenerate: (newsContext?: string) => Promise<void>;
+  onGenerate: (newsContext?: string, selectedNewsIds?: string[]) => Promise<void>;
   onRegenerate: (adjustments: { tone?: string; duration?: string; format?: string }) => Promise<void>;
   onOpenTeleprompter: () => void;
   onScriptChange: (script: string) => void;
+}
+
+interface ScriptHistoryItem {
+  id: string;
+  created_at: string;
+  script_text: string;
+  news_ids_json: unknown;
+  parameters_json?: unknown;
 }
 
 export function ScriptGenerator({
@@ -42,9 +46,14 @@ export function ScriptGenerator({
   const [currentTone, setCurrentTone] = useState(profile.speaking_tone);
   const [currentDuration, setCurrentDuration] = useState(profile.target_duration);
   const [currentFormat, setCurrentFormat] = useState(profile.video_type);
+  const [selectedNewsIds, setSelectedNewsIds] = useState<string[]>([]);
+  const [currentScriptId, setCurrentScriptId] = useState<string | null>(null);
+  const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
 
   const handleGenerate = async () => {
-    await onGenerate(newsContext || undefined);
+    await onGenerate(newsContext || undefined, selectedNewsIds);
+    // Refresh history after generating
+    setHistoryRefreshTrigger((prev) => prev + 1);
   };
 
   const handleRegenerate = async () => {
@@ -53,6 +62,7 @@ export function ScriptGenerator({
       duration: currentDuration,
       format: currentFormat,
     });
+    setHistoryRefreshTrigger((prev) => prev + 1);
   };
 
   const handleAdjustTone = (tone: string) => {
@@ -67,10 +77,41 @@ export function ScriptGenerator({
     setCurrentFormat(format);
   };
 
+  const handleSelectScript = (script: ScriptHistoryItem) => {
+    if (currentScriptId === script.id) {
+      // Deselect
+      setCurrentScriptId(null);
+      return;
+    }
+    
+    setCurrentScriptId(script.id);
+    onScriptChange(script.script_text);
+    
+    // Parse news IDs if available
+    if (script.news_ids_json && Array.isArray(script.news_ids_json)) {
+      setSelectedNewsIds(script.news_ids_json as string[]);
+    }
+  };
+
+  const handleDeleteScript = (id: string) => {
+    if (currentScriptId === id) {
+      setCurrentScriptId(null);
+      onScriptChange("");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Context summary */}
       <ContextSummary profile={profile} onEditProfile={onEditProfile} />
+      
+      {/* News Grid */}
+      <NewsGrid
+        topic={profile.main_topic}
+        language={profile.news_language}
+        selectedIds={selectedNewsIds}
+        onSelectionChange={setSelectedNewsIds}
+      />
       
       {/* Main generation area */}
       <div className="rounded-2xl border bg-card p-6 md:p-8 space-y-6">
@@ -81,6 +122,11 @@ export function ScriptGenerator({
               <h2 className="text-lg font-semibold">Gerar roteiro</h2>
               <p className="text-sm text-muted-foreground">
                 Sobre: {profile.main_topic || 'Defina um tema no seu perfil'}
+                {selectedNewsIds.length > 0 && (
+                  <span className="ml-2 text-primary">
+                    • {selectedNewsIds.length} notícia(s) selecionada(s)
+                  </span>
+                )}
               </p>
             </div>
             <Button
@@ -156,6 +202,14 @@ export function ScriptGenerator({
           scriptText={generatedScript}
         />
       )}
+      
+      {/* Script History */}
+      <ScriptHistory
+        currentScriptId={currentScriptId}
+        onSelectScript={handleSelectScript}
+        onDeleteScript={handleDeleteScript}
+        refreshTrigger={historyRefreshTrigger}
+      />
     </div>
   );
 }
