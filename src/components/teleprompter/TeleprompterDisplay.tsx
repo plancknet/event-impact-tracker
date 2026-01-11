@@ -191,8 +191,10 @@ export function TeleprompterDisplay({
       
       const maxScroll = contentRef.current.scrollHeight - containerRef.current.clientHeight;
       
+      // Allow scrolling all the way to the end (text disappears from view)
       if (scrollPositionRef.current >= maxScroll) {
         scrollPositionRef.current = maxScroll;
+        // Stop only when fully scrolled
         setIsPlaying(false);
       }
       
@@ -370,32 +372,39 @@ export function TeleprompterDisplay({
         })();
         if (showPauseTags) {
           return (
-            <span
-              key={index}
-              data-pause={part.pauseType}
-              className={`inline-block px-2 py-1 mx-1 rounded text-sm ${pauseClass}`}
-            >
-              {pauseLabel}
-            </span>
+            <div key={index} className="my-4">
+              <div className="h-4" /> {/* Line break before */}
+              <span
+                data-pause={part.pauseType}
+                className={`inline-block px-2 py-1 rounded text-sm ${pauseClass}`}
+              >
+                {pauseLabel}
+              </span>
+              <div className="h-4" /> {/* Line break after */}
+            </div>
           );
         } else {
           return (
-            <span
-              key={index}
-              data-pause={part.pauseType}
-              className="inline-block w-0 h-0"
-            />
+            <div key={index} className="my-4">
+              <div className="h-4" />
+              <span
+                data-pause={part.pauseType}
+                className="inline-block w-0 h-0"
+              />
+              <div className="h-4" />
+            </div>
           );
         }
       }
       if (part.type === "topic") {
         return (
-          <span
-            key={index}
-            className="inline-block px-2 py-1 mx-1 rounded text-sm bg-purple-500/30 text-purple-300"
-          >
-            Mudança de assunto
-          </span>
+          <div key={index} className="my-4">
+            <div className="h-4" />
+            <span className="inline-block px-2 py-1 rounded text-sm bg-purple-500/30 text-purple-300">
+              Mudança de assunto
+            </span>
+            <div className="h-4" />
+          </div>
         );
       }
       return <span key={index}>{part.content}</span>;
@@ -624,7 +633,7 @@ export function TeleprompterDisplay({
         
         <div
           ref={contentRef}
-          className="px-8 py-32"
+          className="px-8 pt-32"
           style={{
             fontFamily,
             fontSize: isFullscreen ? Math.round(fontSize * 1.3) : fontSize,
@@ -633,6 +642,8 @@ export function TeleprompterDisplay({
           }}
         >
           {renderContent()}
+          {/* Extra space to allow text to scroll completely off screen */}
+          <div style={{ height: isFullscreen ? '100vh' : '500px' }} />
         </div>
       </div>
     </div>
