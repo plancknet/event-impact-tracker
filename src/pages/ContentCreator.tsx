@@ -1533,9 +1533,17 @@ function ensureLabeledOption(
 }
 
 function buildTermsFromSubject(subject: string): NewsSearchTerm[] {
+  const MAX_TERM_LENGTH = 200;
+  const sanitizeTerm = (value: string) => {
+    const trimmed = value.replace(/\s+/g, " ").trim();
+    if (!trimmed) return "";
+    if (trimmed.length <= MAX_TERM_LENGTH) return trimmed;
+    return trimmed.slice(0, MAX_TERM_LENGTH).trim();
+  };
+
   const rawTerms = subject
     .split(",")
-    .map((term) => term.trim())
+    .map((term) => sanitizeTerm(term))
     .filter(Boolean);
   const seen = new Set<string>();
   const uniqueTerms: string[] = [];

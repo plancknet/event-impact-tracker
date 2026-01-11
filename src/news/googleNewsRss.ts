@@ -7,12 +7,22 @@ type GoogleNewsRssOptions = {
   maxItems?: number;
 };
 
+const MAX_TERM_LENGTH = 200;
+
+const sanitizeTerm = (value: string) => {
+  const trimmed = value.replace(/\s+/g, " ").trim();
+  if (!trimmed) return "";
+  if (trimmed.length <= MAX_TERM_LENGTH) return trimmed;
+  return trimmed.slice(0, MAX_TERM_LENGTH).trim();
+};
+
 export function buildGoogleNewsRssUrl(term: string, options: GoogleNewsRssOptions = {}): string {
   const language = options.language ?? "en";
   const region = options.region ?? "US";
+  const sanitizedTerm = sanitizeTerm(term);
   const ceid = `${region}:${language}`;
   const params = new URLSearchParams({
-    q: term,
+    q: sanitizedTerm,
     hl: language,
     gl: region,
     ceid,
@@ -25,16 +35,22 @@ export async function fetchGoogleNewsRss(
   term: string,
   options: GoogleNewsRssOptions = {},
 ): Promise<RssItem[]> {
+  const sanitizedTerm = sanitizeTerm(term);
+  if (!sanitizedTerm) return [];
   const { data, error } = await supabase.functions.invoke("google-news-rss", {
     body: {
-      term,
+      term: sanitizedTerm,
       language: options.language ?? "en",
       region: options.region ?? "US",
     },
   });
 
   if (error) {
-    throw error;
+    const message =
+      typeof error === "object" && error && "message" in error
+        ? String(error.message)
+        : "Unknown error";
+    throw new Error(message);
   }
 
   const xml = (data as { xml?: string } | null)?.xml;
