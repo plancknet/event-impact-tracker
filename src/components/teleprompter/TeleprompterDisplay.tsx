@@ -20,6 +20,8 @@ import {
   Minimize,
   Eye,
   EyeOff,
+  Minus,
+  Plus,
 } from "lucide-react";
 
 export interface TeleprompterSettings {
@@ -422,29 +424,11 @@ export function TeleprompterDisplay({
     return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   };
 
-  const referencesText = references.length
-    ? references
-        .map((ref, index) => {
-          const url = ref.url ? ` - ${ref.url}` : "";
-          return `${index + 1}. ${ref.title}${url}`;
-        })
-        .join("\n")
-    : "Nenhuma referencia disponivel.";
-
   return (
     <div
       className={`flex flex-col ${isFullscreen ? "h-screen" : ""}`}
       style={isFullscreen ? { backgroundColor } : undefined}
     >
-      {!isFullscreen && (
-        <Card className="mb-4">
-          <CardContent className="py-3">
-            <div className="text-sm text-muted-foreground mb-2">Referencias das noticias</div>
-            <Textarea value={referencesText} readOnly rows={4} className="resize-none" />
-          </CardContent>
-        </Card>
-      )}
-
       {/* Controls */}
       <Card className={`mb-4 ${isFullscreen ? "bg-background/80 backdrop-blur" : ""}`}>
         <CardContent className="py-3">
@@ -554,46 +538,120 @@ export function TeleprompterDisplay({
                 aria-label="Cor do fundo"
               />
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-3 w-full sm:w-auto">
               <span className="text-xs text-muted-foreground">Pausas (s)</span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Curta</span>
-                <input
-                  type="number"
-                  min={0.5}
-                  max={20}
-                  step={0.5}
-                  value={pauseDurations["pause-short"] / 1000}
-                  onChange={(event) => handlePauseDurationChange("pause-short", Number(event.target.value))}
-                  className="h-8 w-16 rounded border border-border bg-transparent px-2 text-xs"
-                  aria-label="Pausa curta em segundos"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Media</span>
-                <input
-                  type="number"
-                  min={0.5}
-                  max={20}
-                  step={0.5}
-                  value={pauseDurations["pause-medium"] / 1000}
-                  onChange={(event) => handlePauseDurationChange("pause-medium", Number(event.target.value))}
-                  className="h-8 w-16 rounded border border-border bg-transparent px-2 text-xs"
-                  aria-label="Pausa media em segundos"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Longa</span>
-                <input
-                  type="number"
-                  min={0.5}
-                  max={20}
-                  step={0.5}
-                  value={pauseDurations["pause-long"] / 1000}
-                  onChange={(event) => handlePauseDurationChange("pause-long", Number(event.target.value))}
-                  className="h-8 w-16 rounded border border-border bg-transparent px-2 text-xs"
-                  aria-label="Pausa longa em segundos"
-                />
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-12">Curta</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      handlePauseDurationChange("pause-short", pauseDurations["pause-short"] / 1000 - 0.5)
+                    }
+                    aria-label="Diminuir pausa curta"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <div className="w-36">
+                    <Slider
+                      value={[pauseDurations["pause-short"] / 1000]}
+                      onValueChange={([value]) => handlePauseDurationChange("pause-short", value)}
+                      min={0.5}
+                      max={20}
+                      step={0.5}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      handlePauseDurationChange("pause-short", pauseDurations["pause-short"] / 1000 + 0.5)
+                    }
+                    aria-label="Aumentar pausa curta"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <span className="text-xs text-muted-foreground w-10 text-right">
+                    {pauseDurations["pause-short"] / 1000}s
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-12">Media</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      handlePauseDurationChange("pause-medium", pauseDurations["pause-medium"] / 1000 - 0.5)
+                    }
+                    aria-label="Diminuir pausa media"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <div className="w-36">
+                    <Slider
+                      value={[pauseDurations["pause-medium"] / 1000]}
+                      onValueChange={([value]) => handlePauseDurationChange("pause-medium", value)}
+                      min={0.5}
+                      max={20}
+                      step={0.5}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      handlePauseDurationChange("pause-medium", pauseDurations["pause-medium"] / 1000 + 0.5)
+                    }
+                    aria-label="Aumentar pausa media"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <span className="text-xs text-muted-foreground w-10 text-right">
+                    {pauseDurations["pause-medium"] / 1000}s
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground w-12">Longa</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      handlePauseDurationChange("pause-long", pauseDurations["pause-long"] / 1000 - 0.5)
+                    }
+                    aria-label="Diminuir pausa longa"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <div className="w-36">
+                    <Slider
+                      value={[pauseDurations["pause-long"] / 1000]}
+                      onValueChange={([value]) => handlePauseDurationChange("pause-long", value)}
+                      min={0.5}
+                      max={20}
+                      step={0.5}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      handlePauseDurationChange("pause-long", pauseDurations["pause-long"] / 1000 + 0.5)
+                    }
+                    aria-label="Aumentar pausa longa"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <span className="text-xs text-muted-foreground w-10 text-right">
+                    {pauseDurations["pause-long"] / 1000}s
+                  </span>
+                </div>
               </div>
             </div>
           </div>

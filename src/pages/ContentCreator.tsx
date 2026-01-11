@@ -190,6 +190,19 @@ export default function ContentCreator() {
     [selectedNews],
   );
 
+  const referencesText = useMemo(
+    () =>
+      references.length
+        ? references
+            .map((ref, index) => {
+              const url = ref.url ? ` - ${ref.url}` : "";
+              return `${index + 1}. ${ref.title}${url}`;
+            })
+            .join("\n")
+        : "Nenhuma referencia disponivel.",
+    [references],
+  );
+
   const termOptions = useMemo(() => searchTerms.map((term) => term.term), [searchTerms]);
   const sourceOptions = useMemo(() => {
     const set = new Set<string>();
@@ -1065,142 +1078,153 @@ export default function ContentCreator() {
               </p>
             </div>
 
-            {newsItems.length === 0 ? (
-              <div className="rounded-lg border p-6 text-sm text-muted-foreground">
-                Nenhuma noticia encontrada ainda. Tente novamente ou ajuste o assunto principal.
-              </div>
-            ) : (
-              <>
-                <div className="flex gap-4 mb-4">
-                  <div className="flex flex-col gap-2 w-[60%]">
-                    <div className="flex items-center gap-2">
-                      <LocalTermFilter value={termFilter} options={termOptions} onChange={setTermFilter} />
-                      <CategoryFilter value={categoryFilter} options={sourceOptions} onChange={setCategoryFilter} />
-                      <DateFilter
-                        value={dateFilter}
-                        onChange={setDateFilter}
-                        placeholder="Criacao dd/mm/aaaa"
-                      />
-                      <DateFilter
-                        value={publishedDateFilter}
-                        onChange={setPublishedDateFilter}
-                        placeholder="Publicacao dd/mm/aaaa"
-                      />
-                    </div>
-                    <div className="relative">
-                      <Input
-                        placeholder="Filtrar por titulo..."
-                        value={titleFilter}
-                        onChange={(e) => {
-                          setTitleFilter(e.target.value);
-                        }}
-                        className="pl-3"
-                        maxLength={100}
-                      />
-                    </div>
-                  </div>
-                  <div className="w-[40%]">
-                    <WordCloud
-                      compact
-                      titles={wordCloudTitles}
-                      onWordClick={handleWordCloudClick}
-                      activeWords={wordCloudFilter}
-                      onClear={() => setWordCloudFilter([])}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Prompt complementar</p>
-                  <Textarea
-                    value={complementaryPrompt}
-                    onChange={(event) => setComplementaryPrompt(event.target.value)}
-                    rows={3}
-                    placeholder="Ex.: foque nos aprendizados para criadores, seja direto e inclua CTA."
+            <div className="flex gap-4 mb-4">
+              <div className="flex flex-col gap-2 w-[60%]">
+                <div className="flex items-center gap-2">
+                  <LocalTermFilter value={termFilter} options={termOptions} onChange={setTermFilter} />
+                  <CategoryFilter value={categoryFilter} options={sourceOptions} onChange={setCategoryFilter} />
+                  <DateFilter
+                    value={dateFilter}
+                    onChange={setDateFilter}
+                    placeholder="Criacao dd/mm/aaaa"
+                  />
+                  <DateFilter
+                    value={publishedDateFilter}
+                    onChange={setPublishedDateFilter}
+                    placeholder="Publicacao dd/mm/aaaa"
                   />
                 </div>
-
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12">
-                          <Checkbox
-                            checked={
-                              selectedNewsIds.length === filteredAndSortedNews.length &&
-                              filteredAndSortedNews.length > 0
-                            }
-                            onCheckedChange={toggleSelectAll}
-                          />
-                        </TableHead>
-                        <SortableTableHead
-                          sortKey="published_at"
-                          currentSort={currentSort}
-                          onSort={handleSort}
-                          className="w-[120px]"
-                        >
-                          Publicacao
-                        </SortableTableHead>
-                        <SortableTableHead
-                          sortKey="title"
-                          currentSort={currentSort}
-                          onSort={handleSort}
-                        >
-                          Titulo
-                        </SortableTableHead>
-                        <TableHead className="w-[140px]">Fonte</TableHead>
-                        <TableHead>Link</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredAndSortedNews.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                            Nenhuma noticia encontrada
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredAndSortedNews.map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell>
-                              <Checkbox
-                                checked={selectedNewsIds.includes(item.id)}
-                                onCheckedChange={() => toggleSelection(item.id)}
-                              />
-                            </TableCell>
-                            <TableCell className="font-mono text-xs whitespace-nowrap">
-                              {item.publishedAt
-                                ? format(new Date(item.publishedAt), "dd/MM/yyyy HH:mm", { locale: ptBR })
-                                : "-"}
-                            </TableCell>
-                            <TableCell className="max-w-[400px] truncate font-medium">
-                              {item.title}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {formatSource(item.source, item.link)}
-                            </TableCell>
-                            <TableCell>
-                              {item.link ? (
-                                <a
-                                  href={item.link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
-                                >
-                                  Ver original
-                                </a>
-                              ) : (
-                                "-"
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
+                <div className="relative">
+                  <Input
+                    placeholder="Filtrar por titulo..."
+                    value={titleFilter}
+                    onChange={(e) => {
+                      setTitleFilter(e.target.value);
+                    }}
+                    className="pl-3"
+                    maxLength={100}
+                  />
                 </div>
-              </>
-            )}
+              </div>
+              <div className="w-[40%]">
+                <WordCloud
+                  compact
+                  titles={wordCloudTitles}
+                  onWordClick={handleWordCloudClick}
+                  activeWords={wordCloudFilter}
+                  onClear={() => setWordCloudFilter([])}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Prompt complementar</p>
+              <Textarea
+                value={complementaryPrompt}
+                onChange={(event) => setComplementaryPrompt(event.target.value)}
+                rows={3}
+                placeholder="Ex.: foque nos aprendizados para criadores, seja direto e inclua CTA."
+              />
+            </div>
+
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={
+                          selectedNewsIds.length === filteredAndSortedNews.length &&
+                          filteredAndSortedNews.length > 0
+                        }
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
+                    <SortableTableHead
+                      sortKey="published_at"
+                      currentSort={currentSort}
+                      onSort={handleSort}
+                      className="w-[120px]"
+                    >
+                      Publicacao
+                    </SortableTableHead>
+                    <SortableTableHead
+                      sortKey="title"
+                      currentSort={currentSort}
+                      onSort={handleSort}
+                    >
+                      Titulo
+                    </SortableTableHead>
+                    <TableHead className="w-[140px]">Fonte</TableHead>
+                    <TableHead>Link</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAndSortedNews.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        Nenhuma noticia encontrada
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredAndSortedNews.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedNewsIds.includes(item.id)}
+                            onCheckedChange={() => toggleSelection(item.id)}
+                          />
+                        </TableCell>
+                        <TableCell className="font-mono text-xs whitespace-nowrap">
+                          {item.publishedAt
+                            ? format(new Date(item.publishedAt), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                            : "-"}
+                        </TableCell>
+                        <TableCell className="max-w-[400px] truncate font-medium">
+                          {item.title}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatSource(item.source, item.link)}
+                        </TableCell>
+                        <TableCell>
+                          {item.link ? (
+                            <a
+                              href={item.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
+                            >
+                              Ver original
+                            </a>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Referencias das noticias</CardTitle>
+                <CardDescription>Lista das noticias selecionadas.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {selectedNews.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">Nenhuma noticia selecionada.</div>
+                ) : (
+                  <Textarea
+                    value={referencesText}
+                    readOnly
+                    rows={4}
+                    className="resize-none"
+                  />
+                )}
+              </CardContent>
+            </Card>
 
             <div className="space-y-2">
               <p className="text-sm font-medium">Idioma do roteiro</p>
