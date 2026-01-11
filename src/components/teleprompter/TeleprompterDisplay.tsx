@@ -521,11 +521,6 @@ export function TeleprompterDisplay({ script, references = [] }: TeleprompterDis
             </div>
           </div>
 
-          {currentPause && (
-            <div className="mt-2 text-center text-yellow-500 animate-pulse">
-              ⏸ Pausa automática ({currentPause.replace("pause-", "").replace("pause", "normal")})
-            </div>
-          )}
         </CardContent>
       </Card>
 
