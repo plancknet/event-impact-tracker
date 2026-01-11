@@ -294,74 +294,125 @@ ${newsContext}
 Por favor, aplique as modificações solicitadas ao roteiro acima e retorne o roteiro completo refinado. Retorne apenas o JSON solicitado.`;
 
     } else {
-      // Generation mode: create new script from scratch
-      systemPrompt = `Você é um roteirista profissional especializado em criar textos para leitura em voz alta.
+      // ============================================================
+      // FASE 1: Engenheiro de Prompt - Cria o prompt ideal
+      // ============================================================
+      
+      const promptEngineerSystem = `Você é um ENGENHEIRO DE PROMPTS especializado em criar instruções precisas para geração de roteiros de vídeo/áudio.
+
+SEU OBJETIVO: Criar um prompt detalhado e otimizado que será usado por um editor especializado para gerar o roteiro final.
+
+VOCÊ DEVE:
+1. Analisar todas as configurações fornecidas
+2. Analisar as notícias/tema disponíveis
+3. Criar um prompt ÚNICO e COMPLETO que contenha todas as instruções necessárias
+4. O prompt deve ser auto-contido - o editor não terá acesso às configurações originais
+
+FORMATO DE SAÍDA (retorne APENAS o prompt, sem explicações):
+Um texto detalhado com todas as instruções para o editor criar o roteiro.`;
+
+      // Determinar o tema principal
+      const mainTopic = complementaryPrompt?.trim() || 
+        (newsItems.length > 0 ? `Notícias sobre: ${newsItems.map(n => n.title).join(', ')}` : 'Tema livre');
+
+      const promptEngineerUser = `CONFIGURAÇÕES DO ROTEIRO:
+
+📌 ASSUNTO PRINCIPAL: ${mainTopic}
+
+🎭 TOM E ESTILO: ${toneMap[parameters.tone] || parameters.tone}
+🧑 PÚBLICO-ALVO: ${audienceMap[parameters.audience] || parameters.audience}
+🌍 IDIOMA: ${parameters.language}
+⏱️ DURAÇÃO: ${durationInstruction}
+   - ${parameters.durationUnit === 'minutes' 
+       ? `Para ${parameters.duration} minutos, escreva aproximadamente ${parseInt(parameters.duration) * 150} palavras (considerando 150 palavras/minuto)`
+       : `O texto deve ter exatamente ${parameters.duration} palavras`}
+🎥 TIPO DE ROTEIRO: ${scriptTypeMap[parameters.scriptType] || parameters.scriptType}
+${parameters.includeCta && parameters.ctaText ? `📣 CTA: ${parameters.ctaText}` : ''}
+
+${newsItems.length > 0 ? `NOTÍCIAS DISPONÍVEIS PARA CONTEXTO:
+${newsContext}` : 'NOTA: Não há notícias selecionadas. O roteiro deve ser baseado apenas no assunto principal informado.'}
+
+${complementaryPrompt ? `INSTRUÇÕES ADICIONAIS DO USUÁRIO: ${complementaryPrompt}` : ''}
+
+Crie um prompt detalhado e otimizado para um editor especializado gerar o roteiro. O prompt deve incluir:
+1. Instruções claras sobre tom, estilo e linguagem
+2. Especificação exata da duração (em palavras e tempo)
+3. Estrutura sugerida para o roteiro
+4. Como usar as notícias (se houver) ou desenvolver o tema
+5. Regras de formatação (pausas, marcações)
+6. CTA se aplicável`;
+
+      console.log("FASE 1: Gerando prompt otimizado com Engenheiro de Prompts...");
+      
+      const promptEngineerResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: promptEngineerSystem },
+            { role: "user", content: promptEngineerUser }
+          ],
+        }),
+      });
+
+      if (!promptEngineerResponse.ok) {
+        const errorText = await promptEngineerResponse.text();
+        console.error("Erro na FASE 1:", promptEngineerResponse.status, errorText);
+        throw new Error(`Erro na geração do prompt: ${promptEngineerResponse.status}`);
+      }
+
+      const promptEngineerData = await promptEngineerResponse.json();
+      const generatedPrompt = promptEngineerData.choices?.[0]?.message?.content || "";
+      
+      console.log("FASE 1 concluída. Prompt gerado:", generatedPrompt.length, "caracteres");
+
+      // ============================================================
+      // FASE 2: Editor Especializado - Gera o roteiro final
+      // ============================================================
+      
+      // Determinar a especialidade do editor baseado no assunto
+      const editorSpecialty = complementaryPrompt 
+        ? `especializado no tema "${complementaryPrompt.slice(0, 100)}"`
+        : newsItems.length > 0 
+          ? `especializado em jornalismo e análise de notícias`
+          : `versátil e adaptável a diferentes temas`;
+
+      systemPrompt = `Você é um EDITOR PROFISSIONAL ${editorSpecialty}, especialista em criar roteiros para leitura em voz alta.
 
 REGRAS ABSOLUTAS:
-1. Retorne um JSON valido com as chaves "script" e "questions"
-2. O texto deve ser escrito como será LIDO EM VOZ ALTA, como um teleprompter
-3. NÃO invente fatos que não estejam nas notícias fornecidas
-4. Insira marcações de pausa nos seguintes formatos:
-   - <pause-short> para pausas breves (1-2 segundos) após frases importantes
-   - <pause-medium> para pausas médias (3-4 segundos) entre tópicos
-   - <pause-long> para pausas longas (5-6 segundos) entre notícias diferentes ou seções
-5. Insira <topic-change> sempre que houver mudanca de assunto (entre noticias ou blocos distintos)
-6. Coloque pausas naturais onde um apresentador respiraria ou daria enfase
-7. O idioma do roteiro deve ser: ${parameters.language}
-8. Gere exatamente 3 perguntas sobre a opiniao pessoal do usuario sobre o texto
-9. Use o prompt complementar do usuario como guia principal, se fornecido
-10. Use as noticias como contexto quando estiverem disponiveis, sem se limitar a elas
+1. Retorne um JSON válido com as chaves "script" e "questions"
+2. O texto deve ser escrito como será LIDO EM VOZ ALTA (teleprompter)
+3. NÃO invente fatos - use apenas as informações fornecidas
+4. Insira marcações de pausa:
+   - <pause-short> para pausas breves (1-2 segundos)
+   - <pause-medium> para pausas médias (3-4 segundos)
+   - <pause-long> para pausas longas (5-6 segundos)
+   - <topic-change> para mudança de assunto
+5. Gere exatamente 3 perguntas sobre a opinião pessoal do usuário sobre o texto
 
-FORMATO DE SAIDA (JSON):
+FORMATO DE SAÍDA (JSON):
 {
   "script": "...",
   "questions": ["Pergunta 1", "Pergunta 2", "Pergunta 3"]
 }`;
 
-      // Build detailed user prompt with all configurations
-      const configDetails = `
-=== CONFIGURAÇÕES OBRIGATÓRIAS DO ROTEIRO ===
+      userPrompt = `${generatedPrompt}
 
-🎭 TOM E ESTILO: ${toneMap[parameters.tone] || parameters.tone}
-   - Escreva TODO o texto neste tom específico
+${newsItems.length > 0 ? `NOTÍCIAS PARA REFERÊNCIA:
+${newsContext}` : ''}
 
-🧑 PÚBLICO-ALVO: ${audienceMap[parameters.audience] || parameters.audience}
-   - Adapte a linguagem, vocabulário e complexidade para este público
-
-🌍 IDIOMA: ${parameters.language}
-   - O roteiro DEVE ser escrito inteiramente neste idioma
-
-⏱️ DURAÇÃO: ${durationInstruction}
-   - ESTA É UMA REGRA CRÍTICA: o roteiro DEVE ter exatamente esta duração
-   - ${parameters.durationUnit === 'minutes' 
-       ? `Para ${parameters.duration} minutos, escreva aproximadamente ${parseInt(parameters.duration) * 150} palavras (considerando 150 palavras/minuto)`
-       : `Conte as palavras e garanta que o texto tenha ${parameters.duration} palavras`}
-
-🎥 TIPO DE ROTEIRO: ${scriptTypeMap[parameters.scriptType] || parameters.scriptType}
-   - Adapte o formato, ritmo e estrutura para este tipo de conteúdo
-
-${parameters.includeCta && parameters.ctaText ? `📣 CHAMADA PARA AÇÃO (CTA): ${parameters.ctaText}
-   - Inclua esta CTA de forma natural ao final do roteiro` : ''}
-
-=== FIM DAS CONFIGURAÇÕES ===
-`;
-
-      userPrompt = `${configDetails}
-
-Com base nas CONFIGURAÇÕES OBRIGATÓRIAS acima e nas seguintes notícias, crie o roteiro:
-
-${newsContext}
-
-IMPORTANTE: 
-- Siga RIGOROSAMENTE todas as configurações especificadas acima
-- A duração é OBRIGATÓRIA: ${durationInstruction}
-- Retorne APENAS o JSON solicitado.`;
+IMPORTANTE: Siga TODAS as instruções do prompt acima. Retorne APENAS o JSON solicitado.`;
     }
 
+    // Adicionar prompt complementar e feedback (aplicável a ambos os modos)
     const extraPrompt =
       complementaryPrompt ||
       (parameters as unknown as { complementaryPrompt?: string })?.complementaryPrompt;
-    if (extraPrompt && typeof extraPrompt === "string" && extraPrompt.trim()) {
+    if (extraPrompt && typeof extraPrompt === "string" && extraPrompt.trim() && isRefinement) {
       userPrompt += `\n\nPrompt complementar do usuario (aplicar obrigatoriamente):\n${extraPrompt.trim()}\n`;
     }
 
@@ -375,7 +426,7 @@ IMPORTANTE:
       }
     }
 
-    console.log(isRefinement ? "Refinando roteiro existente" : "Gerando novo roteiro para", newsItems.length, "notícias");
+    console.log(isRefinement ? "Refinando roteiro existente" : "FASE 2: Gerando roteiro final com Editor Especializado...");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
