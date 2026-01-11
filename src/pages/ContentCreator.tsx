@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { TeleprompterDisplay, DEFAULT_TELEPROMPTER_SETTINGS, type TeleprompterSettings } from "@/components/teleprompter/TeleprompterDisplay";
 import { runNewsPipelineWithTerms } from "@/news/pipeline";
+import { fetchSharedNewsItems, upsertSharedNewsItems } from "@/news/sharedNews";
 import type { FullArticle, NewsSearchTerm } from "@/news/types";
 import {
   fetchLatestTeleprompterScript,
@@ -176,10 +177,13 @@ export default function ContentCreator() {
     { label: "Espanhol", value: "Spanish" },
   ];
 
-  const selectedNews = useMemo(
-    () => newsItems.filter((item) => selectedNewsIds.includes(item.id)),
-    [newsItems, selectedNewsIds],
-  );
+  const selectedNews = useMemo(() => {
+    if (selectedNewsIds.length === 0) return [];
+    const selectedSet = new Set(selectedNewsIds);
+    return newsItems.filter(
+      (item) => selectedSet.has(item.id) || (item.link && selectedSet.has(item.link)),
+    );
+  }, [newsItems, selectedNewsIds]);
 
   const references = useMemo(
     () =>
@@ -380,6 +384,77 @@ export default function ContentCreator() {
     setWordCloudFilter((prev) => (prev.includes(word) ? prev.filter((w) => w !== word) : [...prev, word]));
   };
 
+  const syncNewsForTopic = async (
+    topic: string,
+    language: string,
+    options?: { sinceHours?: number },
+  ) => {
+    const terms = buildTermsFromSubject(topic);
+    if (terms.length === 0) {
+      setNewsError("Adicione um assunto principal para gerar os termos de busca.");
+      return;
+    }
+
+    setSearchTerms(terms);
+
+    const region = deriveRegionFromLanguage(language);
+    let fetchedItems: FullArticle[] = [];
+    let fetchError: string | null = null;
+
+    try {
+      const { items } = await runNewsPipelineWithTerms(terms, {
+        maxItemsPerTerm: 6,
+        minItemsPerTerm: 5,
+        initialWindowHours: 24,
+        language: language.trim(),
+        region,
+      });
+
+      const fetchedAt = new Date().toISOString();
+      fetchedItems = items.map((item) => ({ ...item, fetchedAt }));
+
+      await upsertSharedNewsItems(fetchedItems, { topic, language, region });
+    } catch (error) {
+      console.error("Failed to load news context:", error);
+      fetchError = "Nao foi possivel carregar o contexto de noticias. Tente novamente.";
+    }
+
+    try {
+      const storedItems = await fetchSharedNewsItems(topic, {
+        language,
+        region,
+        sinceHours: options?.sinceHours,
+      });
+      if (storedItems.length > 0) {
+        setNewsItems(storedItems);
+        setNewsError(
+          fetchError
+            ? "Nao foi possivel atualizar as noticias agora. Exibindo resultados salvos."
+            : null,
+        );
+        return;
+      }
+    } catch (error) {
+      console.error("Failed to load stored news:", error);
+      if (!fetchError) {
+        fetchError = "Nao foi possivel carregar as noticias armazenadas. Tente novamente.";
+      }
+    }
+
+    if (fetchedItems.length > 0) {
+      setNewsItems(fetchedItems);
+      if (fetchError) {
+        setNewsError("Nao foi possivel salvar as noticias. Exibindo resultados temporarios.");
+      }
+      return;
+    }
+
+    setNewsItems([]);
+    if (fetchError) {
+      setNewsError(fetchError);
+    }
+  };
+
   const handleContinueToNews = async () => {
     setNewsError(null);
     setNewsLoading(true);
@@ -387,25 +462,7 @@ export default function ContentCreator() {
     setSearchTerms([]);
     setNewsItems([]);
     try {
-      const terms = buildTermsFromSubject(profile.mainSubject);
-      if (terms.length === 0) {
-        setNewsError("Adicione um assunto principal para gerar os termos de busca.");
-        return;
-      }
-
-      setSearchTerms(terms);
-
-      const { items } = await runNewsPipelineWithTerms(terms, {
-        maxItemsPerTerm: 6,
-        minItemsPerTerm: 5,
-        initialWindowHours: 24,
-        language: profile.newsLanguage.trim(),
-      });
-
-      const fetchedAt = new Date().toISOString();
-      const recentItems = items.map((item) => ({ ...item, fetchedAt }));
-      // TODO: Enrich selected items with Firecrawl full text when available.
-      setNewsItems(recentItems);
+      await syncNewsForTopic(profile.mainSubject, profile.newsLanguage, { sinceHours: 72 });
     } catch (error) {
       console.error("Failed to load news context:", error);
       setNewsError("Nao foi possivel carregar o contexto de noticias. Tente novamente.");
@@ -701,27 +758,14 @@ export default function ContentCreator() {
 
     const mainSubject = parameters?.profile?.mainSubject ?? DEFAULT_PROFILE.mainSubject;
     const newsLanguage = parameters?.profile?.newsLanguage ?? profile.newsLanguage;
-    const terms = buildTermsFromSubject(mainSubject);
-    if (terms.length > 0) {
-      setNewsError(null);
-      setNewsLoading(true);
-      setSearchTerms(terms);
-      try {
-        const { items } = await runNewsPipelineWithTerms(terms, {
-          maxItemsPerTerm: 6,
-          minItemsPerTerm: 5,
-          initialWindowHours: 24,
-          language: newsLanguage?.trim(),
-        });
-        const fetchedAt = new Date().toISOString();
-        const recentItems = items.map((item) => ({ ...item, fetchedAt }));
-        setNewsItems(recentItems);
-      } catch (error) {
-        console.error("Failed to load news context:", error);
-        setNewsError("Nao foi possivel carregar o contexto de noticias. Tente novamente.");
-      } finally {
-        setNewsLoading(false);
-      }
+    setNewsError(null);
+    setNewsLoading(true);
+    setSearchTerms([]);
+    setNewsItems([]);
+    try {
+      await syncNewsForTopic(mainSubject, newsLanguage, { sinceHours: 0 });
+    } finally {
+      setNewsLoading(false);
     }
 
     setStep(3);
@@ -1502,6 +1546,20 @@ function buildTermsFromSubject(subject: string): NewsSearchTerm[] {
     uniqueTerms.push(term);
   });
   return uniqueTerms.map((term) => ({ term }));
+}
+
+function deriveRegionFromLanguage(language: string): string | undefined {
+  const trimmed = language.trim();
+  if (!trimmed) return undefined;
+  const parts = trimmed.split("-");
+  if (parts.length > 1) {
+    return parts[1].toUpperCase();
+  }
+  const lower = trimmed.toLowerCase();
+  if (lower === "pt") return "BR";
+  if (lower === "en") return "US";
+  if (lower === "es") return "ES";
+  return undefined;
 }
 
 function formatSource(source?: string, link?: string): string {
