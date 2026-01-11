@@ -393,12 +393,12 @@ export default function ContentCreator() {
       const recentItems = items.map((item) => ({ ...item, fetchedAt }));
       // TODO: Enrich selected items with Firecrawl full text when available.
       setNewsItems(recentItems);
-      setStep(2);
     } catch (error) {
       console.error("Failed to load news context:", error);
       setNewsError("Nao foi possivel carregar o contexto de noticias. Tente novamente.");
     } finally {
       setNewsLoading(false);
+      setStep(2);
     }
   };
 
