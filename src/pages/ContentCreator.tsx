@@ -11,8 +11,9 @@ import { DateFilter } from "@/components/DateFilter";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { LocalTermFilter } from "@/components/LocalTermFilter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, ChevronUp, FileText, Loader2, Monitor, Wand2 } from "lucide-react";
+import { ChevronDown, ChevronUp, FileText, Loader2, LogOut, Monitor, Wand2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { TeleprompterDisplay } from "@/components/teleprompter/TeleprompterDisplay";
 import { runNewsPipelineWithTerms } from "@/news/pipeline";
 import type { FullArticle, NewsSearchTerm } from "@/news/types";
@@ -132,6 +133,7 @@ const DEFAULT_PROFILE: WritingProfile = {
 };
 
 export default function ContentCreator() {
+  const { user, signOut } = useAuth();
   const [step, setStep] = useState<StepId>(1);
   const [profile, setProfile] = useState<WritingProfile>(DEFAULT_PROFILE);
   const [searchTerms, setSearchTerms] = useState<NewsSearchTerm[]>([]);
@@ -479,12 +481,18 @@ export default function ContentCreator() {
       return;
     }
 
+    if (!user) {
+      setGenerationError("Você precisa estar logado para salvar o roteiro.");
+      return;
+    }
+
     setIsSavingScript(true);
     try {
       const parameters = buildTeleprompterParameters(profile, complementaryPrompt);
       const { error } = await supabase
         .from("teleprompter_scripts")
         .insert({
+          user_id: user.id,
           news_ids_json: selectedNewsIds as unknown as import("@/integrations/supabase/types").Json,
           parameters_json: parameters as unknown as import("@/integrations/supabase/types").Json,
           script_text: scriptText,
@@ -667,11 +675,22 @@ export default function ContentCreator() {
     <div className="space-y-6">
       <Card className="border bg-gradient-to-br from-card via-background to-muted/60">
         <CardContent className="py-6">
-          <div>
-            <h1 className="text-2xl font-bold">Fluxo do Criador de Conteudo</h1>
-            <p className="text-muted-foreground">
-              Monte o perfil, adicione o contexto de noticias e gere um roteiro para fala.
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Fluxo do Criador de Conteudo</h1>
+              <p className="text-muted-foreground">
+                Monte o perfil, adicione o contexto de noticias e gere um roteiro para fala.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => signOut()}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Sair
+            </Button>
           </div>
         </CardContent>
       </Card>
