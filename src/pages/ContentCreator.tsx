@@ -1025,7 +1025,7 @@ export default function ContentCreator() {
                     Carregando noticias...
                   </>
                 ) : (
-                  "Continuar para noticias"
+                  "Começar e criar"
                 )}
               </Button>
             </div>
