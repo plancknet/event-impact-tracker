@@ -51,16 +51,24 @@ function validateNewsItem(item: unknown, index: number): NewsItem {
   }
   const obj = item as Record<string, unknown>;
   
-  if (typeof obj.id !== 'string' || obj.id.length > 100) {
-    throw new Error(`News item ${index} has invalid id`);
-  }
-  if (typeof obj.title !== 'string' || obj.title.length > MAX_TITLE_LENGTH) {
-    throw new Error(`News item ${index} has invalid or too long title`);
+  // Allow id to be string, number, or generate fallback
+  let id: string;
+  if (typeof obj.id === 'string' && obj.id.length > 0) {
+    id = obj.id.slice(0, 100);
+  } else if (typeof obj.id === 'number') {
+    id = String(obj.id);
+  } else {
+    id = `item-${index}`;
   }
   
+  // Allow title to be missing if content exists
+  const title = typeof obj.title === 'string' 
+    ? obj.title.slice(0, MAX_TITLE_LENGTH) 
+    : (typeof obj.content === 'string' ? obj.content.slice(0, 100) : `Item ${index + 1}`);
+  
   return {
-    id: obj.id,
-    title: obj.title.slice(0, MAX_TITLE_LENGTH),
+    id,
+    title,
     summary: typeof obj.summary === 'string' ? obj.summary.slice(0, MAX_CONTENT_LENGTH) : undefined,
     content: typeof obj.content === 'string' ? obj.content.slice(0, MAX_CONTENT_LENGTH) : undefined,
   };

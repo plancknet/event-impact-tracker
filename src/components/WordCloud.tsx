@@ -74,16 +74,16 @@ const MUTED_COLORS = [
 
 const getOptions = (compact: boolean) => ({
   enableTooltip: true,
-  deterministic: false,
+  deterministic: true,
   fontFamily: "Inter, system-ui, sans-serif",
-  fontSizes: compact ? [10, 28] as [number, number] : [14, 80] as [number, number],
+  fontSizes: compact ? [8, 20] as [number, number] : [12, 48] as [number, number],
   fontStyle: "normal",
   fontWeight: "bold",
-  padding: compact ? 2 : 4,
-  rotations: compact ? 0 : 2,
+  padding: compact ? 1 : 2,
+  rotations: 0,
   rotationAngles: [0, 0] as [number, number],
   scale: "sqrt" as const,
-  spiral: "archimedean" as const,
+  spiral: "rectangular" as const,
   transitionDuration: 300,
 });
 
