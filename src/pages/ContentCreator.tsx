@@ -489,16 +489,36 @@ export default function ContentCreator() {
     setIsSavingScript(true);
     try {
       const parameters = buildTeleprompterParameters(profile, complementaryPrompt);
-      const { error } = await supabase
-        .from("teleprompter_scripts")
-        .insert({
-          user_id: user.id,
-          news_ids_json: selectedNewsIds as unknown as import("@/integrations/supabase/types").Json,
-          parameters_json: parameters as unknown as import("@/integrations/supabase/types").Json,
-          script_text: scriptText,
-        });
+      
+      if (selectedScriptId) {
+        // Update existing record
+        const { error } = await supabase
+          .from("teleprompter_scripts")
+          .update({
+            news_ids_json: selectedNewsIds as unknown as import("@/integrations/supabase/types").Json,
+            parameters_json: parameters as unknown as import("@/integrations/supabase/types").Json,
+            script_text: scriptText,
+          })
+          .eq("id", selectedScriptId);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Create new record
+        const { data, error } = await supabase
+          .from("teleprompter_scripts")
+          .insert({
+            user_id: user.id,
+            news_ids_json: selectedNewsIds as unknown as import("@/integrations/supabase/types").Json,
+            parameters_json: parameters as unknown as import("@/integrations/supabase/types").Json,
+            script_text: scriptText,
+          })
+          .select("id")
+          .single();
+
+        if (error) throw error;
+        if (data) setSelectedScriptId(data.id);
+      }
+      
       await loadScriptHistory();
     } catch (error) {
       console.error("Failed to save teleprompter script:", error);
