@@ -1050,7 +1050,7 @@ export default function ContentCreator() {
         <Card>
           <CardHeader>
             <CardTitle>Contexto de noticias</CardTitle>
-            <CardDescription>Selecione noticias e adicione um prompt complementar.</CardDescription>
+            <CardDescription>Revise o contexto e avance para gerar o roteiro.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {newsError && (
@@ -1072,177 +1072,10 @@ export default function ContentCreator() {
               </div>
             )}
 
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <p className="text-muted-foreground">
-                {filteredAndSortedNews.length} de {newsItems.length} noticias nas ultimas 24h (ou mais)
-              </p>
-            </div>
-
-            <div className="flex gap-4 mb-4">
-              <div className="flex flex-col gap-2 w-[60%]">
-                <div className="flex items-center gap-2">
-                  <LocalTermFilter value={termFilter} options={termOptions} onChange={setTermFilter} />
-                  <CategoryFilter value={categoryFilter} options={sourceOptions} onChange={setCategoryFilter} />
-                  <DateFilter
-                    value={dateFilter}
-                    onChange={setDateFilter}
-                    placeholder="Criacao dd/mm/aaaa"
-                  />
-                  <DateFilter
-                    value={publishedDateFilter}
-                    onChange={setPublishedDateFilter}
-                    placeholder="Publicacao dd/mm/aaaa"
-                  />
-                </div>
-                <div className="relative">
-                  <Input
-                    placeholder="Filtrar por titulo..."
-                    value={titleFilter}
-                    onChange={(e) => {
-                      setTitleFilter(e.target.value);
-                    }}
-                    className="pl-3"
-                    maxLength={100}
-                  />
-                </div>
-              </div>
-              <div className="w-[40%]">
-                <WordCloud
-                  compact
-                  titles={wordCloudTitles}
-                  onWordClick={handleWordCloudClick}
-                  activeWords={wordCloudFilter}
-                  onClear={() => setWordCloudFilter([])}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Prompt complementar</p>
-              <Textarea
-                value={complementaryPrompt}
-                onChange={(event) => setComplementaryPrompt(event.target.value)}
-                rows={3}
-                placeholder="Ex.: foque nos aprendizados para criadores, seja direto e inclua CTA."
-              />
-            </div>
-
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={
-                          selectedNewsIds.length === filteredAndSortedNews.length &&
-                          filteredAndSortedNews.length > 0
-                        }
-                        onCheckedChange={toggleSelectAll}
-                      />
-                    </TableHead>
-                    <SortableTableHead
-                      sortKey="published_at"
-                      currentSort={currentSort}
-                      onSort={handleSort}
-                      className="w-[120px]"
-                    >
-                      Publicacao
-                    </SortableTableHead>
-                    <SortableTableHead
-                      sortKey="title"
-                      currentSort={currentSort}
-                      onSort={handleSort}
-                    >
-                      Titulo
-                    </SortableTableHead>
-                    <TableHead className="w-[140px]">Fonte</TableHead>
-                    <TableHead>Link</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAndSortedNews.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        Nenhuma noticia encontrada
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredAndSortedNews.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedNewsIds.includes(item.id)}
-                            onCheckedChange={() => toggleSelection(item.id)}
-                          />
-                        </TableCell>
-                        <TableCell className="font-mono text-xs whitespace-nowrap">
-                          {item.publishedAt
-                            ? format(new Date(item.publishedAt), "dd/MM/yyyy HH:mm", { locale: ptBR })
-                            : "-"}
-                        </TableCell>
-                        <TableCell className="max-w-[400px] truncate font-medium">
-                          {item.title}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {formatSource(item.source, item.link)}
-                        </TableCell>
-                        <TableCell>
-                          {item.link ? (
-                            <a
-                              href={item.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
-                            >
-                              Ver original
-                            </a>
-                          ) : (
-                            "-"
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Referencias das noticias</CardTitle>
-                <CardDescription>Lista das noticias selecionadas.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {selectedNews.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">Nenhuma noticia selecionada.</div>
-                ) : (
-                  <Textarea
-                    value={referencesText}
-                    readOnly
-                    rows={4}
-                    className="resize-none"
-                  />
-                )}
-              </CardContent>
-            </Card>
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Idioma do roteiro</p>
-                <Select
-                  value={profile.scriptLanguage}
-                  onValueChange={(value) => setProfile((prev) => ({ ...prev, scriptLanguage: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um idioma" />
-                  </SelectTrigger>
-                  <SelectContent>
-                  {ensureLabeledOption(scriptLanguageOptions, profile.scriptLanguage).map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                  </SelectContent>
-                </Select>
+            <div className="rounded-lg border p-4 text-sm text-muted-foreground">
+              {newsItems.length === 0
+                ? "Nenhuma noticia carregada ainda."
+                : `${newsItems.length} noticias carregadas para o tema informado.`}
             </div>
 
             <div className="flex flex-wrap justify-between gap-2">
@@ -1250,70 +1083,12 @@ export default function ContentCreator() {
                 Voltar ao perfil
               </Button>
               <Button
-                onClick={async () => {
-                  const success = await handleGenerate();
-                  if (success) {
-                    setStep(3);
-                  }
-                }}
-                disabled={!canGenerateFromNews || isGenerating}
+                onClick={() => setStep(3)}
               >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Gerando roteiro...
-                  </>
-                ) : (
-                  "Gerar roteiro"
-                )}
+                Continuar
               </Button>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Roteiros do usuario</CardTitle>
-                <CardDescription>Historico em ordem decrescente de data.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {scriptsLoading ? (
-                  <div className="flex items-center justify-center py-6 text-muted-foreground">
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                    Carregando roteiros...
-                  </div>
-                ) : scriptHistory.length === 0 ? (
-                  <div className="py-6 text-center text-muted-foreground">
-                    Nenhum roteiro gerado ainda.
-                  </div>
-                ) : (
-                  <div className="border rounded-lg">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[140px]">Data</TableHead>
-                          <TableHead>Previa</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {scriptHistory.map((script) => (
-                          <TableRow
-                            key={script.id}
-                            className={`cursor-pointer ${selectedScriptId === script.id ? "bg-muted/60" : ""}`}
-                            onClick={() => void handleUseScript(script)}
-                          >
-                            <TableCell className="font-mono text-xs whitespace-nowrap">
-                              {format(new Date(script.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {getScriptPreview(script.script_text)}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </CardContent>
         </Card>
       )}
@@ -1374,48 +1149,125 @@ export default function ContentCreator() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Noticias para o roteiro</CardTitle>
-              <CardDescription>Selecione as noticias que farão parte do roteiro.</CardDescription>
+              <CardTitle>Contexto de noticias</CardTitle>
+              <CardDescription>Selecione noticias e adicione um prompt complementar.</CardDescription>
             </CardHeader>
-            <CardContent>
-              {newsItems.length === 0 ? (
-                <div className="rounded-lg border p-6 text-sm text-muted-foreground">
-                  Nenhuma noticia carregada. Voce pode gerar o roteiro sem noticias.
+            <CardContent className="space-y-6">
+              {newsError && (
+                <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-sm">
+                  {newsError}
                 </div>
-              ) : (
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
+              )}
+
+              {searchTerms.length > 0 && (
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm font-medium">Termos de busca usados</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {searchTerms.map((term) => (
+                      <span key={term.term} className="rounded-full bg-muted px-3 py-1 text-xs">
+                        {term.term}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <p className="text-muted-foreground">
+                  {filteredAndSortedNews.length} de {newsItems.length} noticias nas ultimas 24h (ou mais)
+                </p>
+              </div>
+
+              <div className="flex gap-4 mb-4">
+                <div className="flex flex-col gap-2 w-[60%]">
+                  <div className="flex items-center gap-2">
+                    <LocalTermFilter value={termFilter} options={termOptions} onChange={setTermFilter} />
+                    <CategoryFilter value={categoryFilter} options={sourceOptions} onChange={setCategoryFilter} />
+                    <DateFilter
+                      value={dateFilter}
+                      onChange={setDateFilter}
+                      placeholder="Criacao dd/mm/aaaa"
+                    />
+                    <DateFilter
+                      value={publishedDateFilter}
+                      onChange={setPublishedDateFilter}
+                      placeholder="Publicacao dd/mm/aaaa"
+                    />
+                  </div>
+                  <div className="relative">
+                    <Input
+                      placeholder="Filtrar por titulo..."
+                      value={titleFilter}
+                      onChange={(e) => {
+                        setTitleFilter(e.target.value);
+                      }}
+                      className="pl-3"
+                      maxLength={100}
+                    />
+                  </div>
+                </div>
+                <div className="w-[40%]">
+                  <WordCloud
+                    compact
+                    titles={wordCloudTitles}
+                    onWordClick={handleWordCloudClick}
+                    activeWords={wordCloudFilter}
+                    onClear={() => setWordCloudFilter([])}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Prompt complementar</p>
+                <Textarea
+                  value={complementaryPrompt}
+                  onChange={(event) => setComplementaryPrompt(event.target.value)}
+                  rows={3}
+                  placeholder="Ex.: foque nos aprendizados para criadores, seja direto e inclua CTA."
+                />
+              </div>
+
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={
+                            selectedNewsIds.length === filteredAndSortedNews.length &&
+                            filteredAndSortedNews.length > 0
+                          }
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
+                      <SortableTableHead
+                        sortKey="published_at"
+                        currentSort={currentSort}
+                        onSort={handleSort}
+                        className="w-[120px]"
+                      >
+                        Publicacao
+                      </SortableTableHead>
+                      <SortableTableHead
+                        sortKey="title"
+                        currentSort={currentSort}
+                        onSort={handleSort}
+                      >
+                        Titulo
+                      </SortableTableHead>
+                      <TableHead className="w-[140px]">Fonte</TableHead>
+                      <TableHead>Link</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAndSortedNews.length === 0 ? (
                       <TableRow>
-                        <TableHead className="w-12">
-                          <Checkbox
-                            checked={
-                              selectedNewsIds.length === filteredAndSortedNews.length &&
-                              filteredAndSortedNews.length > 0
-                            }
-                            onCheckedChange={toggleSelectAll}
-                          />
-                        </TableHead>
-                        <SortableTableHead
-                          sortKey="published_at"
-                          currentSort={currentSort}
-                          onSort={handleSort}
-                          className="w-[120px]"
-                        >
-                          Publicacao
-                        </SortableTableHead>
-                        <SortableTableHead
-                          sortKey="title"
-                          currentSort={currentSort}
-                          onSort={handleSort}
-                        >
-                          Titulo
-                        </SortableTableHead>
-                        <TableHead className="w-[140px]">Fonte</TableHead>
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                          Nenhuma noticia encontrada
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredAndSortedNews.map((item) => (
+                    ) : (
+                      filteredAndSortedNews.map((item) => (
                         <TableRow key={item.id}>
                           <TableCell>
                             <Checkbox
@@ -1434,39 +1286,126 @@ export default function ContentCreator() {
                           <TableCell className="text-sm text-muted-foreground">
                             {formatSource(item.source, item.link)}
                           </TableCell>
+                          <TableCell>
+                            {item.link ? (
+                              <a
+                                href={item.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
+                              >
+                                Ver original
+                              </a>
+                            ) : (
+                              "-"
+                            )}
+                          </TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Prompt complementar</CardTitle>
-              <CardDescription>Ajuste o prompt e gere novamente se necessario.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Textarea
-                value={complementaryPrompt}
-                onChange={(event) => setComplementaryPrompt(event.target.value)}
-                rows={3}
-                placeholder="Ex.: foque nos aprendizados para criadores, seja direto e inclua CTA."
-              />
-              <div className="flex justify-end">
-                <Button onClick={handleRegenerateFromCurrent} disabled={!canGenerateFromNews || isGenerating}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Referencias das noticias</CardTitle>
+                  <CardDescription>Lista das noticias selecionadas.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {selectedNews.length === 0 ? (
+                    <div className="text-sm text-muted-foreground">Nenhuma noticia selecionada.</div>
+                  ) : (
+                    <Textarea
+                      value={referencesText}
+                      readOnly
+                      rows={4}
+                      className="resize-none"
+                    />
+                  )}
+                </CardContent>
+              </Card>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Idioma do roteiro</p>
+                <Select
+                  value={profile.scriptLanguage}
+                  onValueChange={(value) => setProfile((prev) => ({ ...prev, scriptLanguage: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um idioma" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ensureLabeledOption(scriptLanguageOptions, profile.scriptLanguage).map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-wrap justify-between gap-2">
+                <Button variant="outline" onClick={() => setStep(2)}>
+                  Voltar ao contexto
+                </Button>
+                <Button onClick={handleGenerate} disabled={!canGenerateFromNews || isGenerating}>
                   {isGenerating ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Gerando roteiro...
                     </>
                   ) : (
-                    "Gerar novamente"
+                    "Gerar roteiro"
                   )}
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Roteiros do usuario</CardTitle>
+              <CardDescription>Historico em ordem decrescente de data.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {scriptsLoading ? (
+                <div className="flex items-center justify-center py-6 text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  Carregando roteiros...
+                </div>
+              ) : scriptHistory.length === 0 ? (
+                <div className="py-6 text-center text-muted-foreground">
+                  Nenhum roteiro gerado ainda.
+                </div>
+              ) : (
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[140px]">Data</TableHead>
+                        <TableHead>Previa</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {scriptHistory.map((script) => (
+                        <TableRow
+                          key={script.id}
+                          className={`cursor-pointer ${selectedScriptId === script.id ? "bg-muted/60" : ""}`}
+                          onClick={() => void handleUseScript(script)}
+                        >
+                          <TableCell className="font-mono text-xs whitespace-nowrap">
+                            {format(new Date(script.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {getScriptPreview(script.script_text)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -1482,9 +1421,25 @@ export default function ContentCreator() {
                 rows={10}
                 placeholder="O roteiro gerado aparece aqui..."
               />
-              <Button onClick={handleSaveScript} disabled={!canSaveScript || isSavingScript}>
-                {isSavingScript ? "Salvando..." : "Salvar alteracoes"}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleRegenerateFromCurrent}
+                  disabled={!canGenerateFromNews || isGenerating}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Gerando roteiro...
+                    </>
+                  ) : (
+                    "Gerar novamente"
+                  )}
+                </Button>
+                <Button onClick={handleSaveScript} disabled={!canSaveScript || isSavingScript}>
+                  {isSavingScript ? "Salvando..." : "Salvar alteracoes"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
