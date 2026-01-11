@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      creator_profiles: {
+        Row: {
+          audience_pain_points: string[] | null
+          audience_type: string
+          content_goal: string
+          created_at: string
+          cta_template: string | null
+          display_name: string | null
+          duration_unit: string
+          energy_level: string
+          expertise_level: string
+          id: string
+          include_cta: boolean
+          main_topic: string
+          news_language: string
+          platform: string
+          script_language: string
+          speaking_tone: string
+          target_duration: string
+          updated_at: string
+          user_id: string
+          video_type: string
+        }
+        Insert: {
+          audience_pain_points?: string[] | null
+          audience_type?: string
+          content_goal?: string
+          created_at?: string
+          cta_template?: string | null
+          display_name?: string | null
+          duration_unit?: string
+          energy_level?: string
+          expertise_level?: string
+          id?: string
+          include_cta?: boolean
+          main_topic?: string
+          news_language?: string
+          platform?: string
+          script_language?: string
+          speaking_tone?: string
+          target_duration?: string
+          updated_at?: string
+          user_id: string
+          video_type?: string
+        }
+        Update: {
+          audience_pain_points?: string[] | null
+          audience_type?: string
+          content_goal?: string
+          created_at?: string
+          cta_template?: string | null
+          display_name?: string | null
+          duration_unit?: string
+          energy_level?: string
+          expertise_level?: string
+          id?: string
+          include_cta?: boolean
+          main_topic?: string
+          news_language?: string
+          platform?: string
+          script_language?: string
+          speaking_tone?: string
+          target_duration?: string
+          updated_at?: string
+          user_id?: string
+          video_type?: string
+        }
+        Relationships: []
+      }
       teleprompter_scripts: {
         Row: {
           created_at: string

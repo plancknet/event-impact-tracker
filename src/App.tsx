@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import ContentCreator from "@/pages/ContentCreator";
+import Studio from "@/pages/Studio";
 import Auth from "@/pages/Auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
@@ -21,7 +21,7 @@ const App = () => (
             path="/"
             element={
               <ProtectedRoute>
-                <ContentCreator />
+                <Studio />
               </ProtectedRoute>
             }
           />
