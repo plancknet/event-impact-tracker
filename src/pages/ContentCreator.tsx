@@ -554,9 +554,15 @@ export default function ContentCreator() {
     setIsGenerating(true);
     try {
       const trimmedPrompt = complementaryPrompt.trim();
-      if (selectedNews.length === 0 && trimmedPrompt.length === 0) {
+      const missingNews = selectedNews.length === 0;
+      const missingPrompt = trimmedPrompt.length === 0;
+      if (missingNews || missingPrompt) {
+        const parts = [
+          missingNews ? "nenhuma noticia selecionada" : null,
+          missingPrompt ? "nenhum prompt complementar informado" : null,
+        ].filter(Boolean);
         const proceed = window.confirm(
-          "Nenhuma noticia selecionada e nenhum prompt complementar informado. Deseja continuar assim mesmo?",
+          `${parts.join(" e ")}. Deseja continuar assim mesmo?`,
         );
         if (!proceed) {
           return false;
@@ -1096,9 +1102,21 @@ export default function ContentCreator() {
       {step === 3 && (
         <div className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Geracao</CardTitle>
-              <CardDescription>Revise os dados e gere o roteiro.</CardDescription>
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle>Gerar roteiro</CardTitle>
+                <CardDescription>Revise os dados e gere o roteiro.</CardDescription>
+              </div>
+              <Button onClick={handleGenerate} disabled={!canGenerateFromNews || isGenerating}>
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Gerando roteiro...
+                  </>
+                ) : (
+                  "Gerar roteiro"
+                )}
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               {generationError && (
@@ -1345,21 +1363,6 @@ export default function ContentCreator() {
                 </Select>
               </div>
 
-              <div className="flex flex-wrap justify-between gap-2">
-                <Button variant="outline" onClick={() => setStep(2)}>
-                  Voltar ao contexto
-                </Button>
-                <Button onClick={handleGenerate} disabled={!canGenerateFromNews || isGenerating}>
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Gerando roteiro...
-                    </>
-                  ) : (
-                    "Gerar roteiro"
-                  )}
-                </Button>
-              </div>
             </CardContent>
           </Card>
 
