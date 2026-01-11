@@ -2,14 +2,29 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Security: Restrict CORS to allowed origins
+const ALLOWED_ORIGINS = [
+  'https://bficxnetrsuyzygutztn.lovableproject.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.some(o => origin.startsWith(o.replace(/\/$/, ''))) 
+    ? origin 
+    : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
 
 type PlanType = "STANDARD" | "INFLUENCER";
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -74,15 +89,18 @@ serve(async (req) => {
         ? [{ price: influencerPriceId, quantity: 1 }]
         : [{ price: standardPriceId, quantity: 1 }];
 
-    const origin = req.headers.get("origin") ?? Deno.env.get("SITE_URL") ?? "";
+    // Use the request origin or fallback to env var
+    const successOrigin = origin && ALLOWED_ORIGINS.some(o => origin.startsWith(o.replace(/\/$/, '')))
+      ? origin
+      : Deno.env.get("SITE_URL") ?? ALLOWED_ORIGINS[0];
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId ?? undefined,
       customer_email: customerId ? undefined : user.email,
       line_items: lineItems,
       mode,
-      success_url: `${origin}/premium/success?plan=${planType}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/premium?plan=${planType}`,
+      success_url: `${successOrigin}/premium/success?plan=${planType}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${successOrigin}/premium?plan=${planType}`,
       allow_promotion_codes: true,
       metadata: {
         userId: user.id,
@@ -94,10 +112,11 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating checkout session:", error);
+    const origin = req.headers.get('origin');
     return new Response(JSON.stringify({ error: "Failed to create checkout session." }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
       status: 500,
     });
   }

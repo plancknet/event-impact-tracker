@@ -1,14 +1,33 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Security: Restrict CORS to allowed origins
+const ALLOWED_ORIGINS = [
+  'https://bficxnetrsuyzygutztn.lovableproject.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.some(o => origin.startsWith(o.replace(/\/$/, ''))) 
+    ? origin 
+    : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
+
+// Input validation constants
+const MAX_NEWS_ITEMS = 30;
+const MAX_TITLE_LENGTH = 500;
+const MAX_CONTENT_LENGTH = 20000;
+const MAX_URL_LENGTH = 2048;
 
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 
 const AI_MODEL = 'google/gemini-2.5-flash';
 
@@ -67,20 +86,108 @@ Analyze this news and return a JSON object with the following structure. Be prec
 
 Return ONLY the JSON object, no additional text.`;
 
+// Input validation helper
+interface NewsItemInput {
+  newsId: string;
+  fullContentId?: string;
+  title?: string;
+  snippet?: string;
+  linkUrl?: string;
+  contentFull?: string;
+}
+
+function validateNewsItem(item: unknown, index: number): NewsItemInput {
+  if (typeof item !== 'object' || item === null) {
+    throw new Error(`News item ${index} is invalid`);
+  }
+  const obj = item as Record<string, unknown>;
+  
+  if (typeof obj.newsId !== 'string' || obj.newsId.length > 100) {
+    throw new Error(`News item ${index} has invalid newsId`);
+  }
+  
+  // Validate URL if present
+  if (obj.linkUrl !== undefined && typeof obj.linkUrl === 'string') {
+    if (obj.linkUrl.length > MAX_URL_LENGTH) {
+      throw new Error(`News item ${index} has URL that is too long`);
+    }
+    try {
+      const url = new URL(obj.linkUrl);
+      if (!['http:', 'https:'].includes(url.protocol)) {
+        throw new Error(`News item ${index} has invalid URL protocol`);
+      }
+    } catch {
+      // Allow empty or invalid URLs, they'll be handled gracefully
+    }
+  }
+  
+  return {
+    newsId: obj.newsId,
+    fullContentId: typeof obj.fullContentId === 'string' ? obj.fullContentId.slice(0, 100) : undefined,
+    title: typeof obj.title === 'string' ? obj.title.slice(0, MAX_TITLE_LENGTH) : undefined,
+    snippet: typeof obj.snippet === 'string' ? obj.snippet.slice(0, 2000) : undefined,
+    linkUrl: typeof obj.linkUrl === 'string' ? obj.linkUrl.slice(0, MAX_URL_LENGTH) : undefined,
+    contentFull: typeof obj.contentFull === 'string' ? obj.contentFull.slice(0, MAX_CONTENT_LENGTH) : undefined,
+  };
+}
+
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { newsItems } = await req.json();
+    // Security: Validate authentication before processing
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: Missing or invalid authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify user with anon key first
+    const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    });
+    
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Authentication failed:', authError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log('Authenticated user:', user.id);
 
-    if (!newsItems || !Array.isArray(newsItems) || newsItems.length === 0) {
+    const body = await req.json();
+    const rawNewsItems = body.newsItems;
+
+    if (!rawNewsItems || !Array.isArray(rawNewsItems) || rawNewsItems.length === 0) {
       return new Response(
         JSON.stringify({ error: 'No news items provided' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Validate array size
+    if (rawNewsItems.length > MAX_NEWS_ITEMS) {
+      return new Response(
+        JSON.stringify({ error: `Too many news items. Maximum is ${MAX_NEWS_ITEMS}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate each news item
+    const newsItems = rawNewsItems.map((item, index) => validateNewsItem(item, index));
 
     if (!LOVABLE_API_KEY) {
       console.error('LOVABLE_API_KEY is not configured');
@@ -90,6 +197,7 @@ serve(async (req) => {
       );
     }
 
+    // Use service role for database operations (after authentication is verified)
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const results: Array<{ newsId: string; success: boolean; error?: string; analysisId?: string }> = [];
 
@@ -99,7 +207,7 @@ serve(async (req) => {
       console.log(`Analyzing news: ${newsId} - ${title?.substring(0, 50)}...`);
 
       try {
-        // Build the prompt with the news content
+        // Build the prompt with the news content (already sanitized)
         const prompt = ANALYSIS_PROMPT
           .replace('{title}', title || 'N/A')
           .replace('{url}', linkUrl || 'N/A')
@@ -231,9 +339,10 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in analyze-news function:', error);
+    const origin = req.headers.get('origin');
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
     );
   }
 });

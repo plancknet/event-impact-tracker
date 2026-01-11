@@ -2,14 +2,32 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Security: Restrict CORS to allowed origins
+const ALLOWED_ORIGINS = [
+  'https://bficxnetrsuyzygutztn.lovableproject.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.some(o => origin.startsWith(o.replace(/\/$/, ''))) 
+    ? origin 
+    : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
+
+// Input validation
+const MAX_SESSION_ID_LENGTH = 200;
 
 type PlanType = "STANDARD" | "INFLUENCER";
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -30,9 +48,17 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const sessionId = typeof body?.sessionId === "string" ? body.sessionId : "";
-    if (!sessionId) {
+    
+    // Validate session ID
+    let sessionId = body?.sessionId;
+    if (typeof sessionId !== "string" || sessionId.trim().length === 0) {
       throw new Error("Session ID invalido.");
+    }
+    sessionId = sessionId.trim().slice(0, MAX_SESSION_ID_LENGTH);
+    
+    // Basic format validation for Stripe session IDs
+    if (!sessionId.startsWith('cs_')) {
+      throw new Error("Session ID format invalido.");
     }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -94,10 +120,11 @@ serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error verifying payment:", error);
+    const origin = req.headers.get('origin');
     return new Response(JSON.stringify({ error: "Payment verification failed." }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(origin), "Content-Type": "application/json" },
       status: 500,
     });
   }
