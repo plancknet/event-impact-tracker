@@ -184,10 +184,8 @@ serve(async (req) => {
     // Validate parameters
     const parameters = validateParameters(rawParameters);
 
-    if (newsItems.length === 0) {
-      if (!complementaryPrompt || !complementaryPrompt.trim()) {
-        throw new Error("Nenhuma noticia selecionada e nenhum prompt complementar informado");
-      }
+    if (newsItems.length === 0 && (!complementaryPrompt || !complementaryPrompt.trim())) {
+      console.warn("Nenhuma noticia selecionada e nenhum prompt complementar informado.");
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

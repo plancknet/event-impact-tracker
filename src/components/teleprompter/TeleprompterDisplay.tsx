@@ -57,6 +57,7 @@ interface TeleprompterDisplayProps {
   references?: { title: string; url?: string | null }[];
   settings?: TeleprompterSettings;
   onSettingsChange?: (settings: TeleprompterSettings) => void;
+  onBack?: () => void;
 }
 
 const DEFAULT_PAUSE_DURATIONS = {
@@ -76,11 +77,12 @@ const FONT_OPTIONS = [
   { label: "Courier", value: "\"Courier New\", monospace" },
 ];
 
-export function TeleprompterDisplay({ 
-  script, 
+export function TeleprompterDisplay({
+  script,
   references = [],
   settings,
   onSettingsChange,
+  onBack,
 }: TeleprompterDisplayProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -448,6 +450,11 @@ export function TeleprompterDisplay({
         <CardContent className="py-3">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-2">
+              {onBack && (
+                <Button onClick={onBack} size="sm" variant="outline">
+                  Voltar
+                </Button>
+              )}
               {!isPlaying ? (
                 <Button onClick={handleStart} size="sm" disabled={countdown !== null}>
                   <Play className="w-4 h-4 mr-1" />

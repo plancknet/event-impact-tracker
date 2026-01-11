@@ -327,9 +327,8 @@ export default function ContentCreator() {
     profile.newsLanguage.trim();
 
   const hasComplementaryPrompt = complementaryPrompt.trim().length > 0;
-  const canContinueFromNews = selectedNewsIds.length > 0;
-  const canGenerateFromNews =
-    profile.scriptLanguage.trim() && (canContinueFromNews || hasComplementaryPrompt);
+  const canContinueFromNews = selectedNews.length > 0;
+  const canGenerateFromNews = profile.scriptLanguage.trim().length > 0;
   const canSaveScript = editedScript.trim().length > 0;
 
   const handleToggleNews = (id: string) => {
@@ -429,9 +428,14 @@ export default function ContentCreator() {
         setGenerationError("Edite o roteiro antes de gerar novamente.");
         return false;
       }
-      if (!complementaryPrompt.trim()) {
-        setGenerationError("Preencha o prompt complementar para gerar novamente.");
-        return false;
+      const trimmedPrompt = complementaryPrompt.trim();
+      if (!trimmedPrompt) {
+        const proceed = window.confirm(
+          "Nenhum prompt complementar informado. Deseja gerar novamente assim mesmo?",
+        );
+        if (!proceed) {
+          return false;
+        }
       }
 
       const newsItems = selectedNews.map((item) => ({
@@ -441,12 +445,13 @@ export default function ContentCreator() {
         content: item.fullText || item.summary || null,
       })) satisfies TeleprompterNewsItem[];
 
-      const parameters = buildTeleprompterParameters(profile, complementaryPrompt);
-      const keywords = extractComplementaryKeywords(complementaryPrompt);
-      const refinementPrompt =
-        keywords.length > 0
+      const parameters = buildTeleprompterParameters(profile, trimmedPrompt, teleprompterSettings);
+      const keywords = trimmedPrompt ? extractComplementaryKeywords(trimmedPrompt) : [];
+      const refinementPrompt = trimmedPrompt
+        ? keywords.length > 0
           ? `Mantenha o roteiro base ao maximo. Adicione um complemento ao final que atenda ao prompt complementar e inclua: ${keywords.join(", ")}.`
-          : "Mantenha o roteiro base ao maximo. Adicione um complemento ao final que atenda ao prompt complementar.";
+          : "Mantenha o roteiro base ao maximo. Adicione um complemento ao final que atenda ao prompt complementar."
+        : "Mantenha o roteiro base ao maximo. Ajuste apenas para fluidez e coerencia.";
 
       const refined = await generateTeleprompterScript(newsItems, parameters, {
         refinementPrompt,
@@ -457,7 +462,7 @@ export default function ContentCreator() {
         throw new Error("No script returned.");
       }
 
-      if (!scriptIncludesComplementaryPrompt(refined.script, complementaryPrompt)) {
+      if (trimmedPrompt && !scriptIncludesComplementaryPrompt(refined.script, trimmedPrompt)) {
         setGenerationError(
           "O roteiro gerado nao inclui elementos do prompt complementar. Ajuste o prompt e tente novamente.",
         );
@@ -535,11 +540,14 @@ export default function ContentCreator() {
     setGenerationError(null);
     setIsGenerating(true);
     try {
-      if (selectedNews.length === 0 && !hasComplementaryPrompt) {
-        setGenerationError(
-          "Selecione ao menos uma noticia ou preencha o prompt complementar para gerar o roteiro.",
+      const trimmedPrompt = complementaryPrompt.trim();
+      if (selectedNews.length === 0 && trimmedPrompt.length === 0) {
+        const proceed = window.confirm(
+          "Nenhuma noticia selecionada e nenhum prompt complementar informado. Deseja continuar assim mesmo?",
         );
-        return false;
+        if (!proceed) {
+          return false;
+        }
       }
       const newsItems = selectedNews.map((item) => ({
         id: item.id,
@@ -548,16 +556,16 @@ export default function ContentCreator() {
         content: item.fullText || item.summary || null,
       })) satisfies TeleprompterNewsItem[];
 
-      const parameters = buildTeleprompterParameters(profile, complementaryPrompt);
+      const parameters = buildTeleprompterParameters(profile, trimmedPrompt, teleprompterSettings);
       const result = await generateTeleprompterScript(newsItems, parameters);
       if (!result.script) {
         throw new Error("No script returned.");
       }
-      const hasComplementary = scriptIncludesComplementaryPrompt(result.script, complementaryPrompt);
+      const hasComplementary = scriptIncludesComplementaryPrompt(result.script, trimmedPrompt);
       let finalScript = result.script;
 
-      if (!hasComplementary && complementaryPrompt.trim()) {
-        const keywords = extractComplementaryKeywords(complementaryPrompt);
+      if (!hasComplementary && trimmedPrompt) {
+        const keywords = extractComplementaryKeywords(trimmedPrompt);
         const refinementPrompt =
           keywords.length > 0
             ? `Revise o roteiro para incluir explicitamente elementos do prompt complementar e mencione: ${keywords.join(", ")}.`
@@ -573,7 +581,7 @@ export default function ContentCreator() {
         finalScript = refined.script;
       }
 
-      if (!scriptIncludesComplementaryPrompt(finalScript, complementaryPrompt)) {
+      if (!scriptIncludesComplementaryPrompt(finalScript, trimmedPrompt)) {
         setGenerationError(
           "O roteiro gerado não inclui elementos do prompt complementar. Ajuste o prompt e tente novamente.",
         );
@@ -1236,6 +1244,52 @@ export default function ContentCreator() {
                 )}
               </Button>
             </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Roteiros do usuario</CardTitle>
+                <CardDescription>Historico em ordem decrescente de data.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {scriptsLoading ? (
+                  <div className="flex items-center justify-center py-6 text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    Carregando roteiros...
+                  </div>
+                ) : scriptHistory.length === 0 ? (
+                  <div className="py-6 text-center text-muted-foreground">
+                    Nenhum roteiro gerado ainda.
+                  </div>
+                ) : (
+                  <div className="border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[140px]">Data</TableHead>
+                          <TableHead>Previa</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {scriptHistory.map((script) => (
+                          <TableRow
+                            key={script.id}
+                            className={`cursor-pointer ${selectedScriptId === script.id ? "bg-muted/60" : ""}`}
+                            onClick={() => void handleUseScript(script)}
+                          >
+                            <TableCell className="font-mono text-xs whitespace-nowrap">
+                              {format(new Date(script.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {getScriptPreview(script.script_text)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </CardContent>
         </Card>
       )}
@@ -1251,6 +1305,115 @@ export default function ContentCreator() {
               {generationError && (
                 <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm">
                   {generationError}
+                </div>
+              )}
+              <div className="grid gap-4 md:grid-cols-2 text-sm">
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">Assunto</div>
+                  <div className="font-medium">{profile.mainSubject || "-"}</div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">Tom</div>
+                  <div className="font-medium">{profile.tone || "-"}</div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">Publico</div>
+                  <div className="font-medium">{profile.audience || "-"}</div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">Duracao</div>
+                  <div className="font-medium">{profile.duration || "-"}</div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">Plataforma</div>
+                  <div className="font-medium">{profile.platform || "-"}</div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">Objetivo</div>
+                  <div className="font-medium">{profile.goal || "-"}</div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">Idioma das noticias</div>
+                  <div className="font-medium">{profile.newsLanguage || "-"}</div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">Idioma do roteiro</div>
+                  <div className="font-medium">{profile.scriptLanguage || "-"}</div>
+                </div>
+                <div className="md:col-span-2">
+                  <div className="text-xs uppercase text-muted-foreground">Prompt complementar</div>
+                  <div className="font-medium">{complementaryPrompt.trim() || "-"}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Noticias para o roteiro</CardTitle>
+              <CardDescription>Selecione as noticias que farão parte do roteiro.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {newsItems.length === 0 ? (
+                <div className="rounded-lg border p-6 text-sm text-muted-foreground">
+                  Nenhuma noticia carregada. Voce pode gerar o roteiro sem noticias.
+                </div>
+              ) : (
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={
+                              selectedNewsIds.length === filteredAndSortedNews.length &&
+                              filteredAndSortedNews.length > 0
+                            }
+                            onCheckedChange={toggleSelectAll}
+                          />
+                        </TableHead>
+                        <SortableTableHead
+                          sortKey="published_at"
+                          currentSort={currentSort}
+                          onSort={handleSort}
+                          className="w-[120px]"
+                        >
+                          Publicacao
+                        </SortableTableHead>
+                        <SortableTableHead
+                          sortKey="title"
+                          currentSort={currentSort}
+                          onSort={handleSort}
+                        >
+                          Titulo
+                        </SortableTableHead>
+                        <TableHead className="w-[140px]">Fonte</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAndSortedNews.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedNewsIds.includes(item.id)}
+                              onCheckedChange={() => toggleSelection(item.id)}
+                            />
+                          </TableCell>
+                          <TableCell className="font-mono text-xs whitespace-nowrap">
+                            {item.publishedAt
+                              ? format(new Date(item.publishedAt), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                              : "-"}
+                          </TableCell>
+                          <TableCell className="max-w-[400px] truncate font-medium">
+                            {item.title}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatSource(item.source, item.link)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </CardContent>
@@ -1307,6 +1470,7 @@ export default function ContentCreator() {
               references={references}
               settings={teleprompterSettings}
               onSettingsChange={setTeleprompterSettings}
+              onBack={() => setStep(2)}
             />
           ) : (
             <Card>
