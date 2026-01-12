@@ -528,7 +528,6 @@ export default function ContentCreator() {
       }
       const trimmedPrompt = complementaryPrompt.trim();
       const generationPrompt = buildGenerationPrompt(trimmedPrompt);
-      const generationPrompt = buildGenerationPrompt(trimmedPrompt);
 
       const newsItems = selectedNews.map((item) => ({
         id: item.id,
@@ -658,7 +657,7 @@ export default function ContentCreator() {
         content: item.fullText || item.summary || null,
       })) satisfies TeleprompterNewsItem[];
 
-      const parameters = buildTeleprompterParameters(profile, generationPrompt, teleprompterSettings);
+      const parameters = buildTeleprompterParameters(profile, buildGenerationPrompt(trimmedPrompt), teleprompterSettings);
       const result = await generateTeleprompterScript(newsItems, parameters);
       if (!result.script) {
         throw new Error("No script returned.");

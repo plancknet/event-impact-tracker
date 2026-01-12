@@ -16,9 +16,6 @@ export type Database = {
     Tables: {
       creator_profiles: {
         Row: {
-          audience_age_max: number
-          audience_age_min: number
-          audience_gender_split: number
           audience_pain_points: string[] | null
           audience_type: string
           content_goal: string
@@ -41,9 +38,6 @@ export type Database = {
           video_type: string
         }
         Insert: {
-          audience_age_max?: number
-          audience_age_min?: number
-          audience_gender_split?: number
           audience_pain_points?: string[] | null
           audience_type?: string
           content_goal?: string
@@ -66,9 +60,6 @@ export type Database = {
           video_type?: string
         }
         Update: {
-          audience_age_max?: number
-          audience_age_min?: number
-          audience_gender_split?: number
           audience_pain_points?: string[] | null
           audience_type?: string
           content_goal?: string
