@@ -1,3 +1,4 @@
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 interface ScriptOutputProps {
@@ -109,6 +110,20 @@ export function ScriptOutput({ script, isLoading, onEdit }: ScriptOutputProps) {
         <p className="text-sm text-muted-foreground/70 mt-2">
           Clique em "Gerar Roteiro" para começar
         </p>
+      </div>
+    );
+  }
+
+  if (onEdit) {
+    return (
+      <div className="rounded-xl border bg-card p-6 md:p-8">
+        <Textarea
+          value={script}
+          onChange={(event) => onEdit(event.target.value)}
+          rows={12}
+          className="min-h-[320px] resize-y"
+          placeholder="Edite livremente o roteiro..."
+        />
       </div>
     );
   }
