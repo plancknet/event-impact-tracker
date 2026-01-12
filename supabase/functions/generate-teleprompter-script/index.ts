@@ -36,6 +36,9 @@ interface NewsItem {
 interface EditorialParameters {
   tone: string;
   audience: string;
+  audienceAgeMin: number;
+  audienceAgeMax: number;
+  audienceGenderSplit: number;
   language: string;
   duration: string;
   durationUnit: string;
@@ -89,10 +92,19 @@ function validateParameters(params: unknown): EditorialParameters {
   const audience = typeof obj.audience === 'string' && validAudiences.includes(obj.audience) ? obj.audience : 'publico_geral';
   const scriptType = typeof obj.scriptType === 'string' && validScriptTypes.includes(obj.scriptType) ? obj.scriptType : 'narracao_simples';
   const durationUnit = typeof obj.durationUnit === 'string' && validDurationUnits.includes(obj.durationUnit) ? obj.durationUnit : 'minutes';
+  const rawAgeMin = typeof obj.audienceAgeMin === 'number' ? obj.audienceAgeMin : 18;
+  const rawAgeMax = typeof obj.audienceAgeMax === 'number' ? obj.audienceAgeMax : 45;
+  const rawGenderSplit = typeof obj.audienceGenderSplit === 'number' ? obj.audienceGenderSplit : 50;
+  const audienceAgeMin = Math.max(0, Math.min(100, rawAgeMin));
+  const audienceAgeMax = Math.max(audienceAgeMin, Math.min(100, rawAgeMax));
+  const audienceGenderSplit = Math.max(0, Math.min(100, rawGenderSplit));
   
   return {
     tone,
     audience,
+    audienceAgeMin,
+    audienceAgeMax,
+    audienceGenderSplit,
     language: typeof obj.language === 'string' ? obj.language.slice(0, 10) : 'pt-BR',
     duration: typeof obj.duration === 'string' ? obj.duration.slice(0, 10) : '3',
     durationUnit,
@@ -283,6 +295,10 @@ FORMATO DE SAIDA (JSON):
 ${baseScript}
 ---
 
+PERFIL DO PUBLICO:
+- Faixa etaria: ${parameters.audienceAgeMin}-${parameters.audienceAgeMax} anos
+- Distribuicao de sexo: ${parameters.audienceGenderSplit}% masculino / ${100 - parameters.audienceGenderSplit}% feminino
+
 INSTRUÇÕES DE MODIFICAÇÃO DO USUÁRIO:
 ${refinementPrompt}
 
@@ -335,7 +351,9 @@ Um texto detalhado com todas as instruções para o editor criar o roteiro.`;
 
 🎭 TOM E ESTILO: ${toneMap[parameters.tone] || parameters.tone}
 🧑 PÚBLICO-ALVO: ${audienceMap[parameters.audience] || parameters.audience}
-🌍 IDIOMA: ${parameters.language}
+🌍 FAIXA ETARIA DO PUBLICO: ${parameters.audienceAgeMin}-${parameters.audienceAgeMax} anos
+DISTRIBUICAO DE SEXO: ${parameters.audienceGenderSplit}% masculino / ${100 - parameters.audienceGenderSplit}% feminino
+IDIOMA: ${parameters.language}
 
 ⚠️⚠️⚠️ REQUISITO CRÍTICO - DURAÇÃO DO ROTEIRO: ⚠️⚠️⚠️
 - DURAÇÃO SOLICITADA: ${parameters.duration} ${parameters.durationUnit === 'minutes' ? 'MINUTOS' : 'PALAVRAS'}

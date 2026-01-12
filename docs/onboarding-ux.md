@@ -6,7 +6,7 @@ Help the user sound like themselves in under 4 minutes.
 ## Flow
 1. Welcome and value promise
 2. Creator profile (topic focus, expertise level)
-3. Audience profile (who, pain points, desired outcome)
+3. Audience profile (who, age range, gender split, desired outcome)
 4. Platform and duration (format, target length)
 5. Speaking style (tone, pacing, energy)
 6. Content goal (teach, persuade, entertain, sell)

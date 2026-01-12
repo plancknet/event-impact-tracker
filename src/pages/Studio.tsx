@@ -41,6 +41,9 @@ export default function Studio() {
           parameters: {
             tone: profile.speaking_tone,
             audience: profile.audience_type,
+            audienceAgeMin: profile.audience_age_min,
+            audienceAgeMax: profile.audience_age_max,
+            audienceGenderSplit: profile.audience_gender_split,
             duration: profile.target_duration,
             durationUnit: profile.duration_unit,
             language: profile.script_language,
@@ -74,6 +77,9 @@ export default function Studio() {
           parameters: {
             tone: adjustments.tone || profile.speaking_tone,
             audience: profile.audience_type,
+            audienceAgeMin: profile.audience_age_min,
+            audienceAgeMax: profile.audience_age_max,
+            audienceGenderSplit: profile.audience_gender_split,
             duration: adjustments.duration || profile.target_duration,
             durationUnit: profile.duration_unit,
             language: profile.script_language,

@@ -10,6 +10,9 @@ export type TeleprompterNewsItem = {
 export type TeleprompterParameters = {
   tone: string;
   audience: string;
+  audienceAgeMin?: number;
+  audienceAgeMax?: number;
+  audienceGenderSplit?: number;
   language: string;
   duration: string;
   durationUnit: "minutes" | "words";

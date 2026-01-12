@@ -9,7 +9,9 @@ export interface CreatorProfile {
   
   // Audience profile
   audience_type: string;
-  audience_pain_points: string[];
+  audience_age_min: number;
+  audience_age_max: number;
+  audience_gender_split: number;
   
   // Video format
   video_type: string;
@@ -38,7 +40,9 @@ export const DEFAULT_CREATOR_PROFILE: CreatorProfile = {
   main_topic: '',
   expertise_level: 'intermediario',
   audience_type: 'publico_geral',
-  audience_pain_points: [],
+  audience_age_min: 18,
+  audience_age_max: 45,
+  audience_gender_split: 50,
   video_type: 'video_curto',
   target_duration: '3',
   duration_unit: 'minutes',
@@ -63,15 +67,6 @@ export const AUDIENCE_TYPE_OPTIONS = [
   { value: 'publico_geral', label: 'Público geral', description: 'Qualquer pessoa interessada' },
   { value: 'profissionais', label: 'Profissionais', description: 'Pessoas da área ou setor' },
   { value: 'especialistas', label: 'Especialistas', description: 'Experts e conhecedores' },
-];
-
-export const PAIN_POINTS_OPTIONS = [
-  { value: 'falta_tempo', label: 'Falta de tempo' },
-  { value: 'complexidade', label: 'Tema muito complexo' },
-  { value: 'desatualizado', label: 'Informação desatualizada' },
-  { value: 'confianca', label: 'Não sabe em quem confiar' },
-  { value: 'pratica', label: 'Dificuldade prática' },
-  { value: 'motivacao', label: 'Falta de motivação' },
 ];
 
 export const VIDEO_TYPE_OPTIONS = [

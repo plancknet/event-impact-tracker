@@ -61,6 +61,9 @@ export function ContextSummary({ profile, onEditProfile }: ContextSummaryProps) 
     return goals[profile.content_goal] || profile.content_goal;
   };
 
+  const ageRangeLabel = `${profile.audience_age_min}-${profile.audience_age_max} anos`;
+  const genderLabel = `${profile.audience_gender_split}% masc / ${100 - profile.audience_gender_split}% fem`;
+
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div className="rounded-xl border bg-card p-4">
@@ -89,7 +92,7 @@ export function ContextSummary({ profile, onEditProfile }: ContextSummaryProps) 
         </CollapsibleTrigger>
         
         <CollapsibleContent className="pt-4 mt-4 border-t">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-muted-foreground">Tema</p>
               <p className="font-medium truncate">{profile.main_topic || '—'}</p>
@@ -105,6 +108,14 @@ export function ContextSummary({ profile, onEditProfile }: ContextSummaryProps) 
             <div>
               <p className="text-muted-foreground">Idioma</p>
               <p className="font-medium">{profile.script_language}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Faixa etária</p>
+              <p className="font-medium">{ageRangeLabel}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Sexo</p>
+              <p className="font-medium">{genderLabel}</p>
             </div>
           </div>
           
