@@ -113,6 +113,51 @@ export type Database = {
         }
         Relationships: []
       }
+      user_news_items: {
+        Row: {
+          created_at: string
+          external_id: string | null
+          fetched_at: string
+          id: string
+          language: string | null
+          link: string | null
+          published_at: string | null
+          source: string | null
+          summary: string | null
+          title: string
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          external_id?: string | null
+          fetched_at?: string
+          id?: string
+          language?: string | null
+          link?: string | null
+          published_at?: string | null
+          source?: string | null
+          summary?: string | null
+          title: string
+          topic: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          external_id?: string | null
+          fetched_at?: string
+          id?: string
+          language?: string | null
+          link?: string | null
+          published_at?: string | null
+          source?: string | null
+          summary?: string | null
+          title?: string
+          topic?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
