@@ -18,7 +18,7 @@ export default function Studio() {
   const [generatedScript, setGeneratedScript] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [showTeleprompter, setShowTeleprompter] = useState(false);
-
+  const [resetTrigger, setResetTrigger] = useState(0);
 
   const handleStepChange = (step: number) => {
     if (step === 6) {
@@ -34,6 +34,13 @@ export default function Studio() {
     handleStepChange(6);
   };
 
+  const handleNewScript = () => {
+    updateProfile({ main_topic: "" });
+    setGeneratedScript("");
+    setResetTrigger((prev) => prev + 1);
+    handleStepChange(1);
+  };
+
   const handleCompleteOnboarding = async () => {
     const success = await saveProfile(profile);
     if (success) {
@@ -41,18 +48,22 @@ export default function Studio() {
     }
   };
 
-  const handleGenerate = async (newsContext?: string, selectedNews?: UserNewsItem[], complementaryPrompt?: string) => {
+  const handleGenerate = async (
+    newsContext?: string,
+    selectedNews?: UserNewsItem[],
+    complementaryPrompt?: string,
+  ) => {
     setIsGenerating(true);
     try {
       // Build news items for the edge function
-      const newsItems = selectedNews?.map(n => ({
+      const newsItems = selectedNews?.map((n) => ({
         id: n.id,
         title: n.title,
         summary: n.summary || undefined,
         content: n.summary || undefined, // Use summary as content since we don't have full content
       })) || [];
 
-      const { data, error } = await supabase.functions.invoke('generate-teleprompter-script', {
+      const { data, error } = await supabase.functions.invoke("generate-teleprompter-script", {
         body: {
           newsItems,
           parameters: {
@@ -77,9 +88,9 @@ export default function Studio() {
         },
       });
       if (error) throw error;
-      setGeneratedScript(data.script || '');
+      setGeneratedScript(data.script || "");
     } catch (err) {
-      console.error('Failed to generate script:', err);
+      console.error("Failed to generate script:", err);
     } finally {
       setIsGenerating(false);
     }
@@ -88,7 +99,7 @@ export default function Studio() {
   const handleRegenerate = async (adjustments: { tone?: string; duration?: string; format?: string }) => {
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-teleprompter-script', {
+      const { data, error } = await supabase.functions.invoke("generate-teleprompter-script", {
         body: {
           newsItems: [],
           parameters: {
@@ -109,14 +120,14 @@ export default function Studio() {
               platform: profile.platform,
             },
           },
-          refinementPrompt: 'Regenere o roteiro mantendo o tema.',
+          refinementPrompt: "Regenere o roteiro mantendo o tema.",
           baseScript: generatedScript,
         },
       });
       if (error) throw error;
-      setGeneratedScript(data.script || '');
+      setGeneratedScript(data.script || "");
     } catch (err) {
-      console.error('Failed to regenerate script:', err);
+      console.error("Failed to regenerate script:", err);
     } finally {
       setIsGenerating(false);
     }
@@ -130,28 +141,11 @@ export default function Studio() {
     );
   }
 
-  // Show onboarding for new users or when requested
-  if (showOnboarding) {
-    return (
-      <OnboardingFlow
-        profile={profile}
-        onChange={updateProfile}
-        currentStep={onboardingStep}
-        onStepChange={setOnboardingStep}
-        onComplete={handleCompleteOnboarding}
-        onViewScripts={handleViewScripts}
-      />
-    );
-  }
-
   // Teleprompter fullscreen mode
   if (showTeleprompter && generatedScript) {
     return (
       <div className="fixed inset-0 z-50 bg-black">
-        <TeleprompterDisplay
-          script={generatedScript}
-          settings={DEFAULT_TELEPROMPTER_SETTINGS}
-        />
+        <TeleprompterDisplay script={generatedScript} settings={DEFAULT_TELEPROMPTER_SETTINGS} />
         <Button
           variant="ghost"
           size="sm"
@@ -168,39 +162,62 @@ export default function Studio() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary">
             <Sparkles className="w-5 h-5" />
             <span className="font-semibold">ThinkAndTalk</span>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => signOut()} className="gap-2">
-            <LogOut className="w-4 h-4" />
-            Sair
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleNewScript}>
+              Novo roteiro
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleViewScripts}>
+              Ver scripts gerados
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => signOut()} className="gap-2">
+              <LogOut className="w-4 h-4" />
+              Sair
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Main content */}
-      <main className="container max-w-4xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <OnboardingProgress
-            currentStep={onboardingStep}
-            totalSteps={6}
-            stepLabels={["Voc\u00ea", "P\u00fablico", "Formato", "Estilo", "Objetivo", "Roteiros"]}
-            onStepChange={handleStepChange}
-          />
-        </div>
+      <main className="container max-w-6xl mx-auto px-4 py-8">
+        <div className="grid gap-8 md:grid-cols-[220px_1fr]">
+          <aside className="md:pt-4">
+            <OnboardingProgress
+              currentStep={onboardingStep}
+              totalSteps={6}
+              stepLabels={["Você", "Público", "Formato", "Estilo", "Objetivo", "Roteiros"]}
+              onStepChange={handleStepChange}
+            />
+          </aside>
 
-        <ScriptGenerator
-          profile={profile}
-          onEditProfile={() => handleStepChange(1)}
-          generatedScript={generatedScript}
-          isGenerating={isGenerating}
-          onGenerate={handleGenerate}
-          onRegenerate={handleRegenerate}
-          onOpenTeleprompter={() => setShowTeleprompter(true)}
-          onScriptChange={setGeneratedScript}
-        />
+          <section>
+            {showOnboarding ? (
+              <OnboardingFlow
+                profile={profile}
+                onChange={updateProfile}
+                currentStep={onboardingStep}
+                onStepChange={setOnboardingStep}
+                onComplete={handleCompleteOnboarding}
+              />
+            ) : (
+              <ScriptGenerator
+                profile={profile}
+                onEditProfile={() => handleStepChange(1)}
+                generatedScript={generatedScript}
+                isGenerating={isGenerating}
+                onGenerate={handleGenerate}
+                onRegenerate={handleRegenerate}
+                onOpenTeleprompter={() => setShowTeleprompter(true)}
+                onScriptChange={setGeneratedScript}
+                resetTrigger={resetTrigger}
+              />
+            )}
+          </section>
+        </div>
       </main>
     </div>
   );

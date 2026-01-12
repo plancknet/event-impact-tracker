@@ -20,6 +20,7 @@ interface ScriptGeneratorProps {
   onRegenerate: (adjustments: { tone?: string; duration?: string; format?: string }) => Promise<void>;
   onOpenTeleprompter: () => void;
   onScriptChange: (script: string) => void;
+  resetTrigger: number;
 }
 
 interface ScriptHistoryItem {
@@ -39,6 +40,7 @@ export function ScriptGenerator({
   onRegenerate,
   onOpenTeleprompter,
   onScriptChange,
+  resetTrigger,
 }: ScriptGeneratorProps) {
   const [complementaryPrompt, setComplementaryPrompt] = useState("");
   const [currentTone, setCurrentTone] = useState(profile.speaking_tone);
@@ -49,7 +51,14 @@ export function ScriptGenerator({
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
 
-  const { newsItems, isLoading: isLoadingNews, error: newsError, fetchAndSaveNews, loadNews } = useUserNews();
+  const {
+    newsItems,
+    isLoading: isLoadingNews,
+    error: newsError,
+    fetchAndSaveNews,
+    loadNews,
+    clearNews,
+  } = useUserNews();
 
   // Load existing news when component mounts
   useEffect(() => {
@@ -65,6 +74,18 @@ export function ScriptGenerator({
     }
   }, [newsItems]);
 
+  useEffect(() => {
+    setComplementaryPrompt("");
+    setSelectedNewsIds([]);
+    setCurrentScriptId(null);
+    setHasStarted(false);
+    setCurrentTone(profile.speaking_tone);
+    setCurrentDuration(profile.target_duration);
+    setCurrentFormat(profile.video_type);
+    onScriptChange("");
+    clearNews();
+  }, [resetTrigger, onScriptChange, clearNews]);
+
   const handleStartCreating = async () => {
     if (!profile.main_topic.trim()) return;
 
@@ -79,7 +100,7 @@ export function ScriptGenerator({
 
   const handleGenerate = async () => {
     // Get selected news items
-    const selectedNews = newsItems.filter(n => selectedNewsIds.includes(n.id));
+    const selectedNews = newsItems.filter((n) => selectedNewsIds.includes(n.id));
 
     await onGenerate(undefined, selectedNews, complementaryPrompt || undefined);
     // Refresh history after generating
@@ -257,11 +278,7 @@ export function ScriptGenerator({
       )}
 
       {/* Script output */}
-      <ScriptOutput
-        script={generatedScript}
-        isLoading={isGenerating}
-        onEdit={onScriptChange}
-      />
+      <ScriptOutput script={generatedScript} isLoading={isGenerating} onEdit={onScriptChange} />
 
       {/* Controls (shown when script exists) */}
       {generatedScript && !isGenerating && (

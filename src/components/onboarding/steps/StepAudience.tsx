@@ -28,9 +28,7 @@ export function StepAudience({ profile, onChange, onBack, onNext, onSkip }: Step
       <div className="space-y-8">
         {/* Audience type */}
         <div className="space-y-3">
-          <Label className="text-base font-medium">
-            Quem é sua audiência principal?
-          </Label>
+          <Label className="text-base font-medium">Quem é sua audiência principal?</Label>
           <div className="grid grid-cols-2 gap-3">
             {AUDIENCE_TYPE_OPTIONS.map((option) => (
               <OptionCard
@@ -47,15 +45,11 @@ export function StepAudience({ profile, onChange, onBack, onNext, onSkip }: Step
 
         {/* Age range */}
         <div className="space-y-4">
-          <Label className="text-base font-medium">
-            Faixa et??ria do p??blico
-          </Label>
+          <Label className="text-base font-medium">Faixa etária do público</Label>
           <div className="px-2">
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>0</span>
-              <span className="font-medium text-foreground">
-                {ageMin} - {ageMax} anos
-              </span>
+              <span className="font-medium text-foreground">{ageMin} - {ageMax} anos</span>
               <span>100</span>
             </div>
             <Slider
@@ -75,30 +69,43 @@ export function StepAudience({ profile, onChange, onBack, onNext, onSkip }: Step
 
         {/* Gender split */}
         <div className="space-y-4">
-          <Label className="text-base font-medium">
-            Distribui????o de sexo
-          </Label>
-          <div className="px-2">
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>Feminino</span>
-              <span className="font-medium text-foreground">
-                {genderSplit}% masc / {100 - genderSplit}% fem
-              </span>
-              <span>Masculino</span>
+          <Label className="text-base font-medium">Distribuição de sexo</Label>
+          <div className="grid gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Masculino</span>
+                <span className="font-medium text-foreground">{genderSplit}%</span>
+              </div>
+              <Slider
+                value={[genderSplit]}
+                min={0}
+                max={100}
+                step={1}
+                onValueChange={([value]) => {
+                  onChange({ audience_gender_split: value });
+                }}
+                className="w-full"
+              />
             </div>
-            <Slider
-              value={[genderSplit]}
-              min={0}
-              max={100}
-              step={1}
-              onValueChange={([value]) => {
-                onChange({ audience_gender_split: value });
-              }}
-              className="w-full mt-3"
-            />
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Feminino</span>
+                <span className="font-medium text-foreground">{100 - genderSplit}%</span>
+              </div>
+              <Slider
+                value={[100 - genderSplit]}
+                min={0}
+                max={100}
+                step={1}
+                onValueChange={([value]) => {
+                  onChange({ audience_gender_split: 100 - value });
+                }}
+                className="w-full"
+              />
+            </div>
           </div>
         </div>
-
       </div>
     </OnboardingCard>
   );

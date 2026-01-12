@@ -13,20 +13,17 @@ export function OnboardingProgress({
   stepLabels = ["Você", "Público", "Formato", "Estilo", "Objetivo"],
   onStepChange,
 }: OnboardingProgressProps) {
-  const progress = (currentStep / totalSteps) * 100;
+  const progress = totalSteps > 1 ? ((currentStep - 1) / (totalSteps - 1)) * 100 : 0;
 
   return (
-    <div className="w-full space-y-3">
-      {/* Progress bar */}
-      <div className="relative h-1.5 bg-muted rounded-full overflow-hidden">
-        <div
-          className="absolute inset-y-0 left-0 bg-primary rounded-full transition-all duration-500 ease-out"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
+    <div className="relative">
+      <div className="absolute left-3 top-1 bottom-1 w-px bg-muted" />
+      <div
+        className="absolute left-3 top-1 w-px bg-primary transition-all duration-500 ease-out"
+        style={{ height: `${progress}%` }}
+      />
 
-      {/* Step indicators */}
-      <div className="flex justify-between">
+      <div className="flex flex-col gap-4 pl-6">
         {stepLabels.slice(0, totalSteps).map((label, index) => {
           const stepNumber = index + 1;
           const isCompleted = stepNumber < currentStep;
@@ -38,7 +35,7 @@ export function OnboardingProgress({
               type="button"
               onClick={() => onStepChange?.(stepNumber)}
               className={cn(
-                "flex flex-col items-center gap-1 transition-colors",
+                "flex items-center gap-3 text-left transition-colors",
                 isCompleted && "text-primary",
                 isCurrent && "text-foreground font-medium",
                 !isCompleted && !isCurrent && "text-muted-foreground",
@@ -46,7 +43,7 @@ export function OnboardingProgress({
             >
               <div
                 className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center text-xs transition-all",
+                  "w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all",
                   isCompleted && "bg-primary text-primary-foreground",
                   isCurrent && "bg-primary/10 text-primary border-2 border-primary",
                   !isCompleted && !isCurrent && "bg-muted text-muted-foreground",
@@ -54,7 +51,7 @@ export function OnboardingProgress({
               >
                 {isCompleted ? "✓" : stepNumber}
               </div>
-              <span className="text-xs hidden sm:block">{label}</span>
+              <span className="text-sm">{label}</span>
             </button>
           );
         })}

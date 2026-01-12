@@ -27,7 +27,7 @@ export function StepCreator({ profile, onChange, onNext, onSkip }: StepCreatorPr
         {/* Main topic */}
         <div className="space-y-3">
           <Label htmlFor="main_topic" className="text-base font-medium">
-            Qual é o tema principal do seu conteúdo?
+            Sobre o que vamos falar hoje?
           </Label>
           <Input
             id="main_topic"
