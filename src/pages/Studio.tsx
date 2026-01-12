@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCreatorProfile } from "@/hooks/useCreatorProfile";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
+import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
 import { ScriptGenerator } from "@/components/script/ScriptGenerator";
 import { TeleprompterDisplay, DEFAULT_TELEPROMPTER_SETTINGS } from "@/components/teleprompter/TeleprompterDisplay";
 import { Button } from "@/components/ui/button";
@@ -10,17 +11,33 @@ import { supabase } from "@/integrations/supabase/client";
 import type { UserNewsItem } from "@/hooks/useUserNews";
 
 export default function Studio() {
-  const { user, signOut } = useAuth();
-  const { profile, isLoading, hasProfile, saveProfile, updateProfile } = useCreatorProfile();
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const { signOut } = useAuth();
+  const { profile, isLoading, saveProfile, updateProfile } = useCreatorProfile();
+  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [onboardingStep, setOnboardingStep] = useState(1);
   const [generatedScript, setGeneratedScript] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [showTeleprompter, setShowTeleprompter] = useState(false);
 
+
+  const handleStepChange = (step: number) => {
+    if (step === 6) {
+      setShowOnboarding(false);
+      setOnboardingStep(6);
+      return;
+    }
+    setShowOnboarding(true);
+    setOnboardingStep(step);
+  };
+
+  const handleViewScripts = () => {
+    handleStepChange(6);
+  };
+
   const handleCompleteOnboarding = async () => {
     const success = await saveProfile(profile);
     if (success) {
-      setShowOnboarding(false);
+      handleViewScripts();
     }
   };
 
@@ -114,12 +131,15 @@ export default function Studio() {
   }
 
   // Show onboarding for new users or when requested
-  if (!hasProfile || showOnboarding) {
+  if (showOnboarding) {
     return (
       <OnboardingFlow
         profile={profile}
         onChange={updateProfile}
+        currentStep={onboardingStep}
+        onStepChange={setOnboardingStep}
         onComplete={handleCompleteOnboarding}
+        onViewScripts={handleViewScripts}
       />
     );
   }
@@ -162,9 +182,18 @@ export default function Studio() {
 
       {/* Main content */}
       <main className="container max-w-4xl mx-auto px-4 py-8">
+        <div className="mb-8">
+          <OnboardingProgress
+            currentStep={onboardingStep}
+            totalSteps={6}
+            stepLabels={["Voc\u00ea", "P\u00fablico", "Formato", "Estilo", "Objetivo", "Roteiros"]}
+            onStepChange={handleStepChange}
+          />
+        </div>
+
         <ScriptGenerator
           profile={profile}
-          onEditProfile={() => setShowOnboarding(true)}
+          onEditProfile={() => handleStepChange(1)}
           generatedScript={generatedScript}
           isGenerating={isGenerating}
           onGenerate={handleGenerate}
