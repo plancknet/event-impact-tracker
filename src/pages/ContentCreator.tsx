@@ -29,9 +29,9 @@ import { ptBR } from "date-fns/locale";
 
 type StepId = 1 | 2 | 3;
 
-type SortField = "published_at" | "title";
+type SortField = "published_at" | "title" | "source" | "link";
 
-type ScriptSortField = "created_at" | "title";
+type ScriptSortField = "created_at" | "title" | "news_count";
 
 type ScriptHistoryItem = {
   id: string;
@@ -145,6 +145,7 @@ export default function ContentCreator() {
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsError, setNewsError] = useState<string | null>(null);
   const [titleFilter, setTitleFilter] = useState("");
+  const [bodyFilter, setBodyFilter] = useState("");
   const [wordCloudFilter, setWordCloudFilter] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState("");
   const [publishedDateFilter, setPublishedDateFilter] = useState("");
@@ -240,6 +241,14 @@ export default function ContentCreator() {
       );
     }
 
+    if (bodyFilter.trim()) {
+      const needle = bodyFilter.toLowerCase().trim();
+      filtered = filtered.filter((item) => {
+        const bodyText = [item.summary, item.fullText].filter(Boolean).join(" ").toLowerCase();
+        return bodyText.includes(needle);
+      });
+    }
+
     if (wordCloudFilter.length > 0) {
       const words = wordCloudFilter.map((w) => w.toLowerCase());
       filtered = filtered.filter((item) =>
@@ -287,6 +296,16 @@ export default function ContentCreator() {
         const bVal = b.publishedAt || "";
         return currentSort.direction === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
       }
+      if (currentSort.key === "source") {
+        const aVal = formatSource(a.source, a.link).toLowerCase();
+        const bVal = formatSource(b.source, b.link).toLowerCase();
+        return currentSort.direction === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      }
+      if (currentSort.key === "link") {
+        const aVal = (a.link || "").toLowerCase();
+        const bVal = (b.link || "").toLowerCase();
+        return currentSort.direction === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      }
       const aVal = a.title.toLowerCase();
       const bVal = b.title.toLowerCase();
       return currentSort.direction === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
@@ -294,6 +313,7 @@ export default function ContentCreator() {
   }, [
     termFilteredResults,
     titleFilter,
+    bodyFilter,
     wordCloudFilter,
     categoryFilter,
     dateFilter,
@@ -327,6 +347,11 @@ export default function ContentCreator() {
         return scriptSort.direction === "asc"
           ? a.created_at.localeCompare(b.created_at)
           : b.created_at.localeCompare(a.created_at);
+      }
+      if (scriptSort.key === "news_count") {
+        const aVal = getNewsCount(a.news_ids_json);
+        const bVal = getNewsCount(b.news_ids_json);
+        return scriptSort.direction === "asc" ? aVal - bVal : bVal - aVal;
       }
       const aVal = getScriptPreview(a.script_text).toLowerCase();
       const bVal = getScriptPreview(b.script_text).toLowerCase();
@@ -499,14 +524,6 @@ export default function ContentCreator() {
         return false;
       }
       const trimmedPrompt = complementaryPrompt.trim();
-      if (!trimmedPrompt) {
-        const proceed = window.confirm(
-          "Nenhum prompt complementar informado. Deseja gerar novamente assim mesmo?",
-        );
-        if (!proceed) {
-          return false;
-        }
-      }
 
       const newsItems = selectedNews.map((item) => ({
         id: item.id,
@@ -517,11 +534,19 @@ export default function ContentCreator() {
 
       const parameters = buildTeleprompterParameters(profile, trimmedPrompt, teleprompterSettings);
       const keywords = trimmedPrompt ? extractComplementaryKeywords(trimmedPrompt) : [];
-      const refinementPrompt = trimmedPrompt
+      const newsTitles = selectedNews.map((item) => item.title).filter(Boolean);
+      const newsReference =
+        newsTitles.length > 0
+          ? `Use as noticias selecionadas como base e cite fatos relevantes. Noticias: ${newsTitles.join(
+              "; ",
+            )}.`
+          : "";
+      const complementaryInstruction = trimmedPrompt
         ? keywords.length > 0
           ? `Mantenha o roteiro base ao maximo. Adicione um complemento ao final que atenda ao prompt complementar e inclua: ${keywords.join(", ")}.`
           : "Mantenha o roteiro base ao maximo. Adicione um complemento ao final que atenda ao prompt complementar."
         : "Mantenha o roteiro base ao maximo. Ajuste apenas para fluidez e coerencia.";
+      const refinementPrompt = [newsReference, complementaryInstruction].filter(Boolean).join(" ");
 
       const refined = await generateTeleprompterScript(newsItems, parameters, {
         refinementPrompt,
@@ -531,16 +556,24 @@ export default function ContentCreator() {
       if (!refined.script) {
         throw new Error("No script returned.");
       }
+      const finalScript = refined.script;
 
-      if (trimmedPrompt && !scriptIncludesComplementaryPrompt(refined.script, trimmedPrompt)) {
+      if (trimmedPrompt && !scriptIncludesComplementaryPrompt(finalScript, trimmedPrompt)) {
         setGenerationError(
           "O roteiro gerado nao inclui elementos do prompt complementar. Ajuste o prompt e tente novamente.",
         );
         return false;
       }
 
-      setGeneratedScript(refined.script);
-      setEditedScript(refined.script);
+      if (selectedNews.length > 0 && !scriptIncludesSelectedNews(finalScript, selectedNews)) {
+        setGenerationError(
+          "O roteiro gerado nao inclui informacoes das noticias selecionadas. Ajuste a selecao e tente novamente.",
+        );
+        return false;
+      }
+
+      setGeneratedScript(finalScript);
+      setEditedScript(finalScript);
       await loadScriptHistory();
       return true;
     } catch (error) {
@@ -611,20 +644,6 @@ export default function ContentCreator() {
     setIsGenerating(true);
     try {
       const trimmedPrompt = complementaryPrompt.trim();
-      const missingNews = selectedNews.length === 0;
-      const missingPrompt = trimmedPrompt.length === 0;
-      if (missingNews || missingPrompt) {
-        const parts = [
-          missingNews ? "nenhuma noticia selecionada" : null,
-          missingPrompt ? "nenhum prompt complementar informado" : null,
-        ].filter(Boolean);
-        const proceed = window.confirm(
-          `${parts.join(" e ")}. Deseja continuar assim mesmo?`,
-        );
-        if (!proceed) {
-          return false;
-        }
-      }
       const newsItems = selectedNews.map((item) => ({
         id: item.id,
         title: item.title,
@@ -637,15 +656,25 @@ export default function ContentCreator() {
       if (!result.script) {
         throw new Error("No script returned.");
       }
-      const hasComplementary = scriptIncludesComplementaryPrompt(result.script, trimmedPrompt);
+      const needsComplementary =
+        trimmedPrompt.length > 0 && !scriptIncludesComplementaryPrompt(result.script, trimmedPrompt);
+      const needsNews =
+        selectedNews.length > 0 && !scriptIncludesSelectedNews(result.script, selectedNews);
       let finalScript = result.script;
 
-      if (!hasComplementary && trimmedPrompt) {
-        const keywords = extractComplementaryKeywords(trimmedPrompt);
-        const refinementPrompt =
-          keywords.length > 0
-            ? `Revise o roteiro para incluir explicitamente elementos do prompt complementar e mencione: ${keywords.join(", ")}.`
-            : "Revise o roteiro para incluir explicitamente elementos do prompt complementar.";
+      if (needsComplementary || needsNews) {
+        const keywords = trimmedPrompt ? extractComplementaryKeywords(trimmedPrompt) : [];
+        const newsTitles = selectedNews.map((item) => item.title).filter(Boolean);
+        const newsInstruction =
+          newsTitles.length > 0
+            ? `Revise o roteiro para incorporar informacoes baseadas nas noticias selecionadas. Noticias: ${newsTitles.join("; ")}.`
+            : "";
+        const complementaryInstruction = trimmedPrompt
+          ? keywords.length > 0
+            ? `Inclua explicitamente elementos do prompt complementar e mencione: ${keywords.join(", ")}.`
+            : "Inclua explicitamente elementos do prompt complementar."
+          : "";
+        const refinementPrompt = [newsInstruction, complementaryInstruction].filter(Boolean).join(" ");
 
         const refined = await generateTeleprompterScript(newsItems, parameters, {
           refinementPrompt,
@@ -657,9 +686,16 @@ export default function ContentCreator() {
         finalScript = refined.script;
       }
 
-      if (!scriptIncludesComplementaryPrompt(finalScript, trimmedPrompt)) {
+      if (trimmedPrompt && !scriptIncludesComplementaryPrompt(finalScript, trimmedPrompt)) {
         setGenerationError(
-          "O roteiro gerado não inclui elementos do prompt complementar. Ajuste o prompt e tente novamente.",
+          "O roteiro gerado nao inclui elementos do prompt complementar. Ajuste o prompt e tente novamente.",
+        );
+        return false;
+      }
+
+      if (selectedNews.length > 0 && !scriptIncludesSelectedNews(finalScript, selectedNews)) {
+        setGenerationError(
+          "O roteiro gerado nao inclui informacoes das noticias selecionadas. Ajuste a selecao e tente novamente.",
         );
         return false;
       }
@@ -855,7 +891,14 @@ export default function ContentCreator() {
                       >
                         Data
                       </SortableTableHead>
-                      <TableHead className="w-[120px]">Noticias</TableHead>
+                      <SortableTableHead
+                        sortKey="news_count"
+                        currentSort={scriptSort}
+                        onSort={handleScriptSort}
+                        className="w-[120px]"
+                      >
+                        Noticias
+                      </SortableTableHead>
                       <SortableTableHead
                         sortKey="title"
                         currentSort={scriptSort}
@@ -1256,7 +1299,7 @@ export default function ContentCreator() {
                       placeholder="Publicacao dd/mm/aaaa"
                     />
                   </div>
-                  <div className="relative">
+                  <div className="grid gap-2">
                     <Input
                       placeholder="Filtrar por titulo..."
                       value={titleFilter}
@@ -1265,6 +1308,15 @@ export default function ContentCreator() {
                       }}
                       className="pl-3"
                       maxLength={100}
+                    />
+                    <Input
+                      placeholder="Filtrar por conteudo..."
+                      value={bodyFilter}
+                      onChange={(e) => {
+                        setBodyFilter(e.target.value);
+                      }}
+                      className="pl-3"
+                      maxLength={160}
                     />
                   </div>
                 </div>
@@ -1317,8 +1369,21 @@ export default function ContentCreator() {
                       >
                         Titulo
                       </SortableTableHead>
-                      <TableHead className="w-[140px]">Fonte</TableHead>
-                      <TableHead>Link</TableHead>
+                      <SortableTableHead
+                        sortKey="source"
+                        currentSort={currentSort}
+                        onSort={handleSort}
+                        className="w-[140px]"
+                      >
+                        Fonte
+                      </SortableTableHead>
+                      <SortableTableHead
+                        sortKey="link"
+                        currentSort={currentSort}
+                        onSort={handleSort}
+                      >
+                        Link
+                      </SortableTableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1426,32 +1491,73 @@ export default function ContentCreator() {
                   Nenhum roteiro gerado ainda.
                 </div>
               ) : (
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[140px]">Data</TableHead>
-                        <TableHead>Previa</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {scriptHistory.map((script) => (
-                        <TableRow
-                          key={script.id}
-                          className={`cursor-pointer ${selectedScriptId === script.id ? "bg-muted/60" : ""}`}
-                          onClick={() => void handleUseScript(script)}
-                        >
-                          <TableCell className="font-mono text-xs whitespace-nowrap">
-                            {format(new Date(script.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {getScriptPreview(script.script_text)}
-                          </TableCell>
+                <>
+                  <div className="flex gap-4 mb-4">
+                    <div className="flex items-center gap-2">
+                      <DateFilter
+                        value={scriptDateFilter}
+                        onChange={setScriptDateFilter}
+                        placeholder="Criacao dd/mm/aaaa"
+                      />
+                    </div>
+                    <div className="relative flex-1">
+                      <Input
+                        placeholder="Filtrar por conteudo..."
+                        value={scriptTitleFilter}
+                        onChange={(e) => setScriptTitleFilter(e.target.value)}
+                        className="pl-3"
+                        maxLength={120}
+                      />
+                    </div>
+                  </div>
+                  <div className="border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <SortableTableHead
+                            sortKey="created_at"
+                            currentSort={scriptSort}
+                            onSort={handleScriptSort}
+                            className="w-[140px]"
+                          >
+                            Data
+                          </SortableTableHead>
+                          <SortableTableHead
+                            sortKey="title"
+                            currentSort={scriptSort}
+                            onSort={handleScriptSort}
+                          >
+                            Previa
+                          </SortableTableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredScripts.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
+                              Nenhum roteiro encontrado
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredScripts.map((script) => (
+                            <TableRow
+                              key={script.id}
+                              className={`cursor-pointer ${selectedScriptId === script.id ? "bg-muted/60" : ""}`}
+                              onClick={() => void handleUseScript(script)}
+                            >
+                              <TableCell className="font-mono text-xs whitespace-nowrap">
+                                {format(new Date(script.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {getScriptPreview(script.script_text)}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -1616,46 +1722,46 @@ function scriptIncludesComplementaryPrompt(script: string, prompt: string): bool
   return keywords.some((keyword) => haystack.includes(normalizeText(keyword)));
 }
 
-function extractComplementaryKeywords(prompt: string): string[] {
-  const stopwords = new Set([
-    "a",
-    "o",
-    "os",
-    "as",
-    "um",
-    "uma",
-    "uns",
-    "umas",
-    "de",
-    "da",
-    "do",
-    "das",
-    "dos",
-    "em",
-    "no",
-    "na",
-    "nos",
-    "nas",
-    "para",
-    "por",
-    "com",
-    "sem",
-    "e",
-    "ou",
-    "que",
-    "se",
-    "nao",
-    "não",
-    "the",
-    "and",
-    "or",
-    "to",
-    "of",
-    "for",
-    "with",
-    "without",
-  ]);
+const STOPWORDS = new Set([
+  "a",
+  "o",
+  "os",
+  "as",
+  "um",
+  "uma",
+  "uns",
+  "umas",
+  "de",
+  "da",
+  "do",
+  "das",
+  "dos",
+  "em",
+  "no",
+  "na",
+  "nos",
+  "nas",
+  "para",
+  "por",
+  "com",
+  "sem",
+  "e",
+  "ou",
+  "que",
+  "se",
+  "nao",
+  "n?o",
+  "the",
+  "and",
+  "or",
+  "to",
+  "of",
+  "for",
+  "with",
+  "without",
+]);
 
+function extractComplementaryKeywords(prompt: string): string[] {
   const tokens = prompt
     .replace(/[.,;:!?()\[\]{}]/g, " ")
     .split(/\s+/)
@@ -1667,7 +1773,7 @@ function extractComplementaryKeywords(prompt: string): string[] {
   const seen = new Set<string>();
   tokens.forEach((token) => {
     const normalized = normalizeText(token);
-    if (stopwords.has(normalized)) return;
+    if (STOPWORDS.has(normalized)) return;
     if (seen.has(normalized)) return;
     seen.add(normalized);
     keywords.push(token);
@@ -1678,6 +1784,41 @@ function extractComplementaryKeywords(prompt: string): string[] {
 
 function normalizeText(value: string): string {
   return value.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function extractNewsKeywords(newsItems: FullArticle[]): string[] {
+  const keywords: string[] = [];
+  const seen = new Set<string>();
+  newsItems.forEach((item) => {
+    const title = item.title || "";
+    const tokens = title
+      .replace(/[.,;:!?()\[\]{}]/g, " ")
+      .split(/\s+/)
+      .map((token) => token.trim())
+      .filter(Boolean)
+      .filter((token) => token.length >= 4);
+    tokens.forEach((token) => {
+      const normalized = normalizeText(token);
+      if (STOPWORDS.has(normalized)) return;
+      if (seen.has(normalized)) return;
+      seen.add(normalized);
+      keywords.push(token);
+    });
+  });
+  return keywords;
+}
+
+function scriptIncludesSelectedNews(script: string, newsItems: FullArticle[]): boolean {
+  if (newsItems.length === 0) return true;
+  const normalizedScript = normalizeText(script);
+  const titleMatch = newsItems.some((item) => {
+    const title = normalizeText(item.title || "");
+    return title.length > 0 && normalizedScript.includes(title);
+  });
+  if (titleMatch) return true;
+  const keywords = extractNewsKeywords(newsItems);
+  if (keywords.length === 0) return false;
+  return keywords.some((keyword) => normalizedScript.includes(normalizeText(keyword)));
 }
 
 function buildTeleprompterParameters(
