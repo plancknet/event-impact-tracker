@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,75 +19,27 @@ import {
 } from "@/components/ui/collapsible";
 import { format, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { supabase } from "@/integrations/supabase/client";
-
-interface NewsItem {
-  id: string;
-  title: string;
-  link?: string;
-  publishedAt?: string;
-  source?: string;
-  summary?: string;
-}
+import type { UserNewsItem } from "@/hooks/useUserNews";
 
 interface NewsGridProps {
-  topic: string;
-  language: string;
+  newsItems: UserNewsItem[];
+  isLoading: boolean;
+  error: string | null;
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
+  onRefresh: () => void;
 }
 
-export function NewsGrid({ topic, language, selectedIds, onSelectionChange }: NewsGridProps) {
+export function NewsGrid({ 
+  newsItems, 
+  isLoading, 
+  error, 
+  selectedIds, 
+  onSelectionChange,
+  onRefresh 
+}: NewsGridProps) {
   const [isOpen, setIsOpen] = useState(true);
-  const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState("");
-
-  const fetchNews = async () => {
-    if (!topic.trim()) {
-      setError("Defina um tema principal no seu perfil.");
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Use the google-news-rss edge function
-      const { data, error: fetchError } = await supabase.functions.invoke('google-news-rss', {
-        body: {
-          query: topic,
-          language: language || 'pt-BR',
-          maxResults: 20,
-        },
-      });
-
-      if (fetchError) throw fetchError;
-
-      const items: NewsItem[] = (data?.items || []).map((item: any, index: number) => ({
-        id: item.id || `news-${index}-${Date.now()}`,
-        title: item.title,
-        link: item.link,
-        publishedAt: item.publishedAt,
-        source: item.source,
-        summary: item.snippet || item.summary,
-      }));
-
-      setNewsItems(items);
-    } catch (err) {
-      console.error("Failed to fetch news:", err);
-      setError("Não foi possível carregar as notícias. Tente novamente.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (topic.trim()) {
-      fetchNews();
-    }
-  }, [topic, language]);
 
   const filteredNews = useMemo(() => {
     if (!searchFilter.trim()) return newsItems;
@@ -124,16 +76,21 @@ export function NewsGrid({ topic, language, selectedIds, onSelectionChange }: Ne
     return format(date, "dd/MM", { locale: ptBR });
   };
 
+  // Don't render if no news and not loading
+  if (newsItems.length === 0 && !isLoading && !error) {
+    return null;
+  }
+
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div className="rounded-xl border bg-card">
         <CollapsibleTrigger asChild>
           <button className="w-full p-4 flex items-center justify-between text-left hover:bg-muted/50 transition-colors rounded-t-xl">
             <div className="flex items-center gap-3">
-              <h3 className="font-semibold">Notícias</h3>
+              <h3 className="font-semibold">Notícias encontradas</h3>
               {newsItems.length > 0 && (
                 <Badge variant="secondary" className="text-xs">
-                  {selectedIds.length}/{newsItems.length}
+                  {selectedIds.length}/{newsItems.length} selecionadas
                 </Badge>
               )}
             </div>
@@ -143,7 +100,7 @@ export function NewsGrid({ topic, language, selectedIds, onSelectionChange }: Ne
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  fetchNews();
+                  onRefresh();
                 }}
                 disabled={isLoading}
                 className="h-8 px-2"
@@ -182,7 +139,7 @@ export function NewsGrid({ topic, language, selectedIds, onSelectionChange }: Ne
             {isLoading && (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-muted-foreground">Carregando notícias...</span>
+                <span className="ml-2 text-muted-foreground">Buscando notícias...</span>
               </div>
             )}
 
@@ -217,8 +174,8 @@ export function NewsGrid({ topic, language, selectedIds, onSelectionChange }: Ne
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-sm line-clamp-2">{item.title}</h4>
                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                          {item.publishedAt && (
-                            <span>{formatDate(item.publishedAt)}</span>
+                          {item.published_at && (
+                            <span>{formatDate(item.published_at)}</span>
                           )}
                           {item.source && (
                             <>

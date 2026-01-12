@@ -9,15 +9,14 @@ import { ScriptOutput } from "./ScriptOutput";
 import { ScriptControls } from "./ScriptControls";
 import { NewsGrid } from "./NewsGrid";
 import { ScriptHistory } from "./ScriptHistory";
-import { supabase } from "@/integrations/supabase/client";
-import type { FullArticle } from "@/news/types";
+import { useUserNews, UserNewsItem } from "@/hooks/useUserNews";
 
 interface ScriptGeneratorProps {
   profile: CreatorProfile;
   onEditProfile: () => void;
   generatedScript: string;
   isGenerating: boolean;
-  onGenerate: (newsContext?: string, selectedNewsIds?: string[]) => Promise<void>;
+  onGenerate: (newsContext?: string, selectedNews?: UserNewsItem[], complementaryPrompt?: string) => Promise<void>;
   onRegenerate: (adjustments: { tone?: string; duration?: string; format?: string }) => Promise<void>;
   onOpenTeleprompter: () => void;
   onScriptChange: (script: string) => void;
@@ -41,17 +40,49 @@ export function ScriptGenerator({
   onOpenTeleprompter,
   onScriptChange,
 }: ScriptGeneratorProps) {
-  const [newsContext, setNewsContext] = useState("");
-  const [showNewsInput, setShowNewsInput] = useState(false);
+  const [complementaryPrompt, setComplementaryPrompt] = useState("");
+  const [showComplementaryInput, setShowComplementaryInput] = useState(false);
   const [currentTone, setCurrentTone] = useState(profile.speaking_tone);
   const [currentDuration, setCurrentDuration] = useState(profile.target_duration);
   const [currentFormat, setCurrentFormat] = useState(profile.video_type);
   const [selectedNewsIds, setSelectedNewsIds] = useState<string[]>([]);
   const [currentScriptId, setCurrentScriptId] = useState<string | null>(null);
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
+
+  const { newsItems, isLoading: isLoadingNews, error: newsError, fetchAndSaveNews, loadNews } = useUserNews();
+
+  // Load existing news when component mounts
+  useEffect(() => {
+    if (profile.main_topic) {
+      loadNews(profile.main_topic);
+    }
+  }, [profile.main_topic, loadNews]);
+
+  // Check if we have news already
+  useEffect(() => {
+    if (newsItems.length > 0) {
+      setHasStarted(true);
+    }
+  }, [newsItems]);
+
+  const handleStartCreating = async () => {
+    if (!profile.main_topic.trim()) return;
+    
+    setHasStarted(true);
+    await fetchAndSaveNews(profile.main_topic, profile.news_language);
+  };
+
+  const handleRefreshNews = async () => {
+    if (!profile.main_topic.trim()) return;
+    await fetchAndSaveNews(profile.main_topic, profile.news_language);
+  };
 
   const handleGenerate = async () => {
-    await onGenerate(newsContext || undefined, selectedNewsIds);
+    // Get selected news items
+    const selectedNews = newsItems.filter(n => selectedNewsIds.includes(n.id));
+    
+    await onGenerate(undefined, selectedNews, complementaryPrompt || undefined);
     // Refresh history after generating
     setHistoryRefreshTrigger((prev) => prev + 1);
   };
@@ -100,17 +131,68 @@ export function ScriptGenerator({
     }
   };
 
+  // Initial state - show "Start creating" button
+  if (!hasStarted) {
+    return (
+      <div className="space-y-6">
+        <ContextSummary profile={profile} onEditProfile={onEditProfile} />
+        
+        <div className="rounded-2xl border bg-card p-8 md:p-12 text-center space-y-6">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-semibold">Pronto para criar?</h2>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              Vamos buscar as notícias mais recentes sobre <strong>{profile.main_topic || "seu tema"}</strong> para você selecionar e criar seu roteiro.
+            </p>
+          </div>
+          
+          <Button
+            onClick={handleStartCreating}
+            disabled={isLoadingNews || !profile.main_topic}
+            size="lg"
+            className="gap-3 h-14 text-lg font-medium px-8"
+          >
+            {isLoadingNews ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Buscando notícias...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5" />
+                Começar a criar
+              </>
+            )}
+          </Button>
+          
+          {newsError && (
+            <p className="text-destructive text-sm">{newsError}</p>
+          )}
+        </div>
+        
+        {/* Script History - always visible */}
+        <ScriptHistory
+          currentScriptId={currentScriptId}
+          onSelectScript={handleSelectScript}
+          onDeleteScript={handleDeleteScript}
+          refreshTrigger={historyRefreshTrigger}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Context summary */}
       <ContextSummary profile={profile} onEditProfile={onEditProfile} />
       
-      {/* News Grid */}
+      {/* News Grid - populated from database */}
       <NewsGrid
-        topic={profile.main_topic}
-        language={profile.news_language}
+        newsItems={newsItems}
+        isLoading={isLoadingNews}
+        error={newsError}
         selectedIds={selectedNewsIds}
         onSelectionChange={setSelectedNewsIds}
+        onRefresh={handleRefreshNews}
       />
       
       {/* Main generation area */}
@@ -132,27 +214,27 @@ export function ScriptGenerator({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowNewsInput(!showNewsInput)}
+              onClick={() => setShowComplementaryInput(!showComplementaryInput)}
               className="gap-2"
             >
               <Newspaper className="w-4 h-4" />
-              {showNewsInput ? 'Ocultar contexto' : 'Adicionar contexto'}
+              {showComplementaryInput ? 'Ocultar prompt' : 'Prompt complementar'}
             </Button>
           </div>
           
-          {showNewsInput && (
+          {showComplementaryInput && (
             <div className="space-y-2 animate-in">
-              <Label htmlFor="newsContext">Contexto adicional ou notícias</Label>
+              <Label htmlFor="complementaryPrompt">Prompt complementar</Label>
               <Textarea
-                id="newsContext"
-                value={newsContext}
-                onChange={(e) => setNewsContext(e.target.value)}
-                placeholder="Cole aqui notícias, dados ou contexto adicional para o roteiro..."
+                id="complementaryPrompt"
+                value={complementaryPrompt}
+                onChange={(e) => setComplementaryPrompt(e.target.value)}
+                placeholder="Adicione instruções específicas para personalizar o roteiro, ex: 'Foque nos aspectos de segurança' ou 'Use um tom mais crítico'..."
                 rows={4}
                 className="resize-none"
               />
               <p className="text-xs text-muted-foreground">
-                Opcional: adicione informações que você quer incluir no roteiro
+                Opcional: instruções adicionais para guiar a geração do roteiro
               </p>
             </div>
           )}
@@ -161,7 +243,7 @@ export function ScriptGenerator({
         {/* Generate button */}
         <Button
           onClick={handleGenerate}
-          disabled={isGenerating || !profile.main_topic}
+          disabled={isGenerating || !profile.main_topic || (selectedNewsIds.length === 0 && !complementaryPrompt.trim())}
           size="lg"
           className="w-full gap-3 h-14 text-lg font-medium"
         >
@@ -177,6 +259,12 @@ export function ScriptGenerator({
             </>
           )}
         </Button>
+        
+        {selectedNewsIds.length === 0 && !complementaryPrompt.trim() && (
+          <p className="text-sm text-muted-foreground text-center">
+            Selecione pelo menos uma notícia ou adicione um prompt complementar
+          </p>
+        )}
       </div>
       
       {/* Script output */}

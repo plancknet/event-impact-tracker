@@ -7,6 +7,7 @@ import { TeleprompterDisplay, DEFAULT_TELEPROMPTER_SETTINGS } from "@/components
 import { Button } from "@/components/ui/button";
 import { LogOut, Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { UserNewsItem } from "@/hooks/useUserNews";
 
 export default function Studio() {
   const { user, signOut } = useAuth();
@@ -23,24 +24,36 @@ export default function Studio() {
     }
   };
 
-  const handleGenerate = async (newsContext?: string) => {
+  const handleGenerate = async (newsContext?: string, selectedNews?: UserNewsItem[], complementaryPrompt?: string) => {
     setIsGenerating(true);
     try {
+      // Build news items for the edge function
+      const newsItems = selectedNews?.map(n => ({
+        id: n.id,
+        title: n.title,
+        summary: n.summary || undefined,
+        content: n.summary || undefined, // Use summary as content since we don't have full content
+      })) || [];
+
       const { data, error } = await supabase.functions.invoke('generate-teleprompter-script', {
         body: {
-          newsItems: newsContext ? [{ id: '1', title: profile.main_topic, summary: newsContext, content: newsContext }] : [],
+          newsItems,
           parameters: {
             tone: profile.speaking_tone,
             audience: profile.audience_type,
             duration: profile.target_duration,
             durationUnit: profile.duration_unit,
             language: profile.script_language,
+            scriptType: profile.video_type,
+            includeCta: profile.include_cta,
+            ctaText: profile.cta_template,
             profile: {
               mainSubject: profile.main_topic,
               goal: profile.content_goal,
               platform: profile.platform,
             },
           },
+          complementaryPrompt: complementaryPrompt,
         },
       });
       if (error) throw error;
@@ -64,6 +77,9 @@ export default function Studio() {
             duration: adjustments.duration || profile.target_duration,
             durationUnit: profile.duration_unit,
             language: profile.script_language,
+            scriptType: adjustments.format || profile.video_type,
+            includeCta: profile.include_cta,
+            ctaText: profile.cta_template,
             profile: {
               mainSubject: profile.main_topic,
               goal: profile.content_goal,
