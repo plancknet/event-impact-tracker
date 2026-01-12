@@ -30,11 +30,13 @@ export function useCreatorProfile() {
 
       if (data) {
         setProfile({
+          ...DEFAULT_CREATOR_PROFILE,
           ...data,
-          audience_age_min: typeof data.audience_age_min === 'number' ? data.audience_age_min : DEFAULT_CREATOR_PROFILE.audience_age_min,
-          audience_age_max: typeof data.audience_age_max === 'number' ? data.audience_age_max : DEFAULT_CREATOR_PROFILE.audience_age_max,
-          audience_gender_split: typeof data.audience_gender_split === 'number' ? data.audience_gender_split : DEFAULT_CREATOR_PROFILE.audience_gender_split,
-          duration_unit: data.duration_unit as 'minutes' | 'words',
+          // These fields don't exist in DB, use defaults
+          audience_age_min: DEFAULT_CREATOR_PROFILE.audience_age_min,
+          audience_age_max: DEFAULT_CREATOR_PROFILE.audience_age_max,
+          audience_gender_split: DEFAULT_CREATOR_PROFILE.audience_gender_split,
+          duration_unit: (data.duration_unit as 'minutes' | 'words') || DEFAULT_CREATOR_PROFILE.duration_unit,
         });
         setHasProfile(true);
       } else {
@@ -71,9 +73,6 @@ export function useCreatorProfile() {
             main_topic: profileData.main_topic,
             expertise_level: profileData.expertise_level,
             audience_type: profileData.audience_type,
-            audience_age_min: profileData.audience_age_min,
-            audience_age_max: profileData.audience_age_max,
-            audience_gender_split: profileData.audience_gender_split,
             video_type: profileData.video_type,
             target_duration: profileData.target_duration,
             duration_unit: profileData.duration_unit,
@@ -98,9 +97,6 @@ export function useCreatorProfile() {
             main_topic: profileData.main_topic,
             expertise_level: profileData.expertise_level,
             audience_type: profileData.audience_type,
-            audience_age_min: profileData.audience_age_min,
-            audience_age_max: profileData.audience_age_max,
-            audience_gender_split: profileData.audience_gender_split,
             video_type: profileData.video_type,
             target_duration: profileData.target_duration,
             duration_unit: profileData.duration_unit,
