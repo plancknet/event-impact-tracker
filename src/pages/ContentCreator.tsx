@@ -134,8 +134,6 @@ const DEFAULT_PROFILE: WritingProfile = {
   scriptLanguage: "Portuguese",
 };
 
-const PAUSE_LONG_INSTRUCTION = "A cada mudanca de assunto, inclua uma unica tag <pause-long>.";
-
 export default function ContentCreator() {
   const { user, signOut } = useAuth();
   const [step, setStep] = useState<StepId>(1);
@@ -172,7 +170,6 @@ export default function ContentCreator() {
   const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
   const [scriptsLoading, setScriptsLoading] = useState(false);
   const [isScriptsCollapsed, setIsScriptsCollapsed] = useState(true);
-  const [isEditorCollapsed, setIsEditorCollapsed] = useState(false);
   const [teleprompterSettings, setTeleprompterSettings] = useState<TeleprompterSettings>(DEFAULT_TELEPROMPTER_SETTINGS);
 
   const scriptLanguageOptions = [
@@ -527,8 +524,6 @@ export default function ContentCreator() {
         return false;
       }
       const trimmedPrompt = complementaryPrompt.trim();
-      const generationPrompt = buildGenerationPrompt(trimmedPrompt);
-      const generationPrompt = buildGenerationPrompt(trimmedPrompt);
 
       const newsItems = selectedNews.map((item) => ({
         id: item.id,
@@ -537,7 +532,7 @@ export default function ContentCreator() {
         content: item.fullText || item.summary || null,
       })) satisfies TeleprompterNewsItem[];
 
-      const parameters = buildTeleprompterParameters(profile, generationPrompt, teleprompterSettings);
+      const parameters = buildTeleprompterParameters(profile, trimmedPrompt, teleprompterSettings);
       const keywords = trimmedPrompt ? extractComplementaryKeywords(trimmedPrompt) : [];
       const newsTitles = selectedNews.map((item) => item.title).filter(Boolean);
       const newsReference =
@@ -551,9 +546,7 @@ export default function ContentCreator() {
           ? `Mantenha o roteiro base ao maximo. Adicione um complemento ao final que atenda ao prompt complementar e inclua: ${keywords.join(", ")}.`
           : "Mantenha o roteiro base ao maximo. Adicione um complemento ao final que atenda ao prompt complementar."
         : "Mantenha o roteiro base ao maximo. Ajuste apenas para fluidez e coerencia.";
-      const refinementPrompt = [newsReference, complementaryInstruction, PAUSE_LONG_INSTRUCTION]
-        .filter(Boolean)
-        .join(" ");
+      const refinementPrompt = [newsReference, complementaryInstruction].filter(Boolean).join(" ");
 
       const refined = await generateTeleprompterScript(newsItems, parameters, {
         refinementPrompt,
@@ -658,7 +651,7 @@ export default function ContentCreator() {
         content: item.fullText || item.summary || null,
       })) satisfies TeleprompterNewsItem[];
 
-      const parameters = buildTeleprompterParameters(profile, generationPrompt, teleprompterSettings);
+      const parameters = buildTeleprompterParameters(profile, trimmedPrompt, teleprompterSettings);
       const result = await generateTeleprompterScript(newsItems, parameters);
       if (!result.script) {
         throw new Error("No script returned.");
@@ -681,9 +674,7 @@ export default function ContentCreator() {
             ? `Inclua explicitamente elementos do prompt complementar e mencione: ${keywords.join(", ")}.`
             : "Inclua explicitamente elementos do prompt complementar."
           : "";
-        const refinementPrompt = [newsInstruction, complementaryInstruction, PAUSE_LONG_INSTRUCTION]
-          .filter(Boolean)
-          .join(" ");
+        const refinementPrompt = [newsInstruction, complementaryInstruction].filter(Boolean).join(" ");
 
         const refined = await generateTeleprompterScript(newsItems, parameters, {
           refinementPrompt,
@@ -1220,15 +1211,6 @@ export default function ContentCreator() {
                   {generationError}
                 </div>
               )}
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Prompt complementar</p>
-                <Textarea
-                  value={complementaryPrompt}
-                  onChange={(event) => setComplementaryPrompt(event.target.value)}
-                  rows={3}
-                  placeholder="Ex.: foque nos aprendizados para criadores, seja direto e inclua CTA."
-                />
-              </div>
               <div className="grid gap-4 md:grid-cols-2 text-sm">
                 <div>
                   <div className="text-xs uppercase text-muted-foreground">Assunto</div>
@@ -1582,51 +1564,36 @@ export default function ContentCreator() {
 
           <Card>
             <CardHeader>
-              <button
-                type="button"
-                className="flex items-center justify-between w-full text-left"
-                onClick={() => setIsEditorCollapsed((prev) => !prev)}
-              >
-                <div>
-                  <CardTitle>Editor do roteiro</CardTitle>
-                  <CardDescription>Edite antes de exibir no teleprompter.</CardDescription>
-                </div>
-                {isEditorCollapsed ? (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                )}
-              </button>
+              <CardTitle>Editor do roteiro</CardTitle>
+              <CardDescription>Edite antes de exibir no teleprompter.</CardDescription>
             </CardHeader>
-            {!isEditorCollapsed && (
-              <CardContent className="space-y-4">
-                <Textarea
-                  value={editedScript}
-                  onChange={(event) => setEditedScript(event.target.value)}
-                  rows={10}
-                  placeholder="O roteiro gerado aparece aqui..."
-                />
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={handleRegenerateFromCurrent}
-                    disabled={!canGenerateFromNews || isGenerating}
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Gerando roteiro...
-                      </>
-                    ) : (
-                      "Gerar novamente"
-                    )}
-                  </Button>
-                  <Button onClick={handleSaveScript} disabled={!canSaveScript || isSavingScript}>
-                    {isSavingScript ? "Salvando..." : "Salvar alteracoes"}
-                  </Button>
-                </div>
-              </CardContent>
-            )}
+            <CardContent className="space-y-4">
+              <Textarea
+                value={editedScript}
+                onChange={(event) => setEditedScript(event.target.value)}
+                rows={10}
+                placeholder="O roteiro gerado aparece aqui..."
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleRegenerateFromCurrent}
+                  disabled={!canGenerateFromNews || isGenerating}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Gerando roteiro...
+                    </>
+                  ) : (
+                    "Gerar novamente"
+                  )}
+                </Button>
+                <Button onClick={handleSaveScript} disabled={!canSaveScript || isSavingScript}>
+                  {isSavingScript ? "Salvando..." : "Salvar alteracoes"}
+                </Button>
+              </div>
+            </CardContent>
           </Card>
 
           {editedScript ? (
@@ -1817,10 +1784,6 @@ function extractComplementaryKeywords(prompt: string): string[] {
 
 function normalizeText(value: string): string {
   return value.toLowerCase().replace(/\s+/g, " ").trim();
-}
-
-function buildGenerationPrompt(userPrompt: string): string {
-  return [userPrompt.trim(), PAUSE_LONG_INSTRUCTION].filter(Boolean).join(" ");
 }
 
 function extractNewsKeywords(newsItems: FullArticle[]): string[] {

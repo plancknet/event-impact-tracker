@@ -9,8 +9,7 @@ export interface CreatorProfile {
   
   // Audience profile
   audience_type: string;
-  audience_gender: string;
-  audience_age_range: string;
+  audience_pain_points: string[];
   
   // Video format
   video_type: string;
@@ -39,8 +38,7 @@ export const DEFAULT_CREATOR_PROFILE: CreatorProfile = {
   main_topic: '',
   expertise_level: 'intermediario',
   audience_type: 'publico_geral',
-  audience_gender: 'todos',
-  audience_age_range: 'todos',
+  audience_pain_points: [],
   video_type: 'video_curto',
   target_duration: '3',
   duration_unit: 'minutes',
@@ -67,24 +65,14 @@ export const AUDIENCE_TYPE_OPTIONS = [
   { value: 'especialistas', label: 'Especialistas', description: 'Experts e conhecedores' },
 ];
 
-export const AUDIENCE_GENDER_OPTIONS = [
-  { value: 'todos', label: 'Todos' },
-  { value: 'feminino', label: 'Feminino' },
-  { value: 'masculino', label: 'Masculino' },
-  { value: 'outro', label: 'Outro' },
-  { value: 'nao_informar', label: 'Prefiro nao informar' },
+export const PAIN_POINTS_OPTIONS = [
+  { value: 'falta_tempo', label: 'Falta de tempo' },
+  { value: 'complexidade', label: 'Tema muito complexo' },
+  { value: 'desatualizado', label: 'Informação desatualizada' },
+  { value: 'confianca', label: 'Não sabe em quem confiar' },
+  { value: 'pratica', label: 'Dificuldade prática' },
+  { value: 'motivacao', label: 'Falta de motivação' },
 ];
-
-export const AUDIENCE_AGE_RANGE_OPTIONS = [
-  { value: 'todos', label: 'Todas' },
-  { value: '13-17', label: '13-17' },
-  { value: '18-24', label: '18-24' },
-  { value: '25-34', label: '25-34' },
-  { value: '35-44', label: '35-44' },
-  { value: '45-54', label: '45-54' },
-  { value: '55+', label: '55+' },
-];
-
 
 export const VIDEO_TYPE_OPTIONS = [
   { value: 'video_curto', label: 'Vídeo curto', description: 'Reels, Shorts, TikTok' },
@@ -104,12 +92,12 @@ export const DURATION_OPTIONS = [
 ];
 
 export const PLATFORM_OPTIONS = [
-  { value: 'YouTube', label: 'YouTube', logo: '/logos/youtube.svg' },
-  { value: 'Instagram', label: 'Instagram', logo: '/logos/instagram.svg' },
-  { value: 'TikTok', label: 'TikTok', logo: '/logos/tiktok.svg' },
-  { value: 'LinkedIn', label: 'LinkedIn', logo: '/logos/linkedin.svg' },
-  { value: 'Podcast', label: 'Podcast', logo: '/logos/applepodcasts.svg' },
-  { value: 'Twitter', label: 'Twitter/X', logo: '/logos/x.svg' },
+  { value: 'YouTube', label: 'YouTube', icon: '📺' },
+  { value: 'Instagram', label: 'Instagram', icon: '📷' },
+  { value: 'TikTok', label: 'TikTok', icon: '🎵' },
+  { value: 'LinkedIn', label: 'LinkedIn', icon: '💼' },
+  { value: 'Podcast', label: 'Podcast', icon: '🎙️' },
+  { value: 'Twitter', label: 'Twitter/X', icon: '🐦' },
 ];
 
 export const TONE_OPTIONS = [

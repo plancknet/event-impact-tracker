@@ -80,11 +80,7 @@ export function StepFormat({ profile, onChange, onBack, onNext, onSkip }: StepFo
                     : 'border-border hover:border-primary/50'
                 }`}
               >
-                <img
-                  src={option.logo}
-                  alt={option.label}
-                  className="h-6 w-6 object-contain"
-                />
+                <span className="text-xl">{option.icon}</span>
                 <span className="text-xs font-medium">{option.label}</span>
               </button>
             ))}

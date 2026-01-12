@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, Newspaper } from "lucide-react";
 import { CreatorProfile } from "@/types/creatorProfile";
 import { ContextSummary } from "./ContextSummary";
 import { ScriptOutput } from "./ScriptOutput";
@@ -41,6 +41,7 @@ export function ScriptGenerator({
   onScriptChange,
 }: ScriptGeneratorProps) {
   const [complementaryPrompt, setComplementaryPrompt] = useState("");
+  const [showComplementaryInput, setShowComplementaryInput] = useState(false);
   const [currentTone, setCurrentTone] = useState(profile.speaking_tone);
   const [currentDuration, setCurrentDuration] = useState(profile.target_duration);
   const [currentFormat, setCurrentFormat] = useState(profile.video_type);
@@ -205,27 +206,29 @@ export function ScriptGenerator({
                 Sobre: {profile.main_topic || 'Defina um tema no seu perfil'}
                 {selectedNewsIds.length > 0 && (
                   <span className="ml-2 text-primary">
-                    ? {selectedNewsIds.length} not?cia(s) selecionada(s)
+                    • {selectedNewsIds.length} notícia(s) selecionada(s)
                   </span>
                 )}
               </p>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowComplementaryInput(!showComplementaryInput)}
+              className="gap-2"
+            >
+              <Newspaper className="w-4 h-4" />
+              {showComplementaryInput ? 'Ocultar prompt' : 'Prompt complementar'}
+            </Button>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="complementaryPrompt">Prompt complementar</Label>
-            <Textarea
-              id="complementaryPrompt"
-              value={complementaryPrompt}
-              onChange={(e) => setComplementaryPrompt(e.target.value)}
-              placeholder="Adicione instru??es espec?ficas para personalizar o roteiro, ex: 'Foque nos aspectos de seguran?a' ou 'Use um tom mais cr?tico'..."
-              rows={4}
-              className="resize-none"
-            />
-            <p className="text-xs text-muted-foreground">
-              Opcional: instru??es adicionais para guiar a gera??o do roteiro
-            </p>
-          </div>
+          {showComplementaryInput && (
+            <div className="space-y-2 animate-in">
+              <Label htmlFor="complementaryPrompt">Prompt complementar</Label>
+              <Textarea
+                id="complementaryPrompt"
+                value={complementaryPrompt}
+                onChange={(e) => setComplementaryPrompt(e.target.value)}
                 placeholder="Adicione instruções específicas para personalizar o roteiro, ex: 'Foque nos aspectos de segurança' ou 'Use um tom mais crítico'..."
                 rows={4}
                 className="resize-none"
@@ -240,7 +243,7 @@ export function ScriptGenerator({
         {/* Generate button */}
         <Button
           onClick={handleGenerate}
-          disabled={isGenerating || !profile.main_topic}
+          disabled={isGenerating || !profile.main_topic || (selectedNewsIds.length === 0 && !complementaryPrompt.trim())}
           size="lg"
           className="w-full gap-3 h-14 text-lg font-medium"
         >

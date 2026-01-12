@@ -31,8 +31,7 @@ export function useCreatorProfile() {
       if (data) {
         setProfile({
           ...data,
-          audience_gender: data.audience_gender ?? DEFAULT_CREATOR_PROFILE.audience_gender,
-          audience_age_range: data.audience_age_range ?? DEFAULT_CREATOR_PROFILE.audience_age_range,
+          audience_pain_points: data.audience_pain_points || [],
           duration_unit: data.duration_unit as 'minutes' | 'words',
         });
         setHasProfile(true);
@@ -70,8 +69,7 @@ export function useCreatorProfile() {
             main_topic: profileData.main_topic,
             expertise_level: profileData.expertise_level,
             audience_type: profileData.audience_type,
-            audience_gender: profileData.audience_gender,
-            audience_age_range: profileData.audience_age_range,
+            audience_pain_points: profileData.audience_pain_points,
             video_type: profileData.video_type,
             target_duration: profileData.target_duration,
             duration_unit: profileData.duration_unit,
@@ -96,8 +94,7 @@ export function useCreatorProfile() {
             main_topic: profileData.main_topic,
             expertise_level: profileData.expertise_level,
             audience_type: profileData.audience_type,
-            audience_gender: profileData.audience_gender,
-            audience_age_range: profileData.audience_age_range,
+            audience_pain_points: profileData.audience_pain_points,
             video_type: profileData.video_type,
             target_duration: profileData.target_duration,
             duration_unit: profileData.duration_unit,

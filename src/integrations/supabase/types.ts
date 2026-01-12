@@ -18,8 +18,6 @@ export type Database = {
         Row: {
           audience_pain_points: string[] | null
           audience_type: string
-          audience_gender: string | null
-          audience_age_range: string | null
           content_goal: string
           created_at: string
           cta_template: string | null
@@ -42,8 +40,6 @@ export type Database = {
         Insert: {
           audience_pain_points?: string[] | null
           audience_type?: string
-          audience_gender?: string | null
-          audience_age_range?: string | null
           content_goal?: string
           created_at?: string
           cta_template?: string | null
@@ -66,8 +62,6 @@ export type Database = {
         Update: {
           audience_pain_points?: string[] | null
           audience_type?: string
-          audience_gender?: string | null
-          audience_age_range?: string | null
           content_goal?: string
           created_at?: string
           cta_template?: string | null
