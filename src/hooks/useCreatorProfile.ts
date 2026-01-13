@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { CreatorProfile, DEFAULT_CREATOR_PROFILE } from '@/types/creatorProfile';
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { CreatorProfile, DEFAULT_CREATOR_PROFILE } from "@/types/creatorProfile";
 
 export function useCreatorProfile() {
   const { user } = useAuth();
@@ -19,11 +19,11 @@ export function useCreatorProfile() {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const { data, error: fetchError } = await supabase
-        .from('creator_profiles')
-        .select('*')
-        .eq('user_id', user.id)
+        .from("creator_profiles")
+        .select("*")
+        .eq("user_id", user.id)
         .maybeSingle();
 
       if (fetchError) throw fetchError;
@@ -36,7 +36,7 @@ export function useCreatorProfile() {
           audience_age_min: DEFAULT_CREATOR_PROFILE.audience_age_min,
           audience_age_max: DEFAULT_CREATOR_PROFILE.audience_age_max,
           audience_gender_split: DEFAULT_CREATOR_PROFILE.audience_gender_split,
-          duration_unit: (data.duration_unit as 'minutes' | 'words') || DEFAULT_CREATOR_PROFILE.duration_unit,
+          duration_unit: (data.duration_unit as "minutes" | "words") || DEFAULT_CREATOR_PROFILE.duration_unit,
         });
         setHasProfile(true);
       } else {
@@ -44,8 +44,8 @@ export function useCreatorProfile() {
         setHasProfile(false);
       }
     } catch (err) {
-      console.error('Failed to load creator profile:', err);
-      setError('Não foi possível carregar o perfil.');
+      console.error("Failed to load creator profile:", err);
+      setError("Não foi possível carregar o perfil.");
     } finally {
       setIsLoading(false);
     }
@@ -57,17 +57,17 @@ export function useCreatorProfile() {
 
   const saveProfile = async (updates: Partial<CreatorProfile>): Promise<boolean> => {
     if (!user) {
-      setError('Você precisa estar logado.');
+      setError("Você precisa estar logado.");
       return false;
     }
 
     try {
       setError(null);
       const profileData = { ...profile, ...updates };
-      
+
       if (hasProfile) {
         const { error: updateError } = await supabase
-          .from('creator_profiles')
+          .from("creator_profiles")
           .update({
             display_name: profileData.display_name,
             main_topic: profileData.main_topic,
@@ -85,12 +85,12 @@ export function useCreatorProfile() {
             include_cta: profileData.include_cta,
             cta_template: profileData.cta_template,
           })
-          .eq('user_id', user.id);
+          .eq("user_id", user.id);
 
         if (updateError) throw updateError;
       } else {
         const { error: insertError } = await supabase
-          .from('creator_profiles')
+          .from("creator_profiles")
           .insert({
             user_id: user.id,
             display_name: profileData.display_name,
@@ -117,14 +117,14 @@ export function useCreatorProfile() {
       setProfile(profileData as CreatorProfile);
       return true;
     } catch (err) {
-      console.error('Failed to save creator profile:', err);
-      setError('Não foi possível salvar o perfil.');
+      console.error("Failed to save creator profile:", err);
+      setError("Não foi possível salvar o perfil.");
       return false;
     }
   };
 
   const updateProfile = (updates: Partial<CreatorProfile>) => {
-    setProfile(prev => ({ ...prev, ...updates }));
+    setProfile((prev) => ({ ...prev, ...updates }));
   };
 
   return {
@@ -136,4 +136,4 @@ export function useCreatorProfile() {
     updateProfile,
     reloadProfile: loadProfile,
   };
-}
+}

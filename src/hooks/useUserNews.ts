@@ -34,8 +34,11 @@ export function useUserNews() {
 
   // Load news from database
   const loadNews = useCallback(async (topic?: string) => {
-    if (!user) return [];
-    
+    if (!user) {
+      setIsLoading(false);
+      return newsItems;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -64,11 +67,11 @@ export function useUserNews() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, newsItems]);
 
-  // Fetch news from Google RSS and save to database
+  // Fetch news from Google RSS and save to database (or keep locally for guests)
   const fetchAndSaveNews = useCallback(async (topic: string, language: string = "pt-BR") => {
-    if (!user || !topic.trim()) {
+    if (!topic.trim()) {
       setError("Defina um tema principal.");
       return [];
     }
@@ -77,6 +80,45 @@ export function useUserNews() {
     setError(null);
 
     try {
+      if (!user) {
+        const { data, error: fetchError } = await supabase.functions.invoke("google-news-rss", {
+          body: {
+            term: topic,
+            language: language.split("-")[0] || "pt",
+            region: language.split("-")[1]?.toUpperCase() || "BR",
+          },
+        });
+
+        if (fetchError) throw fetchError;
+
+        const xmlText = data?.xml || "";
+        const items = parseRssXml(xmlText);
+
+        if (items.length === 0) {
+          setNewsItems([]);
+          return [];
+        }
+
+        const now = new Date().toISOString();
+        const guestItems = items.map((item, index) => ({
+          id: item.id || `guest-${index}-${Date.now()}`,
+          user_id: "guest",
+          title: item.title,
+          link: item.link || null,
+          published_at: item.publishedAt || null,
+          source: item.source || null,
+          summary: item.summary || null,
+          external_id: item.id || `guest-${index}-${Date.now()}`,
+          topic: topic,
+          language: language,
+          fetched_at: now,
+          created_at: now,
+        }));
+
+        setNewsItems(guestItems);
+        return guestItems;
+      }
+
       // First, clear old news for this topic
       await supabase
         .from("user_news_items")
@@ -140,7 +182,10 @@ export function useUserNews() {
 
   // Delete all news for a topic
   const clearNews = useCallback(async (topic?: string) => {
-    if (!user) return;
+    if (!user) {
+      setNewsItems([]);
+      return;
+    }
 
     try {
       let query = supabase
@@ -166,6 +211,7 @@ export function useUserNews() {
     loadNews,
     fetchAndSaveNews,
     clearNews,
+    setLocalNewsItems: setNewsItems,
   };
 }
 
@@ -209,7 +255,7 @@ function parseRssXml(xml: string): FetchedNewsItem[] {
         .replace(/&nbsp;/g, " ")
         .replace(/\s+/g, " ")
         .trim();
-      
+
       // Limit summary length
       if (summary.length > 300) {
         summary = summary.slice(0, 297) + "...";

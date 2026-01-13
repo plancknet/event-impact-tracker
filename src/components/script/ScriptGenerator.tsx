@@ -23,6 +23,7 @@ interface ScriptGeneratorProps {
     newsContext?: string,
     selectedNews?: UserNewsItem[],
     complementaryPrompt?: string,
+    profileOverride?: CreatorProfile,
   ) => Promise<{ scriptId?: string } | void>;
   onRegenerate: (adjustments: { tone?: string; duration?: string; format?: string }) => Promise<{ scriptId?: string } | void>;
   onOpenTeleprompter: () => void;
@@ -30,6 +31,8 @@ interface ScriptGeneratorProps {
   resetTrigger: number;
   historyExpandTrigger: number;
   autoFetchTrigger: number;
+  pendingGeneration?: PendingGeneration | null;
+  onPendingGenerationHandled?: () => void;
 }
 
 interface ScriptHistoryItem {
@@ -39,6 +42,13 @@ interface ScriptHistoryItem {
   news_ids_json: unknown;
   parameters_json?: unknown;
 }
+
+type PendingGeneration = {
+  profile: CreatorProfile;
+  selectedNews: UserNewsItem[];
+  selectedNewsIds: string[];
+  complementaryPrompt?: string;
+};
 
 type ScriptParameters = {
   tone?: string;
@@ -78,6 +88,8 @@ export function ScriptGenerator({
   resetTrigger,
   historyExpandTrigger,
   autoFetchTrigger,
+  pendingGeneration,
+  onPendingGenerationHandled,
 }: ScriptGeneratorProps) {
   const { user } = useAuth();
   const [complementaryPrompt, setComplementaryPrompt] = useState("");
@@ -93,6 +105,7 @@ export function ScriptGenerator({
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [scrollTrigger, setScrollTrigger] = useState(0);
   const outputRef = useRef<HTMLDivElement | null>(null);
+  const pendingAppliedRef = useRef(false);
 
   const {
     newsItems,
@@ -101,6 +114,7 @@ export function ScriptGenerator({
     fetchAndSaveNews,
     loadNews,
     clearNews,
+    setLocalNewsItems,
   } = useUserNews();
 
   // Load existing news when component mounts
@@ -138,6 +152,56 @@ export function ScriptGenerator({
     }, 0);
     return () => window.clearTimeout(timeout);
   }, [scrollTrigger]);
+
+  useEffect(() => {
+    if (!pendingGeneration) {
+      pendingAppliedRef.current = false;
+    }
+  }, [pendingGeneration]);
+
+  useEffect(() => {
+    if (!pendingGeneration || pendingAppliedRef.current) return;
+    pendingAppliedRef.current = true;
+
+    const applyPending = async () => {
+      const {
+        profile: pendingProfile,
+        selectedNews,
+        selectedNewsIds,
+        complementaryPrompt: pendingPrompt,
+      } = pendingGeneration;
+
+      setHasStarted(true);
+      setSelectedNewsIds(selectedNewsIds);
+      setComplementaryPrompt(pendingPrompt || "");
+      setCurrentTone(pendingProfile.speaking_tone);
+      setCurrentDuration(pendingProfile.target_duration);
+      setCurrentFormat(pendingProfile.video_type);
+      onApplyProfile(pendingProfile);
+      setLocalNewsItems(selectedNews);
+
+      const result = await onGenerate(
+        undefined,
+        selectedNews,
+        pendingPrompt,
+        pendingProfile,
+      );
+      if (result && typeof result === "object" && "scriptId" in result && result.scriptId) {
+        setCurrentScriptId(result.scriptId);
+      }
+      setHistoryRefreshTrigger((prev) => prev + 1);
+      setScrollTrigger((prev) => prev + 1);
+      onPendingGenerationHandled?.();
+    };
+
+    void applyPending();
+  }, [
+    pendingGeneration,
+    onApplyProfile,
+    onGenerate,
+    onPendingGenerationHandled,
+    setLocalNewsItems,
+  ]);
 
   const handleStartCreating = async () => {
     if (!profile.main_topic.trim()) return;

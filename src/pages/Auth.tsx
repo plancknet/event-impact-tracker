@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
 const authSchema = z.object({
-  email: z.string().email("Email inválido"),
+  email: z.string().email("Email inv?lido"),
   password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
 });
 
@@ -27,6 +27,11 @@ export default function Auth() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { user, loading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const params = new URLSearchParams(location.search);
+  const redirectTo = params.get("redirect") || "/";
+  const mode = params.get("mode");
 
   const signInWithGoogle = async () => {
     setError(null);
@@ -55,10 +60,16 @@ export default function Auth() {
   });
 
   useEffect(() => {
-    if (!loading && user) {
-      navigate("/", { replace: true });
+    if (mode === "signup") {
+      setIsLogin(false);
     }
-  }, [user, loading, navigate]);
+  }, [mode]);
+
+  useEffect(() => {
+    if (!loading && user) {
+      navigate(redirectTo, { replace: true });
+    }
+  }, [user, loading, navigate, redirectTo]);
 
   const onSubmit = async (data: AuthFormData) => {
     setError(null);
@@ -79,14 +90,18 @@ export default function Auth() {
         const { error } = await signUp(data.email, data.password);
         if (error) {
           if (error.message.includes("User already registered")) {
-            setError("Este email já está cadastrado. Faça login.");
+            setError("Este email j? est? cadastrado. Fa?a login.");
           } else {
             setError(error.message);
           }
         } else {
-          setSuccessMessage("Conta criada com sucesso! Você já pode fazer login.");
-          setIsLogin(true);
-          form.reset();
+          const { error: signInError } = await signIn(data.email, data.password);
+          if (signInError) {
+            setError("Conta criada, mas n?o foi poss?vel entrar automaticamente.");
+            return;
+          }
+          setSuccessMessage("Conta criada com sucesso!");
+          navigate(redirectTo, { replace: true });
         }
       }
     } finally {
@@ -122,12 +137,13 @@ export default function Auth() {
           <nav className="hidden items-center gap-6 text-sm text-slate-600 md:flex">
             <button className="hover:text-slate-900">Planos</button>
             <button className="hover:text-slate-900">Recursos</button>
-            <button className="flex items-center gap-2 hover:text-slate-900">
-              Português
-            </button>
+            <button className="flex items-center gap-2 hover:text-slate-900">Portugu?s</button>
           </nav>
-          <Button className="rounded-full bg-blue-600 px-6 hover:bg-blue-700">
-            Testar Grátis
+          <Button
+            className="rounded-full bg-blue-600 px-6 hover:bg-blue-700"
+            onClick={() => navigate("/?trial=1")}
+          >
+            Testar Gr?tis
           </Button>
         </div>
       </header>
@@ -136,15 +152,15 @@ export default function Auth() {
         <section className="space-y-6">
           <h1 className="text-4xl font-semibold leading-tight text-blue-700 md:text-5xl">
             Crie <span className="text-emerald-500">Roteiros</span> para{" "}
-            <span className="text-emerald-500">Vídeos</span> em segundos.
+            <span className="text-emerald-500">V?deos</span> em segundos.
           </h1>
           <p className="text-base text-slate-600 md:text-lg">
-            Centralize suas ideias e transforme pensamentos em falas naturais para vídeos,
-            podcasts e apresentações.
+            Centralize suas ideias e transforme pensamentos em falas naturais para v?deos,
+            podcasts e apresenta??es.
           </p>
           <p className="text-base text-slate-600 md:text-lg">
             Crie scripts personalizados para YouTube, Instagram, TikTok, Reels, Shorts,
-            Lives e muito mais — adaptados ao seu público, tom de voz e objetivo. Rode o
+            Lives e muito mais ? adaptados ao seu p?blico, tom de voz e objetivo. Rode o
             texto em um teleprompter com ajustes fino.
           </p>
         </section>
@@ -158,7 +174,7 @@ export default function Auth() {
               <CardDescription>
                 {isLogin
                   ? "Entre com sua conta para continuar"
-                  : "Crie uma conta para começar"}
+                  : "Crie uma conta para come?ar"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -259,8 +275,8 @@ export default function Auth() {
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
                   {isLogin
-                    ? "Não tem conta? Criar conta"
-                    : "Já tem conta? Entrar"}
+                    ? "N?o tem conta? Criar conta"
+                    : "J? tem conta? Entrar"}
                 </button>
               </div>
             </CardContent>

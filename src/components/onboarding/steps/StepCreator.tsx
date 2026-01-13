@@ -25,8 +25,8 @@ export function StepCreator({ profile, onChange, onNext, onSkip }: StepCreatorPr
     >
       <div className="space-y-8">
         {/* Main topic */}
-        <div className="space-y-3">
-          <Label htmlFor="main_topic" className="text-base font-medium">
+        <div className="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+          <Label htmlFor="main_topic" className="text-base font-medium text-emerald-800">
             Sobre o que vamos falar hoje?
           </Label>
           <Input
@@ -34,7 +34,7 @@ export function StepCreator({ profile, onChange, onNext, onSkip }: StepCreatorPr
             value={profile.main_topic}
             onChange={(e) => onChange({ main_topic: e.target.value })}
             placeholder="Ex: Bitcoin, Finanças, Marketing Digital, Culinária..."
-            className="h-12 text-base"
+            className="h-12 text-base bg-white/80 border-emerald-200 focus-visible:ring-emerald-400"
           />
           <p className="text-sm text-muted-foreground">
             Separe múltiplos temas por vírgula

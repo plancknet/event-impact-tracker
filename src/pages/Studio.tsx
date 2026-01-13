@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useCreatorProfile } from "@/hooks/useCreatorProfile";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
@@ -9,10 +10,20 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { UserNewsItem } from "@/hooks/useUserNews";
+import type { CreatorProfile } from "@/types/creatorProfile";
+
+type PendingGeneration = {
+  profile: CreatorProfile;
+  selectedNews: UserNewsItem[];
+  selectedNewsIds: string[];
+  complementaryPrompt?: string;
+};
 
 export default function Studio() {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const { profile, isLoading, saveProfile, updateProfile } = useCreatorProfile();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [generatedScript, setGeneratedScript] = useState("");
@@ -21,6 +32,7 @@ export default function Studio() {
   const [resetTrigger, setResetTrigger] = useState(0);
   const [historyExpandTrigger, setHistoryExpandTrigger] = useState(0);
   const [autoFetchTrigger, setAutoFetchTrigger] = useState(0);
+  const [pendingGeneration, setPendingGeneration] = useState<PendingGeneration | null>(null);
 
   const handleStepChange = (step: number) => {
     if (step === 6) {
@@ -45,6 +57,11 @@ export default function Studio() {
   };
 
   const handleCompleteOnboarding = async () => {
+    if (!user) {
+      setAutoFetchTrigger((prev) => prev + 1);
+      handleStepChange(6);
+      return;
+    }
     const success = await saveProfile(profile);
     if (success) {
       setAutoFetchTrigger((prev) => prev + 1);
@@ -56,7 +73,20 @@ export default function Studio() {
     newsContext?: string,
     selectedNews?: UserNewsItem[],
     complementaryPrompt?: string,
+    profileOverride?: CreatorProfile,
   ): Promise<{ scriptId?: string } | void> => {
+    if (!user) {
+      const payload: PendingGeneration = {
+        profile: profileOverride || profile,
+        selectedNews: selectedNews || [],
+        selectedNewsIds: selectedNews?.map((item) => item.id) || [],
+        complementaryPrompt,
+      };
+      sessionStorage.setItem("pendingScriptGeneration", JSON.stringify(payload));
+      navigate("/auth?mode=signup&redirect=/?resume=1");
+      return;
+    }
+
     setIsGenerating(true);
     try {
       // Build news items for the edge function
@@ -66,26 +96,27 @@ export default function Studio() {
         summary: n.summary || undefined,
         content: n.summary || undefined, // Use summary as content since we don't have full content
       })) || [];
+      const effectiveProfile = profileOverride || profile;
 
       const { data, error } = await supabase.functions.invoke("generate-teleprompter-script", {
         body: {
           newsItems,
           parameters: {
-            tone: profile.speaking_tone,
-            audience: profile.audience_type,
-            audienceAgeMin: profile.audience_age_min,
-            audienceAgeMax: profile.audience_age_max,
-            audienceGenderSplit: profile.audience_gender_split,
-            duration: profile.target_duration,
-            durationUnit: profile.duration_unit,
-            language: profile.script_language,
-            scriptType: profile.video_type,
-            includeCta: profile.include_cta,
-            ctaText: profile.cta_template,
+            tone: effectiveProfile.speaking_tone,
+            audience: effectiveProfile.audience_type,
+            audienceAgeMin: effectiveProfile.audience_age_min,
+            audienceAgeMax: effectiveProfile.audience_age_max,
+            audienceGenderSplit: effectiveProfile.audience_gender_split,
+            duration: effectiveProfile.target_duration,
+            durationUnit: effectiveProfile.duration_unit,
+            language: effectiveProfile.script_language,
+            scriptType: effectiveProfile.video_type,
+            includeCta: effectiveProfile.include_cta,
+            ctaText: effectiveProfile.cta_template,
             profile: {
-              mainSubject: profile.main_topic,
-              goal: profile.content_goal,
-              platform: profile.platform,
+              mainSubject: effectiveProfile.main_topic,
+              goal: effectiveProfile.content_goal,
+              platform: effectiveProfile.platform,
             },
           },
           complementaryPrompt: complementaryPrompt,
@@ -136,6 +167,31 @@ export default function Studio() {
       console.error("Failed to regenerate script:", err);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("resume") !== "1") return;
+    const raw = sessionStorage.getItem("pendingScriptGeneration");
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as PendingGeneration;
+      setPendingGeneration(parsed);
+      setShowOnboarding(false);
+      setOnboardingStep(6);
+    } catch (err) {
+      console.error("Failed to parse pending generation:", err);
+    }
+  }, [location.search]);
+
+  const handlePendingGenerationHandled = () => {
+    sessionStorage.removeItem("pendingScriptGeneration");
+    setPendingGeneration(null);
+    const params = new URLSearchParams(location.search);
+    if (params.get("resume") === "1") {
+      params.delete("resume");
+      navigate({ pathname: "/", search: params.toString() }, { replace: true });
     }
   };
 
@@ -195,7 +251,7 @@ export default function Studio() {
             <OnboardingProgress
               currentStep={onboardingStep}
               totalSteps={6}
-              stepLabels={["Você", "Público", "Formato", "Estilo", "Notícias", "Roteiros"]}
+              stepLabels={["Voc\u00EA", "P\u00FAblico", "Formato", "Estilo", "Not\u00EDcias", "Roteiros"]}
               onStepChange={handleStepChange}
               orientation="horizontal"
             />
@@ -207,7 +263,7 @@ export default function Studio() {
             <OnboardingProgress
               currentStep={onboardingStep}
               totalSteps={6}
-              stepLabels={["Você", "Público", "Formato", "Estilo", "Notícias", "Roteiros"]}
+              stepLabels={["Voc\u00EA", "P\u00FAblico", "Formato", "Estilo", "Not\u00EDcias", "Roteiros"]}
               onStepChange={handleStepChange}
               orientation="vertical"
             />
@@ -236,6 +292,8 @@ export default function Studio() {
                 resetTrigger={resetTrigger}
                 historyExpandTrigger={historyExpandTrigger}
                 autoFetchTrigger={autoFetchTrigger}
+                pendingGeneration={pendingGeneration}
+                onPendingGenerationHandled={handlePendingGenerationHandled}
               />
             )}
           </section>
