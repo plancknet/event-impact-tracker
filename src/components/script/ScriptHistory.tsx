@@ -124,7 +124,7 @@ export function ScriptHistory({
           <button className="w-full p-4 flex items-center justify-between text-left hover:bg-muted/50 transition-colors rounded-t-xl">
             <div className="flex items-center gap-3">
               <FileText className="w-4 h-4 text-muted-foreground" />
-              <h3 className="font-semibold">Hist\u00F3rico de Roteiros</h3>
+              <h3 className="font-semibold">Histórico de Roteiros</h3>
               {scripts.length > 0 && (
                 <Badge variant="secondary" className="text-xs">
                   {scripts.length}

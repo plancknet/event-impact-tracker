@@ -18,7 +18,7 @@ export function StepStyle({ profile, onChange, onBack, onNext, onSkip }: StepSty
   return (
     <OnboardingCard
       title="Seu estilo"
-      subtitle="Como voc\u00EA quer soar no seu conte\u00FAdo?"
+      subtitle="Como você quer soar no seu conteúdo?"
       onBack={onBack}
       onNext={onNext}
       onSkip={onSkip}
@@ -27,7 +27,7 @@ export function StepStyle({ profile, onChange, onBack, onNext, onSkip }: StepSty
         {/* Tone */}
         <div className="space-y-3">
           <Label className="text-base font-medium">
-            Qual \u00E9 o tom da sua fala?
+            Qual é o tom da sua fala?
           </Label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {TONE_OPTIONS.map((option) => (
@@ -45,7 +45,7 @@ export function StepStyle({ profile, onChange, onBack, onNext, onSkip }: StepSty
 
         {/* Energy level */}
         <div className="space-y-4">
-          <Label className="text-base font-medium">N\u00EDvel de energia</Label>
+          <Label className="text-base font-medium">Nível de energia</Label>
           <div className="px-2">
             <Slider
               value={[energyIndex >= 0 ? energyIndex : 1]}

@@ -16,18 +16,18 @@ interface StepGoalProps {
 export function StepGoal({ profile, onChange, onBack, onComplete, isLoading }: StepGoalProps) {
   return (
     <OnboardingCard
-      title="Not\u00EDcias do conte\u00FAdo"
-      subtitle="Defina o objetivo e busque not\u00EDcias relevantes"
+      title="Notícias do conteúdo"
+      subtitle="Defina o objetivo e busque notícias relevantes"
       onBack={onBack}
       onNext={onComplete}
-      nextLabel="Buscar not\u00EDcias"
+      nextLabel="Buscar notícias"
       showSkip={false}
       isLoading={isLoading}
     >
       <div className="space-y-8">
         {/* Content goal */}
         <div className="space-y-3">
-          <Label className="text-base font-medium">Qual \u00E9 o objetivo principal?</Label>
+          <Label className="text-base font-medium">Qual é o objetivo principal?</Label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {GOAL_OPTIONS.map((option) => (
               <OptionCard
@@ -68,7 +68,7 @@ export function StepGoal({ profile, onChange, onBack, onComplete, isLoading }: S
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label className="text-base font-medium">Incluir chamada para a a\u00E7\u00E3o?</Label>
+              <Label className="text-base font-medium">Incluir chamada para a ação?</Label>
               <p className="text-sm text-muted-foreground">
                 Adicionar CTA ao final do roteiro
               </p>

@@ -14,8 +14,8 @@ interface StepFormatProps {
 export function StepFormat({ profile, onChange, onBack, onNext, onSkip }: StepFormatProps) {
   return (
     <OnboardingCard
-      title="Formato do v\u00EDdeo"
-      subtitle="Defina o tipo e dura\u00E7\u00E3o do seu conte\u00FAdo"
+      title="Formato do vídeo"
+      subtitle="Defina o tipo e duração do seu conteúdo"
       onBack={onBack}
       onNext={onNext}
       onSkip={onSkip}
@@ -24,7 +24,7 @@ export function StepFormat({ profile, onChange, onBack, onNext, onSkip }: StepFo
         {/* Video type */}
         <div className="space-y-3">
           <Label className="text-base font-medium">
-            Que tipo de v\u00EDdeo voc\u00EA vai criar?
+            Que tipo de vídeo você vai criar?
           </Label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {VIDEO_TYPE_OPTIONS.map((option) => (
@@ -43,7 +43,7 @@ export function StepFormat({ profile, onChange, onBack, onNext, onSkip }: StepFo
         {/* Duration */}
         <div className="space-y-3">
           <Label className="text-base font-medium">
-            Qual a dura\u00E7\u00E3o alvo?
+            Qual a duração alvo?
           </Label>
           <div className="flex flex-wrap gap-2">
             {DURATION_OPTIONS.map((option) => (
@@ -66,7 +66,7 @@ export function StepFormat({ profile, onChange, onBack, onNext, onSkip }: StepFo
         {/* Platform */}
         <div className="space-y-3">
           <Label className="text-base font-medium">
-            Onde voc\u00EA vai publicar?
+            Onde você vai publicar?
           </Label>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
             {PLATFORM_OPTIONS.map((option) => (

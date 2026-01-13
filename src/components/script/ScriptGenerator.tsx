@@ -196,7 +196,7 @@ export function ScriptGenerator({
   const handleSaveScript = async () => {
     if (!generatedScript.trim()) return;
     if (!user) {
-      setSaveError("Voc\u00EA precisa estar logado para salvar.");
+      setSaveError("Você precisa estar logado para salvar.");
       return;
     }
 
@@ -238,7 +238,7 @@ export function ScriptGenerator({
       setSaveSuccess("Roteiro salvo.");
     } catch (err) {
       console.error("Failed to save script:", err);
-      setSaveError("N\u00E3o foi poss\u00EDvel salvar o roteiro.");
+      setSaveError("Não foi possível salvar o roteiro.");
     } finally {
       setIsSaving(false);
     }
@@ -329,7 +329,7 @@ export function ScriptGenerator({
           <div className="space-y-2">
             <h2 className="text-2xl font-semibold">Pronto para criar?</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Vamos buscar as not\u00EDcias mais recentes sobre <strong>{profile.main_topic || "seu tema"}</strong> para voc\u00EA selecionar e criar seu roteiro.
+              Vamos buscar as notícias mais recentes sobre <strong>{profile.main_topic || "seu tema"}</strong> para você selecionar e criar seu roteiro.
             </p>
           </div>
 
@@ -342,12 +342,12 @@ export function ScriptGenerator({
             {isLoadingNews ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Buscando not\u00EDcias...
+                Buscando notícias...
               </>
             ) : (
               <>
                 <Sparkles className="w-5 h-5" />
-                Buscar not\u00EDcias
+                Buscar notícias
               </>
             )}
           </Button>
@@ -388,7 +388,7 @@ export function ScriptGenerator({
             Sobre: {profile.main_topic || "Defina um tema no seu perfil"}
             {selectedNewsIds.length > 0 && (
               <span className="ml-2 text-primary">
-                ({selectedNewsIds.length} not\u00EDcia(s) selecionada(s))
+                ({selectedNewsIds.length} notícia(s) selecionada(s))
               </span>
             )}
           </p>
@@ -400,12 +400,12 @@ export function ScriptGenerator({
             id="complementaryPrompt"
             value={complementaryPrompt}
             onChange={(e) => setComplementaryPrompt(e.target.value)}
-            placeholder="Adicione instru\u00E7\u00F5es espec\u00EDficas para personalizar o roteiro, ex: 'Foque nos aspectos de seguran\u00E7a' ou 'Use um tom mais cr\u00EDtico'..."
+            placeholder="Adicione instruções específicas para personalizar o roteiro, ex: 'Foque nos aspectos de segurança' ou 'Use um tom mais crítico'..."
             rows={4}
             className="resize-none"
           />
           <p className="text-xs text-muted-foreground">
-            Opcional: instru\u00E7\u00F5es adicionais para guiar a gera\u00E7\u00E3o do roteiro
+            Opcional: instruções adicionais para guiar a geração do roteiro
           </p>
         </div>
       </div>
@@ -431,7 +431,7 @@ export function ScriptGenerator({
 
       {selectedNewsIds.length === 0 && !complementaryPrompt.trim() && (
         <p className="text-sm text-muted-foreground text-center">
-          Selecione pelo menos uma not\u00EDcia ou adicione um prompt complementar
+          Selecione pelo menos uma notícia ou adicione um prompt complementar
         </p>
       )}
 

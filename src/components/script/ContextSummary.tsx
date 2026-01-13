@@ -33,7 +33,7 @@ export function ContextSummary({ profile, onEditProfile }: ContextSummaryProps) 
     const tones: Record<string, string> = {
       calmo: "Calmo",
       conversacional: "Conversacional",
-      energetico: "Energ\u00E9tico",
+      energetico: "Energético",
       educativo: "Educativo",
       persuasivo: "Persuasivo",
     };
@@ -43,7 +43,7 @@ export function ContextSummary({ profile, onEditProfile }: ContextSummaryProps) 
   const getAudienceLabel = () => {
     const audiences: Record<string, string> = {
       iniciantes: "Iniciantes",
-      publico_geral: "P\u00FAblico geral",
+      publico_geral: "Público geral",
       profissionais: "Profissionais",
       especialistas: "Especialistas",
     };
@@ -104,7 +104,7 @@ export function ContextSummary({ profile, onEditProfile }: ContextSummaryProps) 
               <p className="font-medium">{profile.platform}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Tipo de v\u00EDdeo</p>
+              <p className="text-muted-foreground">Tipo de vídeo</p>
               <p className="font-medium capitalize">{profile.video_type.replace("_", " ")}</p>
             </div>
             <div>
@@ -112,7 +112,7 @@ export function ContextSummary({ profile, onEditProfile }: ContextSummaryProps) 
               <p className="font-medium">{profile.script_language}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Faixa et\u00E1ria</p>
+              <p className="text-muted-foreground">Faixa etária</p>
               <p className="font-medium">{ageRangeLabel}</p>
             </div>
             <div>

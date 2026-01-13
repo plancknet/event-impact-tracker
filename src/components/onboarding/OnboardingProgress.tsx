@@ -10,7 +10,7 @@ interface OnboardingProgressProps {
 export function OnboardingProgress({
   currentStep,
   totalSteps,
-  stepLabels = ["Voc\u00EA", "P\u00FAblico", "Formato", "Estilo", "Not\u00EDcias"],
+  stepLabels = ["Você", "Público", "Formato", "Estilo", "Notícias"],
   onStepChange,
 }: OnboardingProgressProps) {
   const progress = totalSteps > 1 ? ((currentStep - 1) / (totalSteps - 1)) * 100 : 0;

@@ -57,7 +57,7 @@ export function OnboardingFlow({
           Configure seu perfil de criador
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Vamos personalizar seus roteiros para soar como voc\u00EA.
+          Vamos personalizar seus roteiros para soar como você.
         </p>
       </div>
       {currentStep === 1 && (

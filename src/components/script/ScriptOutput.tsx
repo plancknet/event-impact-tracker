@@ -28,9 +28,9 @@ export function ScriptOutput({ script, isLoading, onEdit }: ScriptOutputProps) {
   if (!script) {
     return (
       <div className="rounded-xl border border-dashed bg-muted/30 p-12 text-center">
-        <p className="text-muted-foreground">Seu roteiro aparecer\u00E1 aqui</p>
+        <p className="text-muted-foreground">Seu roteiro aparecerá aqui</p>
         <p className="text-sm text-muted-foreground/70 mt-2">
-          Clique em "Gerar Roteiro" para come\u00E7ar
+          Clique em "Gerar Roteiro" para começar
         </p>
       </div>
     );
@@ -48,7 +48,7 @@ export function ScriptOutput({ script, isLoading, onEdit }: ScriptOutputProps) {
           readOnly={!onEdit}
         />
         <p className="text-xs text-muted-foreground">
-          Voc\u00EA pode editar o texto a qualquer momento antes de salvar.
+          Você pode editar o texto a qualquer momento antes de salvar.
         </p>
       </div>
     </div>

@@ -143,7 +143,7 @@ export function NewsGrid({
         <CollapsibleTrigger asChild>
           <button className="w-full p-4 flex items-center justify-between text-left hover:bg-muted/50 transition-colors rounded-t-xl">
             <div className="flex items-center gap-3">
-              <h3 className="font-semibold">Not\u00EDcias encontradas</h3>
+              <h3 className="font-semibold">Notícias encontradas</h3>
               {newsItems.length > 0 && (
                 <Badge variant="secondary" className="text-xs">
                   {selectedIds.length}/{newsItems.length} selecionadas
@@ -175,7 +175,7 @@ export function NewsGrid({
               <div className="relative flex-1 min-w-[220px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar not\u00EDcias..."
+                  placeholder="Buscar notícias..."
                   value={searchFilter}
                   onChange={(e) => setSearchFilter(e.target.value)}
                   className="pl-9 h-9"
@@ -208,7 +208,7 @@ export function NewsGrid({
             {isLoading && (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-muted-foreground">Buscando not\u00EDcias...</span>
+                <span className="ml-2 text-muted-foreground">Buscando notícias...</span>
               </div>
             )}
 
@@ -227,7 +227,7 @@ export function NewsGrid({
                     onClick={() => toggleSort("title")}
                     className="flex items-center gap-1 text-left"
                   >
-                    T\u00EDtulo
+                    Título
                     <ArrowUpDown className="w-3 h-3" />
                   </button>
                   <button
@@ -253,7 +253,7 @@ export function NewsGrid({
                 <div className="max-h-[420px] overflow-y-auto space-y-2">
                   {sortedNews.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">
-                      Nenhuma not\u00EDcia encontrada
+                      Nenhuma notícia encontrada
                     </p>
                   ) : (
                     sortedNews.map((item) => (
