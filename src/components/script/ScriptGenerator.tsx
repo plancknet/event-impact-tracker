@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Loader2, Sparkles } from "lucide-react";
 import { CreatorProfile } from "@/types/creatorProfile";
 import { ContextSummary } from "./ContextSummary";
 import { ScriptOutput } from "./ScriptOutput";
@@ -75,6 +77,7 @@ export function ScriptGenerator({
   onScriptChange,
   resetTrigger,
   historyExpandTrigger,
+  autoFetchTrigger,
 }: ScriptGeneratorProps) {
   const { user } = useAuth();
   const [complementaryPrompt, setComplementaryPrompt] = useState("");
