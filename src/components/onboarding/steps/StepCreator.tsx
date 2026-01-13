@@ -48,14 +48,15 @@ export function StepCreator({ profile, onChange, onNext, onSkip }: StepCreatorPr
           </Label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {EXPERTISE_OPTIONS.map((option) => (
-              <OptionCard
-                key={option.value}
-                label={option.label}
-                description={option.description}
-                selected={profile.expertise_level === option.value}
-                onClick={() => onChange({ expertise_level: option.value })}
-                compact
-              />
+              <div key={option.value} className="origin-top-left scale-[0.8]">
+                <OptionCard
+                  label={option.label}
+                  description={option.description}
+                  selected={profile.expertise_level === option.value}
+                  onClick={() => onChange({ expertise_level: option.value })}
+                  compact
+                />
+              </div>
             ))}
           </div>
         </div>

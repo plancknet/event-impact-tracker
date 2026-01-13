@@ -185,7 +185,7 @@ export function NewsGrid({
                 placeholder="Filtrar por fonte"
                 value={sourceFilter}
                 onChange={(e) => setSourceFilter(e.target.value)}
-                className="h-9 w-[180px]"
+                className="h-9 w-full sm:w-[180px]"
               />
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Checkbox
@@ -220,7 +220,7 @@ export function NewsGrid({
             {/* News grid */}
             {!isLoading && !error && (
               <div className="space-y-2">
-                <div className="grid grid-cols-[40px_2fr_1fr_1fr_2fr_36px] gap-3 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                <div className="hidden md:grid grid-cols-[40px_2fr_1fr_1fr_2fr_36px] gap-3 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   <div />
                   <button
                     type="button"
@@ -259,7 +259,7 @@ export function NewsGrid({
                     sortedNews.map((item) => (
                       <div
                         key={item.id}
-                        className={`grid grid-cols-[40px_2fr_1fr_1fr_2fr_36px] gap-3 p-3 rounded-lg border cursor-pointer transition-colors items-start ${
+                        className={`grid grid-cols-1 gap-2 p-3 rounded-lg border cursor-pointer transition-colors md:grid-cols-[40px_2fr_1fr_1fr_2fr_36px] md:gap-3 md:items-start ${
                           selectedIds.includes(item.id)
                             ? "bg-primary/5 border-primary"
                             : "hover:bg-muted/50"
@@ -289,7 +289,7 @@ export function NewsGrid({
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="text-muted-foreground hover:text-foreground mt-1"
+                            className="text-muted-foreground hover:text-foreground mt-1 md:mt-0"
                           >
                             <ExternalLink className="w-4 h-4" />
                           </a>

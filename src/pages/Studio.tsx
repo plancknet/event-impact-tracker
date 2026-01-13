@@ -188,17 +188,30 @@ export default function Studio() {
 
       {/* Main content */}
       <main className="container max-w-6xl mx-auto px-4 py-8">
-        <div className="grid gap-8 md:grid-cols-[220px_1fr]">
-          <aside className="md:pt-4">
+        <div className="md:hidden sticky top-[72px] z-30 bg-background/95 backdrop-blur border-b mb-6">
+          <div className="py-3">
             <OnboardingProgress
               currentStep={onboardingStep}
               totalSteps={6}
               stepLabels={["Você", "Público", "Formato", "Estilo", "Notícias", "Roteiros"]}
               onStepChange={handleStepChange}
+              orientation="horizontal"
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-8 md:grid-cols-[220px_1fr]">
+          <aside className="md:pt-4 hidden md:block">
+            <OnboardingProgress
+              currentStep={onboardingStep}
+              totalSteps={6}
+              stepLabels={["Você", "Público", "Formato", "Estilo", "Notícias", "Roteiros"]}
+              onStepChange={handleStepChange}
+              orientation="vertical"
             />
           </aside>
 
-          <section>
+          <section className="min-w-0">
             {showOnboarding ? (
               <OnboardingFlow
                 profile={profile}

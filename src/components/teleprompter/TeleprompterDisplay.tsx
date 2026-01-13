@@ -47,10 +47,10 @@ export const DEFAULT_TELEPROMPTER_SETTINGS: TeleprompterSettings = {
   backgroundColor: "#000000",
   showPauseTags: true,
   pauseDurations: {
-    "pause-short": 1500,
-    "pause-medium": 3500,
-    "pause-long": 6000,
-    "pause": 2500,
+    "pause-short": 1000,
+    "pause-medium": 2000,
+    "pause-long": 3000,
+    "pause": 2000,
   },
 };
 
@@ -63,10 +63,10 @@ interface TeleprompterDisplayProps {
 }
 
 const DEFAULT_PAUSE_DURATIONS = {
-  "pause-short": 1500,
-  "pause-medium": 3500,
-  "pause-long": 6000,
-  "pause": 2500,
+  "pause-short": 1000,
+  "pause-medium": 2000,
+  "pause-long": 3000,
+  "pause": 2000,
 } as const;
 
 type PauseType = keyof typeof DEFAULT_PAUSE_DURATIONS;
@@ -102,6 +102,7 @@ export function TeleprompterDisplay({
   const [textColor, setTextColor] = useState(settings?.textColor ?? DEFAULT_TELEPROMPTER_SETTINGS.textColor);
   const [backgroundColor, setBackgroundColor] = useState(settings?.backgroundColor ?? DEFAULT_TELEPROMPTER_SETTINGS.backgroundColor);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [showControls, setShowControls] = useState(true);
 
   // Notify parent of settings changes
   const notifySettingsChange = useCallback(() => {
@@ -454,6 +455,14 @@ export function TeleprompterDisplay({
                 <RotateCcw className="w-4 h-4 mr-1" />
                 Reiniciar
               </Button>
+              <Button
+                onClick={() => setShowControls((prev) => !prev)}
+                size="sm"
+                variant="outline"
+              >
+                {showControls ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
+                {showControls ? "Recolher" : "Expandir"}
+              </Button>
             </div>
 
             <div className="flex items-center gap-4">
@@ -489,7 +498,8 @@ export function TeleprompterDisplay({
             </div>
           </div>
 
-          <div className="mt-3 flex items-center gap-4 flex-wrap">
+          {showControls && (
+            <div className="mt-3 flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Fonte</span>
               <Select value={fontFamily} onValueChange={setFontFamily}>
@@ -579,7 +589,7 @@ export function TeleprompterDisplay({
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-12">Media</span>
+                  <span className="text-xs text-muted-foreground w-12">Média</span>
                   <Button
                     type="button"
                     size="sm"
@@ -587,7 +597,7 @@ export function TeleprompterDisplay({
                     onClick={() =>
                       handlePauseDurationChange("pause-medium", pauseDurations["pause-medium"] / 1000 - 0.5)
                     }
-                    aria-label="Diminuir pausa media"
+                    aria-label="Diminuir pausa média"
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
@@ -607,7 +617,7 @@ export function TeleprompterDisplay({
                     onClick={() =>
                       handlePauseDurationChange("pause-medium", pauseDurations["pause-medium"] / 1000 + 0.5)
                     }
-                    aria-label="Aumentar pausa media"
+                    aria-label="Aumentar pausa média"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -654,7 +664,7 @@ export function TeleprompterDisplay({
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
         </CardContent>
       </Card>
