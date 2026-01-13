@@ -32,16 +32,20 @@ interface ScriptHistoryProps {
   onSelectScript: (script: ScriptHistoryItem) => void;
   onDeleteScript?: (id: string) => void;
   refreshTrigger?: number;
+  expandTrigger?: number;
+  defaultOpen?: boolean;
 }
 
 export function ScriptHistory({ 
   currentScriptId, 
   onSelectScript, 
   onDeleteScript,
-  refreshTrigger 
+  refreshTrigger,
+  expandTrigger,
+  defaultOpen = false
 }: ScriptHistoryProps) {
   const { user } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const [scripts, setScripts] = useState<ScriptHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
@@ -70,6 +74,12 @@ export function ScriptHistory({
   useEffect(() => {
     loadScripts();
   }, [user, refreshTrigger]);
+
+  useEffect(() => {
+    if (expandTrigger !== undefined) {
+      setIsOpen(true);
+    }
+  }, [expandTrigger]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -114,7 +124,7 @@ export function ScriptHistory({
           <button className="w-full p-4 flex items-center justify-between text-left hover:bg-muted/50 transition-colors rounded-t-xl">
             <div className="flex items-center gap-3">
               <FileText className="w-4 h-4 text-muted-foreground" />
-              <h3 className="font-semibold">Histórico de Roteiros</h3>
+              <h3 className="font-semibold">Hist\u00F3rico de Roteiros</h3>
               {scripts.length > 0 && (
                 <Badge variant="secondary" className="text-xs">
                   {scripts.length}
@@ -168,7 +178,7 @@ export function ScriptHistory({
                       <div className="flex-1 min-w-0">
                         <p className="text-sm line-clamp-2">{getScriptPreview(script.script_text)}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {format(new Date(script.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                          {format(new Date(script.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                         </p>
                       </div>
                       <Button

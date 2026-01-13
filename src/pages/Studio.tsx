@@ -19,6 +19,7 @@ export default function Studio() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showTeleprompter, setShowTeleprompter] = useState(false);
   const [resetTrigger, setResetTrigger] = useState(0);
+  const [historyExpandTrigger, setHistoryExpandTrigger] = useState(0);
 
   const handleStepChange = (step: number) => {
     if (step === 6) {
@@ -31,6 +32,7 @@ export default function Studio() {
   };
 
   const handleViewScripts = () => {
+    setHistoryExpandTrigger((prev) => prev + 1);
     handleStepChange(6);
   };
 
@@ -52,7 +54,7 @@ export default function Studio() {
     newsContext?: string,
     selectedNews?: UserNewsItem[],
     complementaryPrompt?: string,
-  ) => {
+  ): Promise<{ scriptId?: string } | void> => {
     setIsGenerating(true);
     try {
       // Build news items for the edge function
@@ -89,6 +91,7 @@ export default function Studio() {
       });
       if (error) throw error;
       setGeneratedScript(data.script || "");
+      return { scriptId: data.scriptId };
     } catch (err) {
       console.error("Failed to generate script:", err);
     } finally {
@@ -96,7 +99,7 @@ export default function Studio() {
     }
   };
 
-  const handleRegenerate = async (adjustments: { tone?: string; duration?: string; format?: string }) => {
+  const handleRegenerate = async (adjustments: { tone?: string; duration?: string; format?: string }): Promise<{ scriptId?: string } | void> => {
     setIsGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-teleprompter-script", {
@@ -126,6 +129,7 @@ export default function Studio() {
       });
       if (error) throw error;
       setGeneratedScript(data.script || "");
+      return { scriptId: data.scriptId };
     } catch (err) {
       console.error("Failed to regenerate script:", err);
     } finally {
@@ -189,7 +193,7 @@ export default function Studio() {
             <OnboardingProgress
               currentStep={onboardingStep}
               totalSteps={6}
-              stepLabels={["Você", "Público", "Formato", "Estilo", "Objetivo", "Roteiros"]}
+              stepLabels={["Voc\u00EA", "P\u00FAblico", "Formato", "Estilo", "Not\u00EDcias", "Roteiros"]}
               onStepChange={handleStepChange}
             />
           </aside>
@@ -207,6 +211,7 @@ export default function Studio() {
               <ScriptGenerator
                 profile={profile}
                 onEditProfile={() => handleStepChange(1)}
+                onApplyProfile={updateProfile}
                 generatedScript={generatedScript}
                 isGenerating={isGenerating}
                 onGenerate={handleGenerate}
@@ -214,6 +219,7 @@ export default function Studio() {
                 onOpenTeleprompter={() => setShowTeleprompter(true)}
                 onScriptChange={setGeneratedScript}
                 resetTrigger={resetTrigger}
+                historyExpandTrigger={historyExpandTrigger}
               />
             )}
           </section>

@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -7,20 +6,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  RefreshCw, 
-  Copy, 
+import {
+  RefreshCw,
+  Copy,
   Check,
   Maximize2,
   Volume2,
   Clock,
-  Sparkles
+  Sparkles,
 } from "lucide-react";
 import { useState } from "react";
-import { 
-  TONE_OPTIONS, 
+import {
+  TONE_OPTIONS,
   DURATION_OPTIONS,
-  VIDEO_TYPE_OPTIONS 
+  VIDEO_TYPE_OPTIONS,
 } from "@/types/creatorProfile";
 
 interface ScriptControlsProps {
@@ -63,27 +62,27 @@ export function ScriptControls({
     <div className="space-y-6">
       {/* Primary actions */}
       <div className="flex flex-wrap gap-3">
-        <Button 
-          onClick={onRegenerate} 
+        <Button
+          onClick={onRegenerate}
           disabled={isGenerating}
           variant="outline"
           className="gap-2"
         >
-          <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 ${isGenerating ? "animate-spin" : ""}`} />
           Regenerar
         </Button>
-        
-        <Button 
+
+        <Button
           onClick={handleCopy}
           variant="outline"
           className="gap-2"
           disabled={!scriptText}
         >
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-          {copied ? 'Copiado!' : 'Copiar'}
+          {copied ? "Copiado!" : "Copiar"}
         </Button>
-        
-        <Button 
+
+        <Button
           onClick={onTeleprompter}
           className="gap-2 ml-auto"
           disabled={!scriptText}
@@ -92,7 +91,7 @@ export function ScriptControls({
           Teleprompter
         </Button>
       </div>
-      
+
       {/* Adjustment controls */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-xl bg-muted/50">
         {/* Tone */}
@@ -106,7 +105,7 @@ export function ScriptControls({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {TONE_OPTIONS.map(option => (
+              {TONE_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
@@ -114,19 +113,19 @@ export function ScriptControls({
             </SelectContent>
           </Select>
         </div>
-        
+
         {/* Duration */}
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Clock className="w-4 h-4" />
-            Duração
+            Dura\u00E7\u00E3o
           </label>
           <Select value={currentDuration} onValueChange={onAdjustDuration}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {DURATION_OPTIONS.map(option => (
+              {DURATION_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
@@ -134,7 +133,7 @@ export function ScriptControls({
             </SelectContent>
           </Select>
         </div>
-        
+
         {/* Format */}
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -146,7 +145,7 @@ export function ScriptControls({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {VIDEO_TYPE_OPTIONS.map(option => (
+              {VIDEO_TYPE_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>

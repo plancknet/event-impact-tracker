@@ -19,8 +19,8 @@ export function StepAudience({ profile, onChange, onBack, onNext, onSkip }: Step
 
   return (
     <OnboardingCard
-      title="Seu público"
-      subtitle="Para quem você cria conteúdo?"
+      title="Seu p\u00FAblico"
+      subtitle="Para quem voc\u00EA cria conte\u00FAdo?"
       onBack={onBack}
       onNext={onNext}
       onSkip={onSkip}
@@ -28,7 +28,7 @@ export function StepAudience({ profile, onChange, onBack, onNext, onSkip }: Step
       <div className="space-y-8">
         {/* Audience type */}
         <div className="space-y-3">
-          <Label className="text-base font-medium">Quem é sua audiência principal?</Label>
+          <Label className="text-base font-medium">Quem \u00E9 sua audi\u00EAncia principal?</Label>
           <div className="grid grid-cols-2 gap-3">
             {AUDIENCE_TYPE_OPTIONS.map((option) => (
               <OptionCard
@@ -45,7 +45,7 @@ export function StepAudience({ profile, onChange, onBack, onNext, onSkip }: Step
 
         {/* Age range */}
         <div className="space-y-4">
-          <Label className="text-base font-medium">Faixa etária do público</Label>
+          <Label className="text-base font-medium">Faixa et\u00E1ria do p\u00FAblico</Label>
           <div className="px-2">
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>0</span>
@@ -69,7 +69,7 @@ export function StepAudience({ profile, onChange, onBack, onNext, onSkip }: Step
 
         {/* Gender split */}
         <div className="space-y-4">
-          <Label className="text-base font-medium">Distribuição de sexo</Label>
+          <Label className="text-base font-medium">Distribui\u00E7\u00E3o de sexo</Label>
           <div className="grid gap-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm text-muted-foreground">

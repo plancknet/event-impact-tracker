@@ -1,12 +1,12 @@
 import { CreatorProfile } from "@/types/creatorProfile";
 import { Button } from "@/components/ui/button";
-import { 
-  Clock, 
-  Users, 
-  Target, 
-  Mic, 
+import {
+  Clock,
+  Users,
+  Target,
+  Mic,
   ChevronDown,
-  Settings2
+  Settings2,
 } from "lucide-react";
 import {
   Collapsible,
@@ -22,41 +22,41 @@ interface ContextSummaryProps {
 
 export function ContextSummary({ profile, onEditProfile }: ContextSummaryProps) {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const getDurationLabel = () => {
     const duration = profile.target_duration;
-    const unit = profile.duration_unit === 'words' ? 'palavras' : 'min';
+    const unit = profile.duration_unit === "words" ? "palavras" : "min";
     return `${duration} ${unit}`;
   };
 
   const getToneLabel = () => {
     const tones: Record<string, string> = {
-      calmo: 'Calmo',
-      conversacional: 'Conversacional',
-      energetico: 'Energético',
-      educativo: 'Educativo',
-      persuasivo: 'Persuasivo',
+      calmo: "Calmo",
+      conversacional: "Conversacional",
+      energetico: "Energ\u00E9tico",
+      educativo: "Educativo",
+      persuasivo: "Persuasivo",
     };
     return tones[profile.speaking_tone] || profile.speaking_tone;
   };
 
   const getAudienceLabel = () => {
     const audiences: Record<string, string> = {
-      iniciantes: 'Iniciantes',
-      publico_geral: 'Público geral',
-      profissionais: 'Profissionais',
-      especialistas: 'Especialistas',
+      iniciantes: "Iniciantes",
+      publico_geral: "P\u00FAblico geral",
+      profissionais: "Profissionais",
+      especialistas: "Especialistas",
     };
     return audiences[profile.audience_type] || profile.audience_type;
   };
 
   const getGoalLabel = () => {
     const goals: Record<string, string> = {
-      ensinar: 'Ensinar',
-      informar: 'Informar',
-      entreter: 'Entreter',
-      persuadir: 'Persuadir',
-      vender: 'Vender',
+      ensinar: "Ensinar",
+      informar: "Informar",
+      entreter: "Entreter",
+      persuadir: "Persuadir",
+      vender: "Vender",
     };
     return goals[profile.content_goal] || profile.content_goal;
   };
@@ -87,30 +87,32 @@ export function ContextSummary({ profile, onEditProfile }: ContextSummaryProps) 
                 <span className="font-medium">{getGoalLabel()}</span>
               </span>
             </div>
-            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
+            />
           </button>
         </CollapsibleTrigger>
-        
+
         <CollapsibleContent className="pt-4 mt-4 border-t">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-muted-foreground">Tema</p>
-              <p className="font-medium truncate">{profile.main_topic || '—'}</p>
+              <p className="font-medium truncate">{profile.main_topic || "Sem tema"}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Plataforma</p>
               <p className="font-medium">{profile.platform}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Tipo de vídeo</p>
-              <p className="font-medium capitalize">{profile.video_type.replace('_', ' ')}</p>
+              <p className="text-muted-foreground">Tipo de v\u00EDdeo</p>
+              <p className="font-medium capitalize">{profile.video_type.replace("_", " ")}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Idioma</p>
               <p className="font-medium">{profile.script_language}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Faixa etária</p>
+              <p className="text-muted-foreground">Faixa et\u00E1ria</p>
               <p className="font-medium">{ageRangeLabel}</p>
             </div>
             <div>
@@ -118,7 +120,7 @@ export function ContextSummary({ profile, onEditProfile }: ContextSummaryProps) 
               <p className="font-medium">{genderLabel}</p>
             </div>
           </div>
-          
+
           {onEditProfile && (
             <div className="mt-4 pt-4 border-t flex justify-end">
               <Button variant="ghost" size="sm" onClick={onEditProfile} className="gap-2">

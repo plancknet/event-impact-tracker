@@ -13,12 +13,12 @@ interface StepStyleProps {
 }
 
 export function StepStyle({ profile, onChange, onBack, onNext, onSkip }: StepStyleProps) {
-  const energyIndex = ENERGY_OPTIONS.findIndex(e => e.value === profile.energy_level);
-  
+  const energyIndex = ENERGY_OPTIONS.findIndex((e) => e.value === profile.energy_level);
+
   return (
     <OnboardingCard
       title="Seu estilo"
-      subtitle="Como você quer soar no seu conteúdo?"
+      subtitle="Como voc\u00EA quer soar no seu conte\u00FAdo?"
       onBack={onBack}
       onNext={onNext}
       onSkip={onSkip}
@@ -27,7 +27,7 @@ export function StepStyle({ profile, onChange, onBack, onNext, onSkip }: StepSty
         {/* Tone */}
         <div className="space-y-3">
           <Label className="text-base font-medium">
-            Qual é o tom da sua fala?
+            Qual \u00E9 o tom da sua fala?
           </Label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {TONE_OPTIONS.map((option) => (
@@ -42,12 +42,10 @@ export function StepStyle({ profile, onChange, onBack, onNext, onSkip }: StepSty
             ))}
           </div>
         </div>
-        
+
         {/* Energy level */}
         <div className="space-y-4">
-          <Label className="text-base font-medium">
-            Nível de energia
-          </Label>
+          <Label className="text-base font-medium">N\u00EDvel de energia</Label>
           <div className="px-2">
             <Slider
               value={[energyIndex >= 0 ? energyIndex : 1]}
@@ -64,11 +62,11 @@ export function StepStyle({ profile, onChange, onBack, onNext, onSkip }: StepSty
             />
             <div className="flex justify-between mt-2">
               {ENERGY_OPTIONS.map((option) => (
-                <div 
+                <div
                   key={option.value}
                   className={`text-center transition-colors ${
-                    profile.energy_level === option.value 
-                      ? 'text-primary font-medium' 
+                    profile.energy_level === option.value
+                      ? 'text-primary font-medium'
                       : 'text-muted-foreground'
                   }`}
                 >

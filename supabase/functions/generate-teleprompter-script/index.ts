@@ -547,12 +547,20 @@ Retorne APENAS o JSON solicitado.`;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    const parametersForStorage = {
+      ...parameters,
+      profile: typeof rawParameters === "object" && rawParameters !== null
+        ? (rawParameters as Record<string, unknown>).profile
+        : undefined,
+      complementaryPrompt,
+    };
+
     const { data: savedScript, error: saveError } = await supabase
       .from("teleprompter_scripts")
       .insert({
         user_id: user.id, // Now we have verified user from auth
         news_ids_json: newsItems.map(n => n.id),
-        parameters_json: parameters,
+        parameters_json: parametersForStorage,
         script_text: scriptText,
         raw_ai_response: JSON.stringify(data),
       })

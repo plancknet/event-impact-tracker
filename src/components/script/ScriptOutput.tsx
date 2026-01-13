@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
 
 interface ScriptOutputProps {
   script: string;
@@ -7,82 +8,6 @@ interface ScriptOutputProps {
 }
 
 export function ScriptOutput({ script, isLoading, onEdit }: ScriptOutputProps) {
-  // Parse and render script with pause tags
-  const renderScript = () => {
-    if (!script) return null;
-    
-    const pauseRegex = /<(pause-short|pause-medium|pause-long|pause|topic-change)>/g;
-    const parts: { type: 'text' | 'pause' | 'topic'; content: string; pauseType?: string }[] = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = pauseRegex.exec(script)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push({
-          type: 'text',
-          content: script.slice(lastIndex, match.index),
-        });
-      }
-      if (match[1] === 'topic-change') {
-        parts.push({
-          type: 'topic',
-          content: match[0],
-        });
-      } else {
-        parts.push({
-          type: 'pause',
-          content: match[0],
-          pauseType: match[1],
-        });
-      }
-      lastIndex = match.index + match[0].length;
-    }
-
-    if (lastIndex < script.length) {
-      parts.push({
-        type: 'text',
-        content: script.slice(lastIndex),
-      });
-    }
-
-    return parts.map((part, index) => {
-      if (part.type === 'pause') {
-        const pauseLabel = (() => {
-          switch (part.pauseType) {
-            case 'pause-short': return '· pausa curta ·';
-            case 'pause-medium': return '·· pausa ··';
-            case 'pause-long': return '··· pausa longa ···';
-            default: return '·· pausa ··';
-          }
-        })();
-        return (
-          <span 
-            key={index}
-            className="inline-block mx-2 px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary"
-          >
-            {pauseLabel}
-          </span>
-        );
-      }
-      if (part.type === 'topic') {
-        return (
-          <div key={index} className="my-6 py-2 border-t border-dashed border-primary/30">
-            <span className="text-xs font-medium text-primary/60 uppercase tracking-wider">
-              Novo assunto
-            </span>
-          </div>
-        );
-      }
-      // Format text for readability
-      return part.content.split('\n').map((line, lineIndex) => (
-        <span key={`${index}-${lineIndex}`}>
-          {lineIndex > 0 && <br />}
-          {line}
-        </span>
-      ));
-    });
-  };
-
   if (isLoading) {
     return (
       <div className="rounded-xl border bg-card p-8">
@@ -103,30 +28,28 @@ export function ScriptOutput({ script, isLoading, onEdit }: ScriptOutputProps) {
   if (!script) {
     return (
       <div className="rounded-xl border border-dashed bg-muted/30 p-12 text-center">
-        <p className="text-muted-foreground">
-          Seu roteiro aparecerá aqui
-        </p>
+        <p className="text-muted-foreground">Seu roteiro aparecer\u00E1 aqui</p>
         <p className="text-sm text-muted-foreground/70 mt-2">
-          Clique em "Gerar Roteiro" para começar
+          Clique em "Gerar Roteiro" para come\u00E7ar
         </p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border bg-card p-8 md:p-10">
-      <div 
-        className={cn(
-          "prose prose-lg max-w-none",
-          "text-foreground leading-relaxed",
-          "font-serif text-xl md:text-2xl"
-        )}
-        style={{
-          lineHeight: '1.8',
-          letterSpacing: '0.01em',
-        }}
-      >
-        {renderScript()}
+    <div className="rounded-xl border bg-card p-6 md:p-8">
+      <div className="space-y-3">
+        <div className="text-sm font-medium text-muted-foreground">Texto do roteiro</div>
+        <Textarea
+          value={script}
+          onChange={(event) => onEdit?.(event.target.value)}
+          rows={12}
+          className={cn("resize-none", onEdit ? "bg-background" : "bg-muted/30")}
+          readOnly={!onEdit}
+        />
+        <p className="text-xs text-muted-foreground">
+          Voc\u00EA pode editar o texto a qualquer momento antes de salvar.
+        </p>
       </div>
     </div>
   );

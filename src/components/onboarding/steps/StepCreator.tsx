@@ -13,11 +13,11 @@ interface StepCreatorProps {
 
 export function StepCreator({ profile, onChange, onNext, onSkip }: StepCreatorProps) {
   const canContinue = profile.main_topic.trim().length > 0;
-  
+
   return (
     <OnboardingCard
-      title="Sobre você"
-      subtitle="Conte-nos sobre seu conteúdo e experiência"
+      title="Sobre voc\u00EA"
+      subtitle="Conte-nos sobre seu conte\u00FAdo e experi\u00EAncia"
       onNext={onNext}
       onSkip={onSkip}
       canContinue={canContinue}
@@ -33,18 +33,18 @@ export function StepCreator({ profile, onChange, onNext, onSkip }: StepCreatorPr
             id="main_topic"
             value={profile.main_topic}
             onChange={(e) => onChange({ main_topic: e.target.value })}
-            placeholder="Ex: Bitcoin, Finanças, Marketing Digital, Culinária..."
+            placeholder="Ex: Bitcoin, Finan\u00E7as, Marketing Digital, Culin\u00E1ria..."
             className="h-12 text-base"
           />
           <p className="text-sm text-muted-foreground">
-            Separe múltiplos temas por vírgula
+            Separe m\u00FAltiplos temas por v\u00EDrgula
           </p>
         </div>
-        
+
         {/* Expertise level */}
         <div className="space-y-3">
           <Label className="text-base font-medium">
-            Qual é o seu nível como criador?
+            Qual \u00E9 o seu n\u00EDvel como criador?
           </Label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {EXPERTISE_OPTIONS.map((option) => (

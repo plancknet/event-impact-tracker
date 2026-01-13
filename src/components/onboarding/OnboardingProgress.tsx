@@ -10,7 +10,7 @@ interface OnboardingProgressProps {
 export function OnboardingProgress({
   currentStep,
   totalSteps,
-  stepLabels = ["Você", "Público", "Formato", "Estilo", "Objetivo"],
+  stepLabels = ["Voc\u00EA", "P\u00FAblico", "Formato", "Estilo", "Not\u00EDcias"],
   onStepChange,
 }: OnboardingProgressProps) {
   const progress = totalSteps > 1 ? ((currentStep - 1) / (totalSteps - 1)) * 100 : 0;
@@ -49,7 +49,7 @@ export function OnboardingProgress({
                   !isCompleted && !isCurrent && "bg-muted text-muted-foreground",
                 )}
               >
-                {isCompleted ? "✓" : stepNumber}
+                {isCompleted ? "OK" : stepNumber}
               </div>
               <span className="text-sm">{label}</span>
             </button>
