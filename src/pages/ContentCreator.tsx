@@ -83,7 +83,7 @@ const AUDIENCE_OPTIONS = [
   "Criadores",
   "Fundadores",
   "Estudantes",
-  "Publico geral",
+  "Público geral",
   "Especialistas",
   "Investidores",
 ];
@@ -444,7 +444,7 @@ export default function ContentCreator() {
       await upsertSharedNewsItems(fetchedItems, { topic, language, region });
     } catch (error) {
       console.error("Failed to load news context:", error);
-      fetchError = "Nao foi possivel carregar o contexto de noticias. Tente novamente.";
+      fetchError = "Não foi possível carregar o contexto de notícias. Tente novamente.";
     }
 
     try {
@@ -457,7 +457,7 @@ export default function ContentCreator() {
         setNewsItems(storedItems);
         setNewsError(
           fetchError
-            ? "Nao foi possivel atualizar as noticias agora. Exibindo resultados salvos."
+            ? "Não foi possível atualizar as notícias agora. Exibindo resultados salvos."
             : null,
         );
         return;
@@ -465,14 +465,14 @@ export default function ContentCreator() {
     } catch (error) {
       console.error("Failed to load stored news:", error);
       if (!fetchError) {
-        fetchError = "Nao foi possivel carregar as noticias armazenadas. Tente novamente.";
+        fetchError = "Não foi possível carregar as notícias armazenadas. Tente novamente.";
       }
     }
 
     if (fetchedItems.length > 0) {
       setNewsItems(fetchedItems);
       if (fetchError) {
-        setNewsError("Nao foi possivel salvar as noticias. Exibindo resultados temporarios.");
+        setNewsError("Não foi possível salvar as notícias. Exibindo resultados temporários.");
       }
       return;
     }
@@ -493,7 +493,7 @@ export default function ContentCreator() {
       await syncNewsForTopic(profile.mainSubject, profile.newsLanguage, { sinceHours: 72 });
     } catch (error) {
       console.error("Failed to load news context:", error);
-      setNewsError("Nao foi possivel carregar o contexto de noticias. Tente novamente.");
+      setNewsError("Não foi possível carregar o contexto de notícias. Tente novamente.");
     } finally {
       setNewsLoading(false);
       setStep(2);
@@ -541,15 +541,15 @@ export default function ContentCreator() {
       const newsTitles = selectedNews.map((item) => item.title).filter(Boolean);
       const newsReference =
         newsTitles.length > 0
-          ? `Use as noticias selecionadas como base e cite fatos relevantes. Noticias: ${newsTitles.join(
+          ? `Use as notícias selecionadas como base e cite fatos relevantes. Notícias: ${newsTitles.join(
               "; ",
             )}.`
           : "";
       const complementaryInstruction = trimmedPrompt
         ? keywords.length > 0
-          ? `Mantenha o roteiro base ao maximo. Adicione um complemento ao final que atenda ao prompt complementar e inclua: ${keywords.join(", ")}.`
-          : "Mantenha o roteiro base ao maximo. Adicione um complemento ao final que atenda ao prompt complementar."
-        : "Mantenha o roteiro base ao maximo. Ajuste apenas para fluidez e coerencia.";
+          ? `Mantenha o roteiro base ao máximo. Adicione um complemento ao final que atenda ao prompt complementar e inclua: ${keywords.join(", ")}.`
+          : "Mantenha o roteiro base ao máximo. Adicione um complemento ao final que atenda ao prompt complementar."
+        : "Mantenha o roteiro base ao máximo. Ajuste apenas para fluidez e coerência.";
       const refinementPrompt = [newsReference, complementaryInstruction, PAUSE_LONG_INSTRUCTION]
         .filter(Boolean)
         .join(" ");
@@ -566,14 +566,14 @@ export default function ContentCreator() {
 
       if (trimmedPrompt && !scriptIncludesComplementaryPrompt(finalScript, trimmedPrompt)) {
         setGenerationError(
-          "O roteiro gerado nao inclui elementos do prompt complementar. Ajuste o prompt e tente novamente.",
+          "O roteiro gerado não inclui elementos do prompt complementar. Ajuste o prompt e tente novamente.",
         );
         return false;
       }
 
       if (selectedNews.length > 0 && !scriptIncludesSelectedNews(finalScript, selectedNews)) {
         setGenerationError(
-          "O roteiro gerado nao inclui informacoes das noticias selecionadas. Ajuste a selecao e tente novamente.",
+          "O roteiro gerado não inclui informações das notícias selecionadas. Ajuste a seleção e tente novamente.",
         );
         return false;
       }
@@ -584,7 +584,7 @@ export default function ContentCreator() {
       return true;
     } catch (error) {
       console.error("Failed to regenerate teleprompter script:", error);
-      setGenerationError("Nao foi possivel gerar o roteiro novamente. Tente novamente.");
+      setGenerationError("Não foi possível gerar o roteiro novamente. Tente novamente.");
       return false;
     } finally {
       setIsGenerating(false);
@@ -639,7 +639,7 @@ export default function ContentCreator() {
       await loadScriptHistory();
     } catch (error) {
       console.error("Failed to save teleprompter script:", error);
-      setGenerationError("Nao foi possivel salvar o roteiro.");
+      setGenerationError("Não foi possível salvar o roteiro.");
     } finally {
       setIsSavingScript(false);
     }
@@ -673,7 +673,7 @@ export default function ContentCreator() {
         const newsTitles = selectedNews.map((item) => item.title).filter(Boolean);
         const newsInstruction =
           newsTitles.length > 0
-            ? `Revise o roteiro para incorporar informacoes baseadas nas noticias selecionadas. Noticias: ${newsTitles.join("; ")}.`
+            ? `Revise o roteiro para incorporar informações baseadas nas notícias selecionadas. Notícias: ${newsTitles.join("; ")}.`
             : "";
         const complementaryInstruction = trimmedPrompt
           ? keywords.length > 0
@@ -696,14 +696,14 @@ export default function ContentCreator() {
 
       if (trimmedPrompt && !scriptIncludesComplementaryPrompt(finalScript, trimmedPrompt)) {
         setGenerationError(
-          "O roteiro gerado nao inclui elementos do prompt complementar. Ajuste o prompt e tente novamente.",
+          "O roteiro gerado não inclui elementos do prompt complementar. Ajuste o prompt e tente novamente.",
         );
         return false;
       }
 
       if (selectedNews.length > 0 && !scriptIncludesSelectedNews(finalScript, selectedNews)) {
         setGenerationError(
-          "O roteiro gerado nao inclui informacoes das noticias selecionadas. Ajuste a selecao e tente novamente.",
+          "O roteiro gerado não inclui informações das notícias selecionadas. Ajuste a seleção e tente novamente.",
         );
         return false;
       }
@@ -714,7 +714,7 @@ export default function ContentCreator() {
       return true;
     } catch (error) {
       console.error("Failed to generate teleprompter script:", error);
-      setGenerationError("Nao foi possivel gerar o roteiro. Tente novamente.");
+      setGenerationError("Não foi possível gerar o roteiro. Tente novamente.");
       return false;
     } finally {
       setIsGenerating(false);
@@ -821,9 +821,9 @@ export default function ContentCreator() {
         <CardContent className="py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Fluxo do Criador de Conteudo</h1>
+              <h1 className="text-2xl font-bold">Fluxo do Criador de Conteúdo</h1>
               <p className="text-muted-foreground">
-                Monte o perfil, adicione o contexto de noticias e gere um roteiro para fala.
+                Monte o perfil, adicione o contexto de notícias e gere um roteiro para fala.
               </p>
             </div>
             <Button
@@ -874,12 +874,12 @@ export default function ContentCreator() {
                   <DateFilter
                     value={scriptDateFilter}
                     onChange={setScriptDateFilter}
-                    placeholder="Criacao dd/mm/aaaa"
+                    placeholder="Criação dd/mm/aaaa"
                   />
                 </div>
                 <div className="relative flex-1">
                   <Input
-                    placeholder="Filtrar por conteudo..."
+                    placeholder="Filtrar por conteúdo..."
                     value={scriptTitleFilter}
                     onChange={(e) => setScriptTitleFilter(e.target.value)}
                     className="pl-3"
@@ -905,7 +905,7 @@ export default function ContentCreator() {
                         onSort={handleScriptSort}
                         className="w-[120px]"
                       >
-                        Noticias
+                        Notícias
                       </SortableTableHead>
                       <SortableTableHead
                         sortKey="title"
@@ -982,7 +982,7 @@ export default function ContentCreator() {
               <Wand2 className="h-4 w-4" />
               Step 2
             </CardTitle>
-            <CardDescription>Contexto de noticias</CardDescription>
+            <CardDescription>Contexto de notícias</CardDescription>
           </CardHeader>
         </Card>
         <Card
@@ -1040,13 +1040,13 @@ export default function ContentCreator() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-medium">Publico</p>
+                <p className="text-sm font-medium">Público</p>
                 <Select
                   value={profile.audience}
                   onValueChange={(value) => setProfile((prev) => ({ ...prev, audience: value }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o publico" />
+                    <SelectValue placeholder="Selecione o público" />
                   </SelectTrigger>
                   <SelectContent>
                     {ensureOption(AUDIENCE_OPTIONS, profile.audience).map((option) => (
@@ -1058,13 +1058,13 @@ export default function ContentCreator() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-medium">Duracao</p>
+                <p className="text-sm font-medium">Duração</p>
                 <Select
                   value={profile.duration}
                   onValueChange={(value) => setProfile((prev) => ({ ...prev, duration: value }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione a duracao" />
+                    <SelectValue placeholder="Selecione a duração" />
                   </SelectTrigger>
                   <SelectContent>
                     {ensureOption(DURATION_OPTIONS, profile.duration).map((option) => (
@@ -1112,7 +1112,7 @@ export default function ContentCreator() {
                 </Select>
               </div>
               <div className="space-y-2 md:col-span-2">
-                <p className="text-sm font-medium">Idioma das noticias</p>
+                <p className="text-sm font-medium">Idioma das notícias</p>
                 <Select
                   value={profile.newsLanguage}
                   onValueChange={(value) => setProfile((prev) => ({ ...prev, newsLanguage: value }))}
@@ -1136,7 +1136,7 @@ export default function ContentCreator() {
                 {newsLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Carregando noticias...
+                    Carregando notícias...
                   </>
                 ) : (
                   "Começar e criar"
@@ -1150,7 +1150,7 @@ export default function ContentCreator() {
       {step === 2 && (
         <Card>
           <CardHeader>
-            <CardTitle>Contexto de noticias</CardTitle>
+            <CardTitle>Contexto de notícias</CardTitle>
             <CardDescription>Revise o contexto e avance para gerar o roteiro.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -1175,8 +1175,8 @@ export default function ContentCreator() {
 
             <div className="rounded-lg border p-4 text-sm text-muted-foreground">
               {newsItems.length === 0
-                ? "Nenhuma noticia carregada ainda."
-                : `${newsItems.length} noticias carregadas para o tema informado.`}
+                ? "Nenhuma notícia carregada ainda."
+                : `${newsItems.length} notícias carregadas para o tema informado.`}
             </div>
 
             <div className="flex flex-wrap justify-between gap-2">
@@ -1238,11 +1238,11 @@ export default function ContentCreator() {
                   <div className="font-medium">{profile.tone || "-"}</div>
                 </div>
                 <div>
-                  <div className="text-xs uppercase text-muted-foreground">Publico</div>
+                  <div className="text-xs uppercase text-muted-foreground">Público</div>
                   <div className="font-medium">{profile.audience || "-"}</div>
                 </div>
                 <div>
-                  <div className="text-xs uppercase text-muted-foreground">Duracao</div>
+                  <div className="text-xs uppercase text-muted-foreground">Duração</div>
                   <div className="font-medium">{profile.duration || "-"}</div>
                 </div>
                 <div>
@@ -1254,7 +1254,7 @@ export default function ContentCreator() {
                   <div className="font-medium">{profile.goal || "-"}</div>
                 </div>
                 <div>
-                  <div className="text-xs uppercase text-muted-foreground">Idioma das noticias</div>
+                  <div className="text-xs uppercase text-muted-foreground">Idioma das notícias</div>
                   <div className="font-medium">{profile.newsLanguage || "-"}</div>
                 </div>
                 <div>
@@ -1271,8 +1271,8 @@ export default function ContentCreator() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Contexto de noticias</CardTitle>
-              <CardDescription>Selecione noticias e adicione um prompt complementar.</CardDescription>
+              <CardTitle>Contexto de notícias</CardTitle>
+              <CardDescription>Selecione notícias e adicione um prompt complementar.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {newsError && (
@@ -1296,7 +1296,7 @@ export default function ContentCreator() {
 
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <p className="text-muted-foreground">
-                  {filteredAndSortedNews.length} de {newsItems.length} noticias nas ultimas 24h (ou mais)
+                  {filteredAndSortedNews.length} de {newsItems.length} notícias nas últimas 24h (ou mais)
                 </p>
               </div>
 
@@ -1308,17 +1308,17 @@ export default function ContentCreator() {
                     <DateFilter
                       value={dateFilter}
                       onChange={setDateFilter}
-                      placeholder="Criacao dd/mm/aaaa"
+                      placeholder="Criação dd/mm/aaaa"
                     />
                     <DateFilter
                       value={publishedDateFilter}
                       onChange={setPublishedDateFilter}
-                      placeholder="Publicacao dd/mm/aaaa"
+                      placeholder="Publicação dd/mm/aaaa"
                     />
                   </div>
                   <div className="grid gap-2">
                     <Input
-                      placeholder="Filtrar por titulo..."
+                      placeholder="Filtrar por título..."
                       value={titleFilter}
                       onChange={(e) => {
                         setTitleFilter(e.target.value);
@@ -1327,7 +1327,7 @@ export default function ContentCreator() {
                       maxLength={100}
                     />
                     <Input
-                      placeholder="Filtrar por conteudo..."
+                      placeholder="Filtrar por conteúdo..."
                       value={bodyFilter}
                       onChange={(e) => {
                         setBodyFilter(e.target.value);
@@ -1377,14 +1377,14 @@ export default function ContentCreator() {
                         onSort={handleSort}
                         className="w-[120px]"
                       >
-                        Publicacao
+                        Publicação
                       </SortableTableHead>
                       <SortableTableHead
                         sortKey="title"
                         currentSort={currentSort}
                         onSort={handleSort}
                       >
-                        Titulo
+                        Título
                       </SortableTableHead>
                       <SortableTableHead
                         sortKey="source"
@@ -1407,7 +1407,7 @@ export default function ContentCreator() {
                     {filteredAndSortedNews.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                          Nenhuma noticia encontrada
+                          Nenhuma notícia encontrada
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -1453,12 +1453,12 @@ export default function ContentCreator() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Referencias das noticias</CardTitle>
-                  <CardDescription>Lista das noticias selecionadas.</CardDescription>
+                  <CardTitle>Referências das notícias</CardTitle>
+                  <CardDescription>Lista das notícias selecionadas.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {selectedNews.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">Nenhuma noticia selecionada.</div>
+                    <div className="text-sm text-muted-foreground">Nenhuma notícia selecionada.</div>
                   ) : (
                     <Textarea
                       value={referencesText}
@@ -1514,12 +1514,12 @@ export default function ContentCreator() {
                       <DateFilter
                         value={scriptDateFilter}
                         onChange={setScriptDateFilter}
-                        placeholder="Criacao dd/mm/aaaa"
+                        placeholder="Criação dd/mm/aaaa"
                       />
                     </div>
                     <div className="relative flex-1">
                       <Input
-                        placeholder="Filtrar por conteudo..."
+                        placeholder="Filtrar por conteúdo..."
                         value={scriptTitleFilter}
                         onChange={(e) => setScriptTitleFilter(e.target.value)}
                         className="pl-3"
@@ -1621,7 +1621,7 @@ export default function ContentCreator() {
                     )}
                   </Button>
                   <Button onClick={handleSaveScript} disabled={!canSaveScript || isSavingScript}>
-                    {isSavingScript ? "Salvando..." : "Salvar alteracoes"}
+                    {isSavingScript ? "Salvando..." : "Salvar alterações"}
                   </Button>
                 </div>
               </CardContent>
@@ -1646,7 +1646,7 @@ export default function ContentCreator() {
 
           <div className="flex justify-start">
             <Button variant="outline" onClick={() => setStep(2)}>
-              Voltar as noticias
+              Voltar às notícias
             </Button>
           </div>
         </div>
@@ -1781,8 +1781,8 @@ const STOPWORDS = new Set([
   "ou",
   "que",
   "se",
-  "nao",
-  "n?o",
+  "não",
+  "não",
   "the",
   "and",
   "or",
