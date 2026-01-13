@@ -48,7 +48,7 @@ export default function Studio() {
     const success = await saveProfile(profile);
     if (success) {
       setAutoFetchTrigger((prev) => prev + 1);
-      handleViewScripts();
+      handleStepChange(6);
     }
   };
 

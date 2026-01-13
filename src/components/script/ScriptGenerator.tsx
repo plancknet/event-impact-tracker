@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -91,6 +91,8 @@ export function ScriptGenerator({
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [scrollTrigger, setScrollTrigger] = useState(0);
+  const outputRef = useRef<HTMLDivElement | null>(null);
 
   const {
     newsItems,
@@ -129,6 +131,14 @@ export function ScriptGenerator({
     fetchAndSaveNews(profile.main_topic, profile.news_language);
   }, [autoFetchTrigger, fetchAndSaveNews, profile.main_topic, profile.news_language]);
 
+  useEffect(() => {
+    if (scrollTrigger <= 0) return;
+    const timeout = window.setTimeout(() => {
+      outputRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [scrollTrigger]);
+
   const handleStartCreating = async () => {
     if (!profile.main_topic.trim()) return;
 
@@ -149,6 +159,7 @@ export function ScriptGenerator({
       setCurrentScriptId(result.scriptId);
     }
     setHistoryRefreshTrigger((prev) => prev + 1);
+    setScrollTrigger((prev) => prev + 1);
   };
 
   const handleRegenerate = async () => {
@@ -161,6 +172,7 @@ export function ScriptGenerator({
       setCurrentScriptId(result.scriptId);
     }
     setHistoryRefreshTrigger((prev) => prev + 1);
+    setScrollTrigger((prev) => prev + 1);
   };
 
   const handleAdjustTone = (tone: string) => {
@@ -389,11 +401,13 @@ export function ScriptGenerator({
         </p>
       )}
 
-      <ScriptOutput
-        script={generatedScript}
-        isLoading={isGenerating}
-        onEdit={onScriptChange}
-      />
+      <div ref={outputRef}>
+        <ScriptOutput
+          script={generatedScript}
+          isLoading={isGenerating}
+          onEdit={onScriptChange}
+        />
+      </div>
 
       {generatedScript && (
         <div className="flex flex-wrap items-center justify-between gap-3">

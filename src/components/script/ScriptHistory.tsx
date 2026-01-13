@@ -2,12 +2,13 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Loader2, 
-  Search, 
+import {
+  Loader2,
+  Search,
   ChevronDown,
   FileText,
-  Trash2
+  Trash2,
+  ArrowUpDown,
 } from "lucide-react";
 import {
   Collapsible,
@@ -36,23 +37,41 @@ interface ScriptHistoryProps {
   defaultOpen?: boolean;
 }
 
-export function ScriptHistory({ 
-  currentScriptId, 
-  onSelectScript, 
+type SortKey = "created_at" | "topic" | "preview";
+
+type SortConfig = {
+  key: SortKey;
+  direction: "asc" | "desc";
+};
+
+const getTopicFromParams = (value: unknown): string => {
+  if (!value || typeof value !== "object") return "";
+  const params = value as { profile?: { mainSubject?: unknown } };
+  return typeof params.profile?.mainSubject === "string" ? params.profile.mainSubject : "";
+};
+
+export function ScriptHistory({
+  currentScriptId,
+  onSelectScript,
   onDeleteScript,
   refreshTrigger,
   expandTrigger,
-  defaultOpen = false
+  defaultOpen = false,
 }: ScriptHistoryProps) {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [scripts, setScripts] = useState<ScriptHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
+  const [topicFilter, setTopicFilter] = useState("");
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    key: "created_at",
+    direction: "desc",
+  });
 
   const loadScripts = async () => {
     if (!user) return;
-    
+
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -83,7 +102,7 @@ export function ScriptHistory({
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    
+
     if (!confirm("Deseja excluir este roteiro?")) return;
 
     try {
@@ -93,7 +112,7 @@ export function ScriptHistory({
         .eq("id", id);
 
       if (error) throw error;
-      
+
       setScripts((prev) => prev.filter((s) => s.id !== id));
       onDeleteScript?.(id);
     } catch (err) {
@@ -110,12 +129,59 @@ export function ScriptHistory({
   };
 
   const filteredScripts = useMemo(() => {
-    if (!searchFilter.trim()) return scripts;
-    const query = searchFilter.toLowerCase();
-    return scripts.filter((script) =>
-      script.script_text.toLowerCase().includes(query)
-    );
-  }, [scripts, searchFilter]);
+    let filtered = scripts;
+
+    if (searchFilter.trim()) {
+      const query = searchFilter.toLowerCase();
+      filtered = filtered.filter((script) =>
+        script.script_text.toLowerCase().includes(query)
+      );
+    }
+
+    if (topicFilter.trim()) {
+      const query = topicFilter.toLowerCase();
+      filtered = filtered.filter((script) =>
+        getTopicFromParams(script.parameters_json).toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [scripts, searchFilter, topicFilter]);
+
+  const sortedScripts = useMemo(() => {
+    const sorted = [...filteredScripts];
+    const { key, direction } = sortConfig;
+
+    sorted.sort((a, b) => {
+      if (key === "created_at") {
+        const aTime = new Date(a.created_at).getTime();
+        const bTime = new Date(b.created_at).getTime();
+        return direction === "asc" ? aTime - bTime : bTime - aTime;
+      }
+
+      const aValue = key === "topic"
+        ? getTopicFromParams(a.parameters_json)
+        : getScriptPreview(a.script_text);
+      const bValue = key === "topic"
+        ? getTopicFromParams(b.parameters_json)
+        : getScriptPreview(b.script_text);
+
+      return direction === "asc"
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue);
+    });
+
+    return sorted;
+  }, [filteredScripts, sortConfig]);
+
+  const toggleSort = (key: SortKey) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
+      }
+      return { key, direction: "asc" };
+    });
+  };
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -131,67 +197,109 @@ export function ScriptHistory({
                 </Badge>
               )}
             </div>
-            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
+            <ChevronDown
+              className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
+            />
           </button>
         </CollapsibleTrigger>
 
         <CollapsibleContent>
           <div className="border-t p-4 space-y-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative flex-1 min-w-[220px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar roteiros..."
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                  className="pl-9 h-9"
+                />
+              </div>
               <Input
-                placeholder="Buscar roteiros..."
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                className="pl-9 h-9"
+                placeholder="Filtrar por tema"
+                value={topicFilter}
+                onChange={(e) => setTopicFilter(e.target.value)}
+                className="h-9 w-full sm:w-[220px]"
               />
             </div>
 
-            {/* Loading */}
             {isLoading && (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             )}
 
-            {/* Scripts list */}
             {!isLoading && (
-              <div className="max-h-[300px] overflow-y-auto space-y-2">
-                {filteredScripts.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    {scripts.length === 0 
-                      ? "Nenhum roteiro salvo ainda" 
-                      : "Nenhum roteiro encontrado"}
-                  </p>
-                ) : (
-                  filteredScripts.map((script) => (
-                    <div
-                      key={script.id}
-                      className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors group ${
-                        currentScriptId === script.id
-                          ? "bg-primary/5 border-primary"
-                          : "hover:bg-muted/50"
-                      }`}
-                      onClick={() => onSelectScript(script)}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm line-clamp-2">{getScriptPreview(script.script_text)}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {format(new Date(script.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => handleDelete(e, script.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 text-destructive hover:text-destructive"
+              <div className="space-y-2">
+                <div className="hidden md:grid grid-cols-[2fr_1fr_160px_40px] gap-3 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("preview")}
+                    className="flex items-center gap-1 text-left"
+                  >
+                    Roteiro
+                    <ArrowUpDown className="w-3 h-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("topic")}
+                    className="flex items-center gap-1 text-left"
+                  >
+                    Tema
+                    <ArrowUpDown className="w-3 h-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("created_at")}
+                    className="flex items-center gap-1 text-left"
+                  >
+                    Data
+                    <ArrowUpDown className="w-3 h-3" />
+                  </button>
+                  <div />
+                </div>
+
+                <div className="max-h-[320px] overflow-y-auto space-y-2">
+                  {sortedScripts.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      {scripts.length === 0
+                        ? "Nenhum roteiro salvo ainda"
+                        : "Nenhum roteiro encontrado"}
+                    </p>
+                  ) : (
+                    sortedScripts.map((script) => (
+                      <div
+                        key={script.id}
+                        className={`grid grid-cols-1 gap-2 p-3 rounded-lg border cursor-pointer transition-colors md:grid-cols-[2fr_1fr_160px_40px] md:gap-3 md:items-start ${
+                          currentScriptId === script.id
+                            ? "bg-primary/5 border-primary"
+                            : "hover:bg-muted/50"
+                        }`}
+                        onClick={() => onSelectScript(script)}
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))
-                )}
+                        <div className="text-sm font-medium leading-snug">
+                          {getScriptPreview(script.script_text)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {getTopicFromParams(script.parameters_json) || "-"}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {format(new Date(script.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </div>
+                        <div className="flex justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => handleDelete(e, script.id)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             )}
           </div>

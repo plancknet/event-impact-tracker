@@ -16,8 +16,6 @@ interface OnboardingCardProps {
 }
 
 export function OnboardingCard({
-  title,
-  subtitle,
   children,
   onBack,
   onNext,
