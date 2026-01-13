@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, Sparkles } from "lucide-react";
 import { CreatorProfile } from "@/types/creatorProfile";
 import { ContextSummary } from "./ContextSummary";
 import { ScriptOutput } from "./ScriptOutput";
@@ -29,6 +27,7 @@ interface ScriptGeneratorProps {
   onScriptChange: (script: string) => void;
   resetTrigger: number;
   historyExpandTrigger: number;
+  autoFetchTrigger: number;
 }
 
 interface ScriptHistoryItem {
@@ -106,13 +105,6 @@ export function ScriptGenerator({
     }
   }, [profile.main_topic, loadNews]);
 
-  // Check if we have news already
-  useEffect(() => {
-    if (newsItems.length > 0) {
-      setHasStarted(true);
-    }
-  }, [newsItems]);
-
   useEffect(() => {
     setComplementaryPrompt("");
     setSelectedNewsIds([]);
@@ -126,6 +118,13 @@ export function ScriptGenerator({
     onScriptChange("");
     clearNews();
   }, [resetTrigger, onScriptChange, clearNews, profile.speaking_tone, profile.target_duration, profile.video_type]);
+
+  useEffect(() => {
+    if (autoFetchTrigger <= 0) return;
+    if (!profile.main_topic.trim()) return;
+    setHasStarted(true);
+    fetchAndSaveNews(profile.main_topic, profile.news_language);
+  }, [autoFetchTrigger, fetchAndSaveNews, profile.main_topic, profile.news_language]);
 
   const handleStartCreating = async () => {
     if (!profile.main_topic.trim()) return;
@@ -312,54 +311,6 @@ export function ScriptGenerator({
     }
   };
 
-  if (!hasStarted) {
-    return (
-      <div className="space-y-6">
-        <ScriptHistory
-          currentScriptId={currentScriptId}
-          onSelectScript={handleSelectScript}
-          onDeleteScript={handleDeleteScript}
-          refreshTrigger={historyRefreshTrigger}
-          expandTrigger={historyExpandTrigger || undefined}
-        />
-
-        <ContextSummary profile={profile} onEditProfile={onEditProfile} />
-
-        <div className="rounded-2xl border bg-card p-8 md:p-12 text-center space-y-6">
-          <div className="space-y-2">
-            <h2 className="text-2xl font-semibold">Pronto para criar?</h2>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Vamos buscar as notícias mais recentes sobre <strong>{profile.main_topic || "seu tema"}</strong> para você selecionar e criar seu roteiro.
-            </p>
-          </div>
-
-          <Button
-            onClick={handleStartCreating}
-            disabled={isLoadingNews || !profile.main_topic}
-            size="lg"
-            className="gap-3 h-14 text-lg font-medium px-8"
-          >
-            {isLoadingNews ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Buscando notícias...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5" />
-                Buscar notícias
-              </>
-            )}
-          </Button>
-
-          {newsError && (
-            <p className="text-destructive text-sm">{newsError}</p>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <ScriptHistory
@@ -378,7 +329,7 @@ export function ScriptGenerator({
         error={newsError}
         selectedIds={selectedNewsIds}
         onSelectionChange={setSelectedNewsIds}
-        onRefresh={handleRefreshNews}
+        onRefresh={hasStarted ? handleRefreshNews : handleStartCreating}
       />
 
       <div className="rounded-2xl border bg-card p-6 md:p-8 space-y-4">

@@ -132,11 +132,6 @@ export function NewsGrid({
     return format(date, "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
   };
 
-  // Don't render if no news and not loading
-  if (newsItems.length === 0 && !isLoading && !error) {
-    return null;
-  }
-
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div className="rounded-xl border bg-card">

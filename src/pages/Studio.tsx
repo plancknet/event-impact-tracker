@@ -20,6 +20,7 @@ export default function Studio() {
   const [showTeleprompter, setShowTeleprompter] = useState(false);
   const [resetTrigger, setResetTrigger] = useState(0);
   const [historyExpandTrigger, setHistoryExpandTrigger] = useState(0);
+  const [autoFetchTrigger, setAutoFetchTrigger] = useState(0);
 
   const handleStepChange = (step: number) => {
     if (step === 6) {
@@ -46,6 +47,7 @@ export default function Studio() {
   const handleCompleteOnboarding = async () => {
     const success = await saveProfile(profile);
     if (success) {
+      setAutoFetchTrigger((prev) => prev + 1);
       handleViewScripts();
     }
   };
@@ -233,6 +235,7 @@ export default function Studio() {
                 onScriptChange={setGeneratedScript}
                 resetTrigger={resetTrigger}
                 historyExpandTrigger={historyExpandTrigger}
+                autoFetchTrigger={autoFetchTrigger}
               />
             )}
           </section>

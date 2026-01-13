@@ -29,18 +29,6 @@ export function OnboardingCard({
 }: OnboardingCardProps) {
   return (
     <div className="w-full max-w-2xl mx-auto animate-in">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-semibold text-foreground tracking-tight">
-          {title}
-        </h2>
-        {subtitle && (
-          <p className="mt-2 text-muted-foreground">
-            {subtitle}
-          </p>
-        )}
-      </div>
-      
       {/* Content */}
       <div className="mb-8">
         {children}

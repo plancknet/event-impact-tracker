@@ -151,6 +151,14 @@ export function TeleprompterDisplay({
           type: "topic",
           content: match[0],
         });
+        const nextSlice = text.slice(match.index + match[0].length);
+        if (!nextSlice.trimStart().startsWith("<pause-long>")) {
+          parts.push({
+            type: "pause",
+            content: "<pause-long>",
+            pauseType: "pause-long",
+          });
+        }
       } else {
         parts.push({
           type: "pause",
