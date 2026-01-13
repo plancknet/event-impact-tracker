@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
 const authSchema = z.object({
-  email: z.string().email("Email inv\u00E1lido"),
+  email: z.string().email("Email inválido"),
   password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
 });
 
@@ -79,12 +79,12 @@ export default function Auth() {
         const { error } = await signUp(data.email, data.password);
         if (error) {
           if (error.message.includes("User already registered")) {
-            setError("Este email j\u00E1 est\u00E1 cadastrado. Fa\u00E7a login.");
+            setError("Este email já está cadastrado. Faça login.");
           } else {
             setError(error.message);
           }
         } else {
-          setSuccessMessage("Conta criada com sucesso! Voc\u00EA j\u00E1 pode fazer login.");
+          setSuccessMessage("Conta criada com sucesso! Você já pode fazer login.");
           setIsLogin(true);
           form.reset();
         }
@@ -123,11 +123,11 @@ export default function Auth() {
             <button className="hover:text-slate-900">Planos</button>
             <button className="hover:text-slate-900">Recursos</button>
             <button className="flex items-center gap-2 hover:text-slate-900">
-              Portugu\u00EAs
+              Português
             </button>
           </nav>
           <Button className="rounded-full bg-blue-600 px-6 hover:bg-blue-700">
-            Testar Gr\u00E1tis
+            Testar Grátis
           </Button>
         </div>
       </header>
@@ -136,15 +136,15 @@ export default function Auth() {
         <section className="space-y-6">
           <h1 className="text-4xl font-semibold leading-tight text-blue-700 md:text-5xl">
             Crie <span className="text-emerald-500">Roteiros</span> para{" "}
-            <span className="text-emerald-500">V\u00EDdeos</span> em segundos.
+            <span className="text-emerald-500">Vídeos</span> em segundos.
           </h1>
           <p className="text-base text-slate-600 md:text-lg">
-            Centralize suas ideias e transforme pensamentos em falas naturais para v\u00EDdeos,
-            podcasts e apresenta\u00E7\u00F5es.
+            Centralize suas ideias e transforme pensamentos em falas naturais para vídeos,
+            podcasts e apresentações.
           </p>
           <p className="text-base text-slate-600 md:text-lg">
             Crie scripts personalizados para YouTube, Instagram, TikTok, Reels, Shorts,
-            Lives e muito mais \u2014 adaptados ao seu p\u00FAblico, tom de voz e objetivo. Rode o
+            Lives e muito mais — adaptados ao seu público, tom de voz e objetivo. Rode o
             texto em um teleprompter com ajustes fino.
           </p>
         </section>
@@ -158,7 +158,7 @@ export default function Auth() {
               <CardDescription>
                 {isLogin
                   ? "Entre com sua conta para continuar"
-                  : "Crie uma conta para come\u00E7ar"}
+                  : "Crie uma conta para começar"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -259,8 +259,8 @@ export default function Auth() {
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
                   {isLogin
-                    ? "N\u00E3o tem conta? Criar conta"
-                    : "J\u00E1 tem conta? Entrar"}
+                    ? "Não tem conta? Criar conta"
+                    : "Já tem conta? Entrar"}
                 </button>
               </div>
             </CardContent>

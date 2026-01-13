@@ -118,7 +118,7 @@ export function ScriptControls({
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Clock className="w-4 h-4" />
-            Dura\u00E7\u00E3o
+            Duração
           </label>
           <Select value={currentDuration} onValueChange={onAdjustDuration}>
             <SelectTrigger>
