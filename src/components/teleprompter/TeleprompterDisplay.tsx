@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -500,7 +499,7 @@ export function TeleprompterDisplay({
 
           {showControls && (
             <div className="mt-3 flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Fonte</span>
               <Select value={fontFamily} onValueChange={setFontFamily}>
                 <SelectTrigger className="w-[170px] h-8">
@@ -514,8 +513,8 @@ export function TeleprompterDisplay({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="flex items-center gap-2">
+              </div>
+              <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Tamanho</span>
               <div className="w-36">
                 <Slider
@@ -527,8 +526,8 @@ export function TeleprompterDisplay({
                 />
               </div>
               <span className="text-xs text-muted-foreground w-10">{fontSize}px</span>
-            </div>
-            <div className="flex items-center gap-2">
+              </div>
+              <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Cor</span>
               <input
                 type="color"
@@ -537,8 +536,8 @@ export function TeleprompterDisplay({
                 className="h-8 w-10 rounded border border-border bg-transparent p-0"
                 aria-label="Cor da fonte"
               />
-            </div>
-            <div className="flex items-center gap-2">
+              </div>
+              <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Fundo</span>
               <input
                 type="color"
@@ -547,8 +546,8 @@ export function TeleprompterDisplay({
                 className="h-8 w-10 rounded border border-border bg-transparent p-0"
                 aria-label="Cor do fundo"
               />
-            </div>
-            <div className="flex flex-col gap-3 w-full sm:w-auto">
+              </div>
+              <div className="flex flex-col gap-3 w-full sm:w-auto">
               <span className="text-xs text-muted-foreground">Pausas (s)</span>
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
@@ -662,6 +661,7 @@ export function TeleprompterDisplay({
                     {pauseDurations["pause-long"] / 1000}s
                   </span>
                 </div>
+              </div>
               </div>
             </div>
           )}
