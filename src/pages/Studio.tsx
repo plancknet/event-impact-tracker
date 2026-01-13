@@ -173,14 +173,14 @@ export default function Studio() {
             <Sparkles className="w-5 h-5" />
             <span className="font-semibold">ThinkAndTalk</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             <Button variant="outline" size="sm" onClick={handleNewScript}>
               Novo roteiro
             </Button>
             <Button variant="outline" size="sm" onClick={handleViewScripts}>
               Ver scripts gerados
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => signOut()} className="gap-2">
+            <Button variant="ghost" size="sm" onClick={() => signOut()} className="gap-2 whitespace-nowrap">
               <LogOut className="w-4 h-4" />
               Sair
             </Button>
