@@ -240,12 +240,14 @@ export default function Studio() {
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="container max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-primary">
-            <Sparkles className="w-5 h-5" />
-            <span className="font-semibold">ThinkAndTalk</span>
-          </div>
-          <div className="text-sm text-muted-foreground">
-            Bem-vindo, {user?.email ?? "Visitante"}
+          <div className="flex flex-col text-primary">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5" />
+              <span className="font-semibold">ThinkAndTalk</span>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Bem-vindo, {user?.email ?? "Visitante"}
+            </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <Button variant="outline" size="sm" onClick={handleNewScript}>

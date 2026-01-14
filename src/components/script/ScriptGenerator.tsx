@@ -370,11 +370,6 @@ export function ScriptGenerator({
   };
 
   const handleSelectScript = (script: ScriptHistoryItem) => {
-    if (currentScriptId === script.id) {
-      setCurrentScriptId(null);
-      return;
-    }
-
     setCurrentScriptId(script.id);
     onScriptChange(script.script_text);
     setHasStarted(true);

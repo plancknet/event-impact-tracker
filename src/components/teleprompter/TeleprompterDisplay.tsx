@@ -109,6 +109,7 @@ export function TeleprompterDisplay({
   const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
   const [recordingError, setRecordingError] = useState<string | null>(null);
   const [shouldDownload, setShouldDownload] = useState(false);
+  const [recordOrientation, setRecordOrientation] = useState<"portrait" | "landscape">("portrait");
 
   // Notify parent of settings changes
   const notifySettingsChange = useCallback(() => {
@@ -217,8 +218,9 @@ export function TeleprompterDisplay({
     if (mediaStreamRef.current) return;
     setRecordingError(null);
     try {
+      const aspectRatio = recordOrientation == "portrait" ? 9 / 16 : 16 / 9;
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" },
+        video: { facingMode: "user", aspectRatio },
         audio: true,
       });
       mediaStreamRef.current = stream;
@@ -231,7 +233,7 @@ export function TeleprompterDisplay({
       setRecordingError("Não foi possível acessar a câmera.");
       setRecordEnabled(false);
     }
-  }, []);
+  }, [recordOrientation]);
 
   const triggerDownload = useCallback((url: string) => {
     const link = document.createElement("a");
@@ -493,6 +495,13 @@ export function TeleprompterDisplay({
   }, [recordEnabled, ensurePreview, stopPreviewStream, stopRecording, recordedUrl]);
 
   useEffect(() => {
+    if (!recordEnabled) return;
+    stopRecording();
+    stopPreviewStream();
+    void ensurePreview();
+  }, [recordOrientation, recordEnabled, ensurePreview, stopPreviewStream, stopRecording]);
+
+  useEffect(() => {
     return () => {
       stopRecording();
       stopPreviewStream();
@@ -606,27 +615,20 @@ export function TeleprompterDisplay({
                 <RotateCcw className="w-4 h-4 mr-1" />
                 Reiniciar
               </Button>
-              <Button
-                onClick={() => {
-                  if (isRecording) {
-                    setShouldDownload(true);
-                    stopRecording();
-                  }
-                }}
-                size="sm"
-                variant="outline"
-                disabled={!isRecording}
-              >
-                Parar Gravação
-              </Button>
-              {recordedUrl && !isRecording && (
-                <Button asChild size="sm" variant="outline">
-                  <a href={recordedUrl} download="teleprompter.webm">
-                    Salvar vídeo
-                  </a>
+              <div className="flex items-center gap-2 flex-nowrap">
+                <Button
+                  onClick={() => {
+                    if (isRecording) {
+                      setShouldDownload(true);
+                      stopRecording();
+                    }
+                  }}
+                  size="sm"
+                  variant="outline"
+                  disabled={!isRecording}
+                >
+                  Parar Gravação
                 </Button>
-              )}
-              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Checkbox
                   id="recordVideo"
                   checked={recordEnabled}
@@ -642,6 +644,13 @@ export function TeleprompterDisplay({
                   </span>
                 )}
               </div>
+              {recordedUrl && !isRecording && (
+                <Button asChild size="sm" variant="outline">
+                  <a href={recordedUrl} download="teleprompter.webm">
+                    Salvar vídeo
+                  </a>
+                </Button>
+              )}
               <Button
                 onClick={() => setShowControls((prev) => !prev)}
                 size="sm"
@@ -887,7 +896,9 @@ export function TeleprompterDisplay({
         />
 
         {recordEnabled && (
-          <div className="absolute right-4 top-4 z-20 w-36 h-24 rounded-lg border border-white/30 bg-black/40 overflow-hidden">
+          <div
+            className={`absolute right-4 top-4 z-20 rounded-lg border border-white/30 bg-black/40 overflow-hidden ${recordOrientation === "portrait" ? "w-24 h-36" : "w-36 h-24"}`}
+          >
             <video
               ref={previewRef}
               className="h-full w-full object-cover scale-x-[-1]"
