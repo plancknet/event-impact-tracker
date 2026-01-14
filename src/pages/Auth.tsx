@@ -265,7 +265,8 @@ export default function Auth() {
         <section className="space-y-6">
           <h1 className="text-4xl font-semibold leading-tight text-blue-700 md:text-5xl">
             Crie <span className="text-emerald-500">Roteiros</span> para{" "}
-            <span className="text-emerald-500">Vídeos</span> em segundos.
+            <span className="text-emerald-500">Vídeos</span> em segundos, usando{" "}
+            <span className="text-emerald-500">IA</span>.
           </h1>
           <p className="text-base text-slate-600 md:text-lg">
             Centralize suas ideias e transforme pensamentos em falas naturais para vídeos,
