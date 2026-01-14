@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
 const authSchema = z.object({
-  email: z.string().email("Email inv?lido"),
+  email: z.string().email("Email inv\u00e1lido"),
   password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
 });
 
@@ -32,6 +32,7 @@ export default function Auth() {
   const params = new URLSearchParams(location.search);
   const redirectTo = params.get("redirect") || "/";
   const mode = params.get("mode");
+  const isTrialSignup = mode === "signup" && redirectTo.includes("resume=1");
 
   const signInWithGoogle = async () => {
     setError(null);
@@ -90,14 +91,14 @@ export default function Auth() {
         const { error } = await signUp(data.email, data.password);
         if (error) {
           if (error.message.includes("User already registered")) {
-            setError("Este email j? est? cadastrado. Fa?a login.");
+            setError("Este email j\u00e1 est\u00e1 cadastrado. Fa\u00e7a login.");
           } else {
             setError(error.message);
           }
         } else {
           const { error: signInError } = await signIn(data.email, data.password);
           if (signInError) {
-            setError("Conta criada, mas n?o foi poss?vel entrar automaticamente.");
+            setError("Conta criada, mas n\u00e3o foi poss\u00edvel entrar automaticamente.");
             return;
           }
           setSuccessMessage("Conta criada com sucesso!");
@@ -124,6 +125,73 @@ export default function Auth() {
     );
   }
 
+  if (isTrialSignup) {
+    return (
+      <div className="min-h-screen bg-[#f7f9fc] flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md space-y-8">
+          <h1 className="text-center text-3xl font-semibold text-slate-900 md:text-4xl">
+            Crie agora sua <span className="text-emerald-500">conta</span> e obtenha seu{" "}
+            <span className="text-emerald-500">roteiro</span>
+          </h1>
+          <Card className="w-full border border-slate-100 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.4)]">
+            <CardContent className="pt-6">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="seu@email.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Senha</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="******" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {error && (
+                    <p className="text-sm text-destructive text-center">{error}</p>
+                  )}
+
+                  {successMessage && (
+                    <p className="text-sm text-primary text-center">{successMessage}</p>
+                  )}
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    Criar conta
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f7f9fc]">
       <header className="border-b bg-white">
@@ -137,13 +205,13 @@ export default function Auth() {
           <nav className="hidden items-center gap-6 text-sm text-slate-600 md:flex">
             <button className="hover:text-slate-900">Planos</button>
             <button className="hover:text-slate-900">Recursos</button>
-            <button className="flex items-center gap-2 hover:text-slate-900">Portugu?s</button>
+            <button className="flex items-center gap-2 hover:text-slate-900">Portugu\u00eas</button>
           </nav>
           <Button
             className="rounded-full bg-blue-600 px-6 hover:bg-blue-700"
             onClick={() => navigate("/?trial=1")}
           >
-            Testar Gr?tis
+            Testar Gr\u00e1tis
           </Button>
         </div>
       </header>
@@ -152,15 +220,15 @@ export default function Auth() {
         <section className="space-y-6">
           <h1 className="text-4xl font-semibold leading-tight text-blue-700 md:text-5xl">
             Crie <span className="text-emerald-500">Roteiros</span> para{" "}
-            <span className="text-emerald-500">V?deos</span> em segundos.
+            <span className="text-emerald-500">V\u00eddeos</span> em segundos.
           </h1>
           <p className="text-base text-slate-600 md:text-lg">
-            Centralize suas ideias e transforme pensamentos em falas naturais para v?deos,
-            podcasts e apresenta??es.
+            Centralize suas ideias e transforme pensamentos em falas naturais para v\u00eddeos,
+            podcasts e apresenta\u00e7\u00f5es.
           </p>
           <p className="text-base text-slate-600 md:text-lg">
             Crie scripts personalizados para YouTube, Instagram, TikTok, Reels, Shorts,
-            Lives e muito mais ? adaptados ao seu p?blico, tom de voz e objetivo. Rode o
+            Lives e muito mais \u2014 adaptados ao seu p\u00fablico, tom de voz e objetivo. Rode o
             texto em um teleprompter com ajustes fino.
           </p>
         </section>
@@ -174,7 +242,7 @@ export default function Auth() {
               <CardDescription>
                 {isLogin
                   ? "Entre com sua conta para continuar"
-                  : "Crie uma conta para come?ar"}
+                  : "Crie uma conta para come\u00e7ar"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -275,8 +343,8 @@ export default function Auth() {
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
                   {isLogin
-                    ? "N?o tem conta? Criar conta"
-                    : "J? tem conta? Entrar"}
+                    ? "N\u00e3o tem conta? Criar conta"
+                    : "J\u00e1 tem conta? Entrar"}
                 </button>
               </div>
             </CardContent>

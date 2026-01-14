@@ -36,7 +36,7 @@ export function useUserNews() {
   const loadNews = useCallback(async (topic?: string) => {
     if (!user) {
       setIsLoading(false);
-      return newsItems;
+      return [];
     }
 
     setIsLoading(true);
@@ -67,7 +67,7 @@ export function useUserNews() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, newsItems]);
+  }, [user]);
 
   // Fetch news from Google RSS and save to database (or keep locally for guests)
   const fetchAndSaveNews = useCallback(async (topic: string, language: string = "pt-BR") => {
@@ -86,6 +86,7 @@ export function useUserNews() {
             term: topic,
             language: language.split("-")[0] || "pt",
             region: language.split("-")[1]?.toUpperCase() || "BR",
+            allowGuest: true,
           },
         });
 
@@ -132,6 +133,7 @@ export function useUserNews() {
           term: topic,
           language: language.split("-")[0] || "pt",
           region: language.split("-")[1]?.toUpperCase() || "BR",
+          allowGuest: true,
         },
       });
 
