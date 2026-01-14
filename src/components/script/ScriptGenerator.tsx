@@ -106,6 +106,7 @@ export function ScriptGenerator({
   const [scrollTrigger, setScrollTrigger] = useState(0);
   const outputRef = useRef<HTMLDivElement | null>(null);
   const pendingAppliedRef = useRef(false);
+  const skipResetRef = useRef(false);
 
   const {
     newsItems,
@@ -125,6 +126,10 @@ export function ScriptGenerator({
   }, [profile.main_topic, loadNews]);
 
   useEffect(() => {
+    if (skipResetRef.current && pendingGeneration) {
+      skipResetRef.current = false;
+      return;
+    }
     setComplementaryPrompt("");
     setSelectedNewsIds([]);
     setCurrentScriptId(null);
@@ -177,6 +182,7 @@ export function ScriptGenerator({
       setCurrentTone(pendingProfile.speaking_tone);
       setCurrentDuration(pendingProfile.target_duration);
       setCurrentFormat(pendingProfile.video_type);
+      skipResetRef.current = true;
       onApplyProfile(pendingProfile);
       setLocalNewsItems(selectedNews);
 
