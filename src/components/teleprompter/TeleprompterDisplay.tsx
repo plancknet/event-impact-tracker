@@ -202,6 +202,79 @@ export function TeleprompterDisplay({
     }, pauseDurations[pauseType]);
   }, [pauseDurations]);
 
+  const stopPreviewStream = useCallback(() => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+    if (previewRef.current) {
+      previewRef.current.srcObject = null;
+    }
+  }, []);
+
+  const ensurePreview = useCallback(async () => {
+    if (mediaStreamRef.current) return;
+    setRecordingError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: true,
+      });
+      mediaStreamRef.current = stream;
+      if (previewRef.current) {
+        previewRef.current.srcObject = stream;
+        await previewRef.current.play().catch(() => undefined);
+      }
+    } catch (err) {
+      console.error("Failed to access camera:", err);
+      setRecordingError("Não foi possível acessar a câmera.");
+      setRecordEnabled(false);
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+    }
+    setIsRecording(false);
+  }, []);
+
+  const startRecording = useCallback(async () => {
+    await ensurePreview();
+    const stream = mediaStreamRef.current;
+    if (!stream || isRecording) return;
+
+    recordedChunksRef.current = [];
+    if (recordedUrl) {
+      URL.revokeObjectURL(recordedUrl);
+      setRecordedUrl(null);
+    }
+
+    try {
+      const recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+        latestRecordedUrlRef.current = url;
+        setRecordedUrl(url);
+        setIsRecording(false);
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Failed to start recording:", err);
+      setRecordingError("Não foi possível iniciar a gravação.");
+      setIsRecording(false);
+    }
+  }, [ensurePreview, isRecording, recordedUrl]);
+
   // Animate scrolling
   const animate = useCallback((timestamp: number) => {
     if (!lastTimeRef.current) lastTimeRef.current = timestamp;
@@ -346,79 +419,6 @@ export function TeleprompterDisplay({
       ...(pauseType === "pause-medium" ? { "pause": nextMs } : {}),
     }));
   };
-
-  const stopPreviewStream = useCallback(() => {
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-      mediaStreamRef.current = null;
-    }
-    if (previewRef.current) {
-      previewRef.current.srcObject = null;
-    }
-  }, []);
-
-  const ensurePreview = useCallback(async () => {
-    if (mediaStreamRef.current) return;
-    setRecordingError(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" },
-        audio: true,
-      });
-      mediaStreamRef.current = stream;
-      if (previewRef.current) {
-        previewRef.current.srcObject = stream;
-        await previewRef.current.play().catch(() => undefined);
-      }
-    } catch (err) {
-      console.error("Failed to access camera:", err);
-      setRecordingError("Não foi possível acessar a câmera.");
-      setRecordEnabled(false);
-    }
-  }, []);
-
-  const stopRecording = useCallback(() => {
-    const recorder = mediaRecorderRef.current;
-    if (recorder && recorder.state !== "inactive") {
-      recorder.stop();
-    }
-    setIsRecording(false);
-  }, []);
-
-  const startRecording = useCallback(async () => {
-    await ensurePreview();
-    const stream = mediaStreamRef.current;
-    if (!stream || isRecording) return;
-
-    recordedChunksRef.current = [];
-    if (recordedUrl) {
-      URL.revokeObjectURL(recordedUrl);
-      setRecordedUrl(null);
-    }
-
-    try {
-      const recorder = new MediaRecorder(stream);
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
-      recorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
-        latestRecordedUrlRef.current = url;
-        setRecordedUrl(url);
-        setIsRecording(false);
-      };
-      recorder.start();
-      mediaRecorderRef.current = recorder;
-      setIsRecording(true);
-    } catch (err) {
-      console.error("Failed to start recording:", err);
-      setRecordingError("Não foi possível iniciar a gravação.");
-      setIsRecording(false);
-    }
-  }, [ensurePreview, isRecording, recordedUrl]);
 
   const toggleFullscreen = async () => {
     if (!document.fullscreenElement) {
