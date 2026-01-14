@@ -541,7 +541,7 @@ export function TeleprompterDisplay({
         const isLongPause = part.pauseType === "pause-long";
         if (showPauseTags) {
           return (
-            <span key={index} className={isLongPause ? "block my-4" : "inline"}>
+            <span key={index} className={isLongPause ? "block mt-4" : "inline"}>
               {isLongPause ? <span className="block h-4" /> : null}
               <span
                 data-pause={part.pauseType}
@@ -549,18 +549,16 @@ export function TeleprompterDisplay({
               >
                 {pauseLabel}
               </span>
-              {isLongPause ? <span className="block h-4" /> : null}
             </span>
           );
         }
         return (
-          <span key={index} className={isLongPause ? "block my-4" : "inline"}>
+          <span key={index} className={isLongPause ? "block mt-4" : "inline"}>
             {isLongPause ? <span className="block h-4" /> : null}
             <span
               data-pause={part.pauseType}
               className="inline-block w-0 h-0"
             />
-            {isLongPause ? <span className="block h-4" /> : null}
           </span>
         );
       }

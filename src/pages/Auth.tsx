@@ -241,15 +241,7 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-[#f7f9fc]">
       <header className="border-b bg-white">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-3">
-            <img
-              src="/imgs/TAT_Logo_sem_fundo_500px.png"
-              alt="ThinkAndTalk"
-              className="h-10 w-auto"
-            />
-            <span className="text-xl font-semibold text-blue-800">ThinkAndTalk</span>
-          </div>
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-end px-4 py-4">
           <nav className="hidden items-center gap-6 text-sm text-slate-600 md:flex">
             <button className="hover:text-slate-900">Planos</button>
             <button className="hover:text-slate-900">Recursos</button>
@@ -266,6 +258,14 @@ export default function Auth() {
 
       <main className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 py-12 md:grid-cols-[1.2fr_1fr] md:py-16">
         <section className="space-y-6">
+          <div className="flex items-center gap-3">
+            <img
+              src="/imgs/TAT_Logo_sem_fundo_500px.png"
+              alt="ThinkAndTalk"
+              className="h-12 w-auto"
+            />
+            <span className="text-2xl font-semibold text-blue-800">ThinkAndTalk</span>
+          </div>
           <h1 className="text-4xl font-semibold leading-tight text-blue-700 md:text-5xl">
             Crie <span className="text-emerald-500">Roteiros</span> para{" "}
             <span className="text-emerald-500">Vídeos</span> em segundos.
