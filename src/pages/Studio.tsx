@@ -179,17 +179,22 @@ export default function Studio() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("resume") !== "1") return;
+    // Wait for user to be authenticated before resuming
+    if (!user) return;
     const raw = sessionStorage.getItem("pendingScriptGeneration");
     if (!raw) return;
     try {
       const parsed = JSON.parse(raw) as PendingGeneration;
-      setPendingGeneration(parsed);
-      setShowOnboarding(false);
-      setOnboardingStep(6);
+      // Save profile from pending generation to DB before proceeding
+      saveProfile(parsed.profile).then(() => {
+        setPendingGeneration(parsed);
+        setShowOnboarding(false);
+        setOnboardingStep(6);
+      });
     } catch (err) {
       console.error("Failed to parse pending generation:", err);
     }
-  }, [location.search]);
+  }, [location.search, user, saveProfile]);
 
   const handlePendingGenerationHandled = () => {
     sessionStorage.removeItem("pendingScriptGeneration");
