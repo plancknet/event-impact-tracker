@@ -260,11 +260,10 @@ export default function Auth() {
         <section className="space-y-6">
           <div className="flex items-center gap-3">
             <img
-              src="/imgs/TAT_Logo_sem_fundo_500px.png"
+              src="/imgs/ThinkAndTalk.png"
               alt="ThinkAndTalk"
-              className="h-12 w-auto"
+              className="h-10 w-auto sm:h-12"
             />
-            <span className="text-2xl font-semibold text-blue-800">ThinkAndTalk</span>
           </div>
           <h1 className="text-4xl font-semibold leading-tight text-blue-700 md:text-5xl">
             Crie <span className="text-emerald-500">Roteiros</span> para{" "}

@@ -243,11 +243,10 @@ export default function Studio() {
           <div className="flex flex-col text-primary">
             <div className="flex items-center gap-3">
               <img
-                src="/imgs/TAT_Logo_sem_fundo_500px.png"
+                src="/imgs/ThinkAndTalk.png"
                 alt="ThinkAndTalk"
-                className="h-10 w-auto"
+                className="h-8 w-auto sm:h-10"
               />
-              <span className="font-semibold">ThinkAndTalk</span>
             </div>
             <div className="text-sm text-muted-foreground">
               Bem-vindo, {user?.email ?? "Visitante"}
