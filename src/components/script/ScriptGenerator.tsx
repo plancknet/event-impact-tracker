@@ -166,18 +166,21 @@ export function ScriptGenerator({
 
   useEffect(() => {
     if (!pendingGeneration || pendingAppliedRef.current) return;
+    // Only proceed if user is logged in
+    if (!user) return;
     pendingAppliedRef.current = true;
 
     const applyPending = async () => {
       const {
         profile: pendingProfile,
         selectedNews,
-        selectedNewsIds,
+        selectedNewsIds: pendingNewsIds,
         complementaryPrompt: pendingPrompt,
       } = pendingGeneration;
 
+      // Set UI state first
       setHasStarted(true);
-      setSelectedNewsIds(selectedNewsIds);
+      setSelectedNewsIds(pendingNewsIds);
       setComplementaryPrompt(pendingPrompt || "");
       setCurrentTone(pendingProfile.speaking_tone);
       setCurrentDuration(pendingProfile.target_duration);
@@ -185,6 +188,9 @@ export function ScriptGenerator({
       skipResetRef.current = true;
       onApplyProfile(pendingProfile);
       setLocalNewsItems(selectedNews);
+
+      // Small delay to ensure state is settled
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const result = await onGenerate(
         undefined,
@@ -207,6 +213,7 @@ export function ScriptGenerator({
     onGenerate,
     onPendingGenerationHandled,
     setLocalNewsItems,
+    user,
   ]);
 
   const handleStartCreating = async () => {
