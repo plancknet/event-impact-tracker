@@ -12,10 +12,31 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
-const authSchema = z.object({
-  email: z.string().email("Email invÃ¡lido"),
-  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
-});
+const authSchema = z
+  .object({
+    mode: z.enum(["login", "signup"]),
+    email: z.string().email("Email inválido"),
+    password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
+    confirmPassword: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.mode !== "signup") return;
+    if (!data.confirmPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["confirmPassword"],
+        message: "Confirme a senha.",
+      });
+      return;
+    }
+    if (data.password !== data.confirmPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["confirmPassword"],
+        message: "As senhas não conferem.",
+      });
+    }
+  });
 
 type AuthFormData = z.infer<typeof authSchema>;
 
@@ -55,8 +76,10 @@ export default function Auth() {
   const form = useForm<AuthFormData>({
     resolver: zodResolver(authSchema),
     defaultValues: {
+      mode: "login",
       email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
@@ -65,6 +88,13 @@ export default function Auth() {
       setIsLogin(false);
     }
   }, [mode]);
+
+  useEffect(() => {
+    form.setValue("mode", isLogin ? "login" : "signup");
+    if (isLogin) {
+      form.clearErrors("confirmPassword");
+    }
+  }, [isLogin, form]);
 
   useEffect(() => {
     if (!loading && user) {
@@ -91,14 +121,14 @@ export default function Auth() {
         const { error } = await signUp(data.email, data.password);
         if (error) {
           if (error.message.includes("User already registered")) {
-            setError("Este email jÃ¡ estÃ¡ cadastrado. FaÃ§a login.");
+            setError("Este email já está cadastrado. Faça login.");
           } else {
             setError(error.message);
           }
         } else {
           const { error: signInError } = await signIn(data.email, data.password);
           if (signInError) {
-            setError("Conta criada, mas nÃ£o foi possÃ­vel entrar automaticamente.");
+            setError("Conta criada, mas não foi possível entrar automaticamente.");
             return;
           }
           setSuccessMessage("Conta criada com sucesso!");
@@ -165,6 +195,22 @@ export default function Auth() {
                     )}
                   />
 
+                  {!isLogin && (
+                    <FormField
+                      control={form.control}
+                      name="confirmPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Confirmar senha</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="******" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
                   {error && (
                     <p className="text-sm text-destructive text-center">{error}</p>
                   )}
@@ -205,13 +251,13 @@ export default function Auth() {
           <nav className="hidden items-center gap-6 text-sm text-slate-600 md:flex">
             <button className="hover:text-slate-900">Planos</button>
             <button className="hover:text-slate-900">Recursos</button>
-            <button className="flex items-center gap-2 hover:text-slate-900">PortuguÃªs</button>
+            <button className="flex items-center gap-2 hover:text-slate-900">Português</button>
           </nav>
           <Button
             className="rounded-full bg-blue-600 px-6 hover:bg-blue-700"
             onClick={() => navigate("/?trial=1")}
           >
-            Testar GrÃ¡tis
+            Testar Grátis
           </Button>
         </div>
       </header>
@@ -220,15 +266,15 @@ export default function Auth() {
         <section className="space-y-6">
           <h1 className="text-4xl font-semibold leading-tight text-blue-700 md:text-5xl">
             Crie <span className="text-emerald-500">Roteiros</span> para{" "}
-            <span className="text-emerald-500">VÃ­deos</span> em segundos.
+            <span className="text-emerald-500">Vídeos</span> em segundos.
           </h1>
           <p className="text-base text-slate-600 md:text-lg">
-            Centralize suas ideias e transforme pensamentos em falas naturais para vÃ­deos,
-            podcasts e apresentaÃ§Ãµes.
+            Centralize suas ideias e transforme pensamentos em falas naturais para vídeos,
+            podcasts e apresentações.
           </p>
           <p className="text-base text-slate-600 md:text-lg">
             Crie scripts personalizados para YouTube, Instagram, TikTok, Reels, Shorts,
-            Lives e muito mais â€” adaptados ao seu pÃºblico, tom de voz e objetivo. Rode o
+            Lives e muito mais — adaptados ao seu público, tom de voz e objetivo. Rode o
             texto em um teleprompter com ajustes fino.
           </p>
         </section>
@@ -242,7 +288,7 @@ export default function Auth() {
               <CardDescription>
                 {isLogin
                   ? "Entre com sua conta para continuar"
-                  : "Crie uma conta para comeÃ§ar"}
+                  : "Crie uma conta para começar"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -275,6 +321,22 @@ export default function Auth() {
                       </FormItem>
                     )}
                   />
+
+                  {!isLogin && (
+                    <FormField
+                      control={form.control}
+                      name="confirmPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Confirmar senha</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="******" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   {error && (
                     <p className="text-sm text-destructive text-center">{error}</p>
@@ -343,8 +405,8 @@ export default function Auth() {
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
                   {isLogin
-                    ? "NÃ£o tem conta? Criar conta"
-                    : "JÃ¡ tem conta? Entrar"}
+                    ? "Não tem conta? Criar conta"
+                    : "Já tem conta? Entrar"}
                 </button>
               </div>
             </CardContent>

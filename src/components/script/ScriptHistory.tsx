@@ -7,6 +7,7 @@ import {
   Search,
   ChevronDown,
   FileText,
+  Monitor,
   Trash2,
   ArrowUpDown,
 } from "lucide-react";
@@ -31,6 +32,7 @@ interface ScriptHistoryItem {
 interface ScriptHistoryProps {
   currentScriptId: string | null;
   onSelectScript: (script: ScriptHistoryItem) => void;
+  onOpenTeleprompter?: (script: ScriptHistoryItem) => void;
   onDeleteScript?: (id: string) => void;
   refreshTrigger?: number;
   expandTrigger?: number;
@@ -53,6 +55,7 @@ const getTopicFromParams = (value: unknown): string => {
 export function ScriptHistory({
   currentScriptId,
   onSelectScript,
+  onOpenTeleprompter,
   onDeleteScript,
   refreshTrigger,
   expandTrigger,
@@ -286,7 +289,20 @@ export function ScriptHistory({
                         <div className="text-xs text-muted-foreground">
                           {format(new Date(script.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                         </div>
-                        <div className="flex justify-end">
+                        <div className="flex justify-end gap-2">
+                          {onOpenTeleprompter && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenTeleprompter(script);
+                              }}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Monitor className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"

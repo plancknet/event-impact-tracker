@@ -565,15 +565,7 @@ export function TeleprompterDisplay({
         );
       }
       if (part.type === "topic") {
-        return (
-          <div key={index} className="my-4">
-            <div className="h-4" />
-            <span className="inline-block px-2 py-1 rounded text-sm bg-purple-500/30 text-purple-300">
-              Mudança de assunto
-            </span>
-            <div className="h-4" />
-          </div>
-        );
+        return null;
       }
       return <span key={index}>{part.content}</span>;
     });

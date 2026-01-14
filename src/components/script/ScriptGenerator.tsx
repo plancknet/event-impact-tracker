@@ -391,6 +391,11 @@ export function ScriptGenerator({
     applyParametersToProfile(params);
   };
 
+  const handleOpenTeleprompter = (script: ScriptHistoryItem) => {
+    handleSelectScript(script);
+    onOpenTeleprompter();
+  };
+
   const handleDeleteScript = (id: string) => {
     if (currentScriptId === id) {
       setCurrentScriptId(null);
@@ -403,6 +408,7 @@ export function ScriptGenerator({
       <ScriptHistory
         currentScriptId={currentScriptId}
         onSelectScript={handleSelectScript}
+        onOpenTeleprompter={handleOpenTeleprompter}
         onDeleteScript={handleDeleteScript}
         refreshTrigger={historyRefreshTrigger}
         expandTrigger={historyExpandTrigger || undefined}
