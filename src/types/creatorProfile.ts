@@ -48,27 +48,27 @@ export const DEFAULT_CREATOR_PROFILE: CreatorProfile = {
 };
 
 export const EXPERTISE_OPTIONS = [
-  { value: "iniciante", label: "Iniciante", description: "Come\u00e7ando na \u00e1rea" },
-  { value: "intermediario", label: "Intermedi\u00e1rio", description: "Experi\u00eancia moderada" },
-  { value: "avancado", label: "Avan\u00e7ado", description: "Conhecimento profundo" },
-  { value: "especialista", label: "Especialista", description: "Refer\u00eancia na \u00e1rea" },
+  { value: "iniciante", label: "Iniciante", description: "Começando na área" },
+  { value: "intermediario", label: "Intermediário", description: "Experiência moderada" },
+  { value: "avancado", label: "Avançado", description: "Conhecimento profundo" },
+  { value: "especialista", label: "Especialista", description: "Referência na área" },
 ];
 
 export const AUDIENCE_TYPE_OPTIONS = [
-  { value: "publico_geral", label: "P\u00fablico geral", description: "Audi\u00eancia ampla" },
-  { value: "criadores", label: "Criadores", description: "Criadores de conte\u00fado" },
-  { value: "empreendedores", label: "Empreendedores", description: "Donos de neg\u00f3cio" },
+  { value: "publico_geral", label: "Público geral", description: "Audiência ampla" },
+  { value: "criadores", label: "Criadores", description: "Criadores de conteúdo" },
+  { value: "empreendedores", label: "Empreendedores", description: "Donos de negócio" },
   { value: "estudantes", label: "Estudantes", description: "Pessoas em aprendizado" },
-  { value: "profissionais", label: "Profissionais", description: "Trabalhadores da \u00e1rea" },
+  { value: "profissionais", label: "Profissionais", description: "Trabalhadores da área" },
   { value: "investidores", label: "Investidores", description: "Pessoas com capital" },
 ];
 
 export const VIDEO_TYPE_OPTIONS = [
-  { value: "video_curto", label: "V\u00eddeo curto (Reels/Shorts)", description: "At\u00e9 60 segundos" },
-  { value: "video_medio", label: "V\u00eddeo m\u00e9dio", description: "1-5 minutos" },
-  { value: "video_longo", label: "V\u00eddeo longo", description: "Mais de 5 minutos" },
-  { value: "podcast", label: "Podcast", description: "\u00c1udio longo" },
-  { value: "live", label: "Live/Transmiss\u00e3o", description: "Ao vivo" },
+  { value: "video_curto", label: "Vídeo curto (Reels/Shorts)", description: "Até 60 segundos" },
+  { value: "video_medio", label: "Vídeo médio", description: "1-5 minutos" },
+  { value: "video_longo", label: "Vídeo longo", description: "Mais de 5 minutos" },
+  { value: "podcast", label: "Podcast", description: "Áudio longo" },
+  { value: "live", label: "Live/Transmissão", description: "Ao vivo" },
 ];
 
 export const DURATION_OPTIONS = [
@@ -89,45 +89,45 @@ export const PLATFORM_OPTIONS = [
 ];
 
 export const TONE_OPTIONS = [
-  { value: "conversacional", label: "Conversacional", description: "Tom amig\u00e1vel" },
+  { value: "conversacional", label: "Conversacional", description: "Tom amigável" },
   { value: "profissional", label: "Profissional", description: "Tom formal" },
   { value: "entusiasmado", label: "Entusiasmado", description: "Tom animado" },
-  { value: "didatico", label: "Did\u00e1tico", description: "Tom educativo" },
-  { value: "humoristico", label: "Humor\u00edstico", description: "Tom divertido" },
+  { value: "didatico", label: "Didático", description: "Tom educativo" },
+  { value: "humoristico", label: "Humorístico", description: "Tom divertido" },
   { value: "inspirador", label: "Inspirador", description: "Tom motivacional" },
-  { value: "jornalistico", label: "Jornal\u00edstico", description: "Tom informativo" },
+  { value: "jornalistico", label: "Jornalístico", description: "Tom informativo" },
 ];
 
 export const ENERGY_OPTIONS = [
   { value: "baixo", label: "Baixa energia", description: "Calmo e tranquilo" },
-  { value: "medio", label: "M\u00e9dia energia", description: "Equilibrado" },
-  { value: "alto", label: "Alta energia", description: "Din\u00e2mico e intenso" },
+  { value: "medio", label: "Média energia", description: "Equilibrado" },
+  { value: "alto", label: "Alta energia", description: "Dinâmico e intenso" },
 ];
 
 export const GOAL_OPTIONS = [
-  { value: "informar", label: "Informar", description: "Compartilhar not\u00edcias", icon: "Info" },
+  { value: "informar", label: "Informar", description: "Compartilhar notícias", icon: "Info" },
   { value: "educar", label: "Educar", description: "Ensinar conceitos", icon: "GraduationCap" },
-  { value: "entreter", label: "Entreter", description: "Divertir audi\u00eancia", icon: "Smile" },
+  { value: "entreter", label: "Entreter", description: "Divertir audiência", icon: "Smile" },
   { value: "inspirar", label: "Inspirar", description: "Motivar pessoas", icon: "Sparkles" },
   { value: "vender", label: "Vender", description: "Promover produtos", icon: "ShoppingBag" },
   { value: "engajar", label: "Engajar", description: "Criar comunidade", icon: "Users" },
 ];
 
 export const LANGUAGE_OPTIONS = [
-  { value: "Portuguese", label: "Portugu\u00eas" },
-  { value: "English", label: "Ingl\u00eas" },
+  { value: "Portuguese", label: "Português" },
+  { value: "English", label: "Inglês" },
   { value: "Spanish", label: "Espanhol" },
-  { value: "French", label: "Franc\u00eas" },
-  { value: "German", label: "Alem\u00e3o" },
+  { value: "French", label: "Francês" },
+  { value: "German", label: "Alemão" },
   { value: "Italian", label: "Italiano" },
 ];
 
 export const NEWS_LANGUAGE_OPTIONS = [
-  { value: "pt-BR", label: "Portugu\u00eas (Brasil)" },
-  { value: "en-US", label: "Ingl\u00eas (EUA)" },
-  { value: "en-GB", label: "Ingl\u00eas (UK)" },
+  { value: "pt-BR", label: "Português (Brasil)" },
+  { value: "en-US", label: "Inglês (EUA)" },
+  { value: "en-GB", label: "Inglês (UK)" },
   { value: "es-ES", label: "Espanhol" },
-  { value: "fr-FR", label: "Franc\u00eas" },
-  { value: "de-DE", label: "Alem\u00e3o" },
+  { value: "fr-FR", label: "Francês" },
+  { value: "de-DE", label: "Alemão" },
   { value: "it-IT", label: "Italiano" },
 ];

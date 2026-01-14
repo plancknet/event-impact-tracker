@@ -251,7 +251,7 @@ export default function Studio() {
             <OnboardingProgress
               currentStep={onboardingStep}
               totalSteps={6}
-              stepLabels={["Voc\u00EA", "P\u00FAblico", "Formato", "Estilo", "Not\u00EDcias", "Roteiros"]}
+              stepLabels={["Você", "Público", "Formato", "Estilo", "Notícias", "Roteiros"]}
               onStepChange={handleStepChange}
               orientation="horizontal"
             />
@@ -263,7 +263,7 @@ export default function Studio() {
             <OnboardingProgress
               currentStep={onboardingStep}
               totalSteps={6}
-              stepLabels={["Voc\u00EA", "P\u00FAblico", "Formato", "Estilo", "Not\u00EDcias", "Roteiros"]}
+              stepLabels={["Você", "Público", "Formato", "Estilo", "Notícias", "Roteiros"]}
               onStepChange={handleStepChange}
               orientation="vertical"
             />
