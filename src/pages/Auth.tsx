@@ -269,13 +269,9 @@ export default function Auth() {
             <span className="text-emerald-500">IA</span>.
           </h1>
           <p className="text-base text-slate-600 md:text-lg">
-            Centralize suas ideias e transforme pensamentos em falas naturais para vídeos,
-            podcasts e apresentações.
-          </p>
-          <p className="text-base text-slate-600 md:text-lg">
-            Crie scripts personalizados para YouTube, Instagram, TikTok, Reels, Shorts,
-            Lives e muito mais  adaptados ao seu público, tom de voz e objetivo. Rode o
-            texto em um teleprompter com ajustes fino.
+            Crie roteiros personalizados para YouTube, Instagram, TikTok, Reels, Shorts,
+            Lives e muito mais, adaptados ao seu público, tom de voz e objetivo. Rode o
+            texto em um teleprompter com ajustes finos.
           </p>
         </section>
 
@@ -415,4 +411,5 @@ export default function Auth() {
       </main>
     </div>
   );
-}
+}
+
