@@ -50,13 +50,17 @@ serve(async (req) => {
 
       const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
       if (claimsError || !claimsData?.claims) {
-        return new Response(
-          JSON.stringify({ error: 'Unauthorized', xml: '' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        if (allowGuest) {
+          userId = "guest";
+        } else {
+          return new Response(
+            JSON.stringify({ error: 'Unauthorized', xml: '' }),
+            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } else {
+        userId = claimsData.claims.sub;
       }
-
-      userId = claimsData.claims.sub;
     } else if (!allowGuest) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized', xml: '' }),
