@@ -218,7 +218,11 @@ export default function Studio() {
   if (showTeleprompter && generatedScript) {
     return (
       <div className="fixed inset-0 z-50 bg-black">
-        <TeleprompterDisplay script={generatedScript} settings={DEFAULT_TELEPROMPTER_SETTINGS} />
+        <TeleprompterDisplay
+          script={generatedScript}
+          settings={DEFAULT_TELEPROMPTER_SETTINGS}
+          onBack={() => setShowTeleprompter(false)}
+        />
         <Button
           variant="ghost"
           size="sm"

@@ -108,6 +108,7 @@ export function TeleprompterDisplay({
   const [isRecording, setIsRecording] = useState(false);
   const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
   const [recordingError, setRecordingError] = useState<string | null>(null);
+  const [shouldDownload, setShouldDownload] = useState(false);
 
   // Notify parent of settings changes
   const notifySettingsChange = useCallback(() => {
@@ -232,6 +233,15 @@ export function TeleprompterDisplay({
     }
   }, []);
 
+  const triggerDownload = useCallback((url: string) => {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "teleprompter.webm";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }, []);
+
   const stopRecording = useCallback(() => {
     const recorder = mediaRecorderRef.current;
     if (recorder && recorder.state !== "inactive") {
@@ -264,6 +274,10 @@ export function TeleprompterDisplay({
         latestRecordedUrlRef.current = url;
         setRecordedUrl(url);
         setIsRecording(false);
+        if (shouldDownload) {
+          setShouldDownload(false);
+          triggerDownload(url);
+        }
       };
       recorder.start();
       mediaRecorderRef.current = recorder;
@@ -273,7 +287,7 @@ export function TeleprompterDisplay({
       setRecordingError("Não foi possível iniciar a gravação.");
       setIsRecording(false);
     }
-  }, [ensurePreview, isRecording, recordedUrl]);
+  }, [ensurePreview, isRecording, recordedUrl, shouldDownload, triggerDownload]);
 
   // Animate scrolling
   const animate = useCallback((timestamp: number) => {
@@ -377,9 +391,15 @@ export function TeleprompterDisplay({
       setIsPaused(false);
       setIsUserPaused(false);
       setCurrentPause(null);
+      if (mediaRecorderRef.current?.state === "paused") {
+        mediaRecorderRef.current.resume();
+      }
     } else {
       setIsPaused(true);
       setIsUserPaused(true);
+      if (mediaRecorderRef.current?.state === "recording") {
+        mediaRecorderRef.current.pause();
+      }
     }
   };
 
@@ -389,6 +409,7 @@ export function TeleprompterDisplay({
     setIsUserPaused(false);
     setCurrentPause(null);
     stopRecording();
+    setShouldDownload(false);
     if (recordedUrl) {
       URL.revokeObjectURL(recordedUrl);
       setRecordedUrl(null);
@@ -427,6 +448,7 @@ export function TeleprompterDisplay({
     } else {
       await document.exitFullscreen();
       setIsFullscreen(false);
+      onBack?.();
     }
   };
 
@@ -458,6 +480,7 @@ export function TeleprompterDisplay({
   useEffect(() => {
     if (!recordEnabled) {
       stopRecording();
+      setShouldDownload(false);
       stopPreviewStream();
       setRecordingError(null);
       if (recordedUrl) {
@@ -506,31 +529,31 @@ export function TeleprompterDisplay({
               return "bg-yellow-500/30 text-yellow-300";
           }
         })();
+        const isLongPause = part.pauseType === "pause-long";
         if (showPauseTags) {
           return (
-            <div key={index} className="my-4">
-              <div className="h-4" /> {/* Line break before */}
+            <span key={index} className={isLongPause ? "block my-4" : "inline"}>
+              {isLongPause ? <span className="block h-4" /> : null}
               <span
                 data-pause={part.pauseType}
                 className={`inline-block px-2 py-1 rounded text-sm ${pauseClass}`}
               >
                 {pauseLabel}
               </span>
-              <div className="h-4" /> {/* Line break after */}
-            </div>
-          );
-        } else {
-          return (
-            <div key={index} className="my-4">
-              <div className="h-4" />
-              <span
-                data-pause={part.pauseType}
-                className="inline-block w-0 h-0"
-              />
-              <div className="h-4" />
-            </div>
+              {isLongPause ? <span className="block h-4" /> : null}
+            </span>
           );
         }
+        return (
+          <span key={index} className={isLongPause ? "block my-4" : "inline"}>
+            {isLongPause ? <span className="block h-4" /> : null}
+            <span
+              data-pause={part.pauseType}
+              className="inline-block w-0 h-0"
+            />
+            {isLongPause ? <span className="block h-4" /> : null}
+          </span>
+        );
       }
       if (part.type === "topic") {
         return (
@@ -562,7 +585,7 @@ export function TeleprompterDisplay({
       <Card className={`mb-4 ${isFullscreen ? "bg-background/80 backdrop-blur" : ""}`}>
         <CardContent className="py-3">
           <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {onBack && (
                 <Button onClick={onBack} size="sm" variant="outline">
                   Voltar
@@ -583,6 +606,19 @@ export function TeleprompterDisplay({
                 <RotateCcw className="w-4 h-4 mr-1" />
                 Reiniciar
               </Button>
+              <Button
+                onClick={() => {
+                  if (isRecording) {
+                    setShouldDownload(true);
+                    stopRecording();
+                  }
+                }}
+                size="sm"
+                variant="outline"
+                disabled={!isRecording}
+              >
+                Parar Gravação
+              </Button>
               {recordedUrl && !isRecording && (
                 <Button asChild size="sm" variant="outline">
                   <a href={recordedUrl} download="teleprompter.webm">
@@ -590,6 +626,22 @@ export function TeleprompterDisplay({
                   </a>
                 </Button>
               )}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Checkbox
+                  id="recordVideo"
+                  checked={recordEnabled}
+                  onCheckedChange={(value) => setRecordEnabled(Boolean(value))}
+                />
+                <Label htmlFor="recordVideo" className="text-sm">
+                  Gravar vídeo
+                </Label>
+                {isRecording && (
+                  <span className="flex items-center gap-1 text-xs text-red-500">
+                    <span className="h-2 w-2 rounded-full bg-red-500" />
+                    REC
+                  </span>
+                )}
+              </div>
               <Button
                 onClick={() => setShowControls((prev) => !prev)}
                 size="sm"
@@ -630,22 +682,6 @@ export function TeleprompterDisplay({
               <Button onClick={toggleFullscreen} size="sm" variant="outline">
                 {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
               </Button>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="recordVideo"
-                  checked={recordEnabled}
-                  onCheckedChange={(value) => setRecordEnabled(Boolean(value))}
-                />
-                <Label htmlFor="recordVideo" className="text-sm">
-                  Gravar vídeo
-                </Label>
-                {isRecording && (
-                  <span className="flex items-center gap-1 text-xs text-red-500">
-                    <span className="h-2 w-2 rounded-full bg-red-500" />
-                    REC
-                  </span>
-                )}
-              </div>
             </div>
           </div>
 
