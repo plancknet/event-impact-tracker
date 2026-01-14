@@ -256,10 +256,16 @@ export default function Studio() {
             <Button variant="outline" size="sm" onClick={handleNewScript}>
               Novo roteiro
             </Button>
-            <Button variant="outline" size="sm" onClick={handleViewScripts}>
+            <Button variant="outline" size="sm" onClick={handleViewScripts} disabled={!user}>
               Meus Roteiros
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => signOut()} className="gap-2 whitespace-nowrap">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => signOut()}
+              className="gap-2 whitespace-nowrap"
+              disabled={!user}
+            >
               <LogOut className="w-4 h-4" />
               Sair
             </Button>
@@ -271,13 +277,13 @@ export default function Studio() {
       <main className="container max-w-6xl mx-auto px-4 py-8">
         <div className="md:hidden sticky top-[72px] z-30 bg-background/95 backdrop-blur border-b mb-6">
           <div className="py-3">
-            <OnboardingProgress
-              currentStep={onboardingStep}
-              totalSteps={6}
-              stepLabels={["Você", "Público", "Formato", "Estilo", "Notícias", "Roteiros"]}
-              onStepChange={handleStepChange}
-              orientation="horizontal"
-            />
+              <OnboardingProgress
+                currentStep={onboardingStep}
+                totalSteps={6}
+                stepLabels={["Você", "Público", "Formato", "Estilo", "Objetivo", "Roteiros"]}
+                onStepChange={handleStepChange}
+                orientation="horizontal"
+              />
           </div>
         </div>
 
@@ -286,7 +292,7 @@ export default function Studio() {
             <OnboardingProgress
               currentStep={onboardingStep}
               totalSteps={6}
-              stepLabels={["Você", "Público", "Formato", "Estilo", "Notícias", "Roteiros"]}
+              stepLabels={["Você", "Público", "Formato", "Estilo", "Objetivo", "Roteiros"]}
               onStepChange={handleStepChange}
               orientation="vertical"
             />

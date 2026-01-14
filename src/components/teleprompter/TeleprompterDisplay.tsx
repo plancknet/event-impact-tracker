@@ -220,8 +220,19 @@ export function TeleprompterDisplay({
     try {
       const aspectRatio = recordOrientation == "portrait" ? 9 / 16 : 16 / 9;
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", aspectRatio },
-        audio: true,
+        video: {
+          facingMode: "user",
+          aspectRatio,
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          frameRate: { ideal: 30, max: 60 },
+        },
+        audio: {
+          channelCount: 2,
+          sampleRate: 48000,
+          echoCancellation: false,
+          noiseSuppression: false,
+        },
       });
       mediaStreamRef.current = stream;
       if (previewRef.current) {
@@ -235,10 +246,15 @@ export function TeleprompterDisplay({
     }
   }, [recordOrientation]);
 
-  const triggerDownload = useCallback((url: string) => {
+  const triggerDownload = useCallback((url: string, mimeType: string) => {
+    const extension = mimeType.includes("mp4")
+      ? "mp4"
+      : mimeType.includes("mpeg")
+        ? "mpeg"
+        : "webm";
     const link = document.createElement("a");
     link.href = url;
-    link.download = "teleprompter.webm";
+    link.download = `teleprompter.${extension}`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -264,21 +280,43 @@ export function TeleprompterDisplay({
     }
 
     try {
-      const recorder = new MediaRecorder(stream);
+      const preferredTypes = [
+        "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+        "video/mp4",
+        "video/mpeg",
+        "video/webm;codecs=vp9,opus",
+        "video/webm;codecs=vp8,opus",
+        "video/webm",
+      ];
+      const mimeType = preferredTypes.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+      const recorder = new MediaRecorder(
+        stream,
+        mimeType
+          ? {
+              mimeType,
+              videoBitsPerSecond: 8_000_000,
+              audioBitsPerSecond: 192_000,
+            }
+          : {
+              videoBitsPerSecond: 8_000_000,
+              audioBitsPerSecond: 192_000,
+            }
+      );
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           recordedChunksRef.current.push(event.data);
         }
       };
       recorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+        const finalType = recorder.mimeType || "video/webm";
+        const blob = new Blob(recordedChunksRef.current, { type: finalType });
         const url = URL.createObjectURL(blob);
         latestRecordedUrlRef.current = url;
         setRecordedUrl(url);
         setIsRecording(false);
         if (shouldDownload) {
           setShouldDownload(false);
-          triggerDownload(url);
+          triggerDownload(url, finalType);
         }
       };
       recorder.start();
