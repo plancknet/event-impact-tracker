@@ -241,7 +241,12 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-[#f7f9fc]">
       <header className="border-b bg-white">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-end px-4 py-4">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4">
+          <img
+            src="/imgs/ThinkAndTalk.png"
+            alt="ThinkAndTalk"
+            className="h-8 w-auto sm:h-10"
+          />
           <nav className="hidden items-center gap-6 text-sm text-slate-600 md:flex">
             <button className="hover:text-slate-900">Planos</button>
             <button className="hover:text-slate-900">Recursos</button>
@@ -258,13 +263,6 @@ export default function Auth() {
 
       <main className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 py-12 md:grid-cols-[1.2fr_1fr] md:py-16">
         <section className="space-y-6">
-          <div className="flex items-center gap-3">
-            <img
-              src="/imgs/ThinkAndTalk.png"
-              alt="ThinkAndTalk"
-              className="h-10 w-auto sm:h-12"
-            />
-          </div>
           <h1 className="text-4xl font-semibold leading-tight text-blue-700 md:text-5xl">
             Crie <span className="text-emerald-500">Roteiros</span> para{" "}
             <span className="text-emerald-500">Vídeos</span> em segundos.
