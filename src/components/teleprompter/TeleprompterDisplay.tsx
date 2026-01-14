@@ -619,7 +619,7 @@ export function TeleprompterDisplay({
       style={isFullscreen ? { backgroundColor } : undefined}
     >
       {/* Controls */}
-      <Card className={`mb-4 ${isFullscreen ? "bg-background/80 backdrop-blur" : ""}`}>
+      <Card className={`mb-4 md:mb-4 md:static fixed inset-x-0 bottom-0 z-30 ${isFullscreen ? "bg-background/80 backdrop-blur" : "bg-background/95"} md:rounded-lg rounded-t-xl`}>
         <CardContent className="py-3">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
@@ -897,7 +897,7 @@ export function TeleprompterDisplay({
       {/* Teleprompter Display */}
       <div
         ref={containerRef}
-        className={`relative overflow-hidden text-white rounded-lg ${
+        className={`relative overflow-hidden text-white rounded-lg pb-40 md:pb-0 ${
           isFullscreen ? "flex-1" : "h-[500px]"
         }`}
         style={{ scrollBehavior: "auto", backgroundColor }}
