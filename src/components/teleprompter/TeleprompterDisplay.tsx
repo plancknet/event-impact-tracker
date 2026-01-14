@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -102,6 +104,10 @@ export function TeleprompterDisplay({
   const [backgroundColor, setBackgroundColor] = useState(settings?.backgroundColor ?? DEFAULT_TELEPROMPTER_SETTINGS.backgroundColor);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [showControls, setShowControls] = useState(true);
+  const [recordEnabled, setRecordEnabled] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
+  const [recordingError, setRecordingError] = useState<string | null>(null);
 
   // Notify parent of settings changes
   const notifySettingsChange = useCallback(() => {
@@ -131,6 +137,11 @@ export function TeleprompterDisplay({
   const lastTimeRef = useRef<number>();
   const pauseTimeoutRef = useRef<NodeJS.Timeout>();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const previewRef = useRef<HTMLVideoElement | null>(null);
+  const latestRecordedUrlRef = useRef<string | null>(null);
 
   // Parse script to identify pause positions
   const parseScript = useCallback((text: string) => {
@@ -208,6 +219,7 @@ export function TeleprompterDisplay({
         scrollPositionRef.current = maxScroll;
         // Stop only when fully scrolled
         setIsPlaying(false);
+        stopRecording();
       }
       
       containerRef.current.scrollTop = scrollPositionRef.current;
@@ -235,7 +247,7 @@ export function TeleprompterDisplay({
     if (isPlaying) {
       animationRef.current = requestAnimationFrame(animate);
     }
-  }, [speed, isPaused, isPlaying, handlePause]);
+  }, [speed, isPaused, isPlaying, handlePause, stopRecording]);
 
   useEffect(() => {
     if (isPlaying && !isPaused) {
@@ -278,6 +290,10 @@ export function TeleprompterDisplay({
     setIsPaused(false);
     setIsUserPaused(false);
     setCountdown(3);
+    if (recordedUrl) {
+      URL.revokeObjectURL(recordedUrl);
+      setRecordedUrl(null);
+    }
   };
 
   const handlePauseToggle = () => {
@@ -299,6 +315,11 @@ export function TeleprompterDisplay({
     setIsPaused(false);
     setIsUserPaused(false);
     setCurrentPause(null);
+    stopRecording();
+    if (recordedUrl) {
+      URL.revokeObjectURL(recordedUrl);
+      setRecordedUrl(null);
+    }
     scrollPositionRef.current = 0;
     setElapsedSeconds(0);
     setCountdown(null);
@@ -326,6 +347,79 @@ export function TeleprompterDisplay({
     }));
   };
 
+  const stopPreviewStream = useCallback(() => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+    if (previewRef.current) {
+      previewRef.current.srcObject = null;
+    }
+  }, []);
+
+  const ensurePreview = useCallback(async () => {
+    if (mediaStreamRef.current) return;
+    setRecordingError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: true,
+      });
+      mediaStreamRef.current = stream;
+      if (previewRef.current) {
+        previewRef.current.srcObject = stream;
+        await previewRef.current.play().catch(() => undefined);
+      }
+    } catch (err) {
+      console.error("Failed to access camera:", err);
+      setRecordingError("Não foi possível acessar a câmera.");
+      setRecordEnabled(false);
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+    }
+    setIsRecording(false);
+  }, []);
+
+  const startRecording = useCallback(async () => {
+    await ensurePreview();
+    const stream = mediaStreamRef.current;
+    if (!stream || isRecording) return;
+
+    recordedChunksRef.current = [];
+    if (recordedUrl) {
+      URL.revokeObjectURL(recordedUrl);
+      setRecordedUrl(null);
+    }
+
+    try {
+      const recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+        latestRecordedUrlRef.current = url;
+        setRecordedUrl(url);
+        setIsRecording(false);
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Failed to start recording:", err);
+      setRecordingError("Não foi possível iniciar a gravação.");
+      setIsRecording(false);
+    }
+  }, [ensurePreview, isRecording, recordedUrl]);
+
   const toggleFullscreen = async () => {
     if (!document.fullscreenElement) {
       await containerRef.current?.parentElement?.requestFullscreen();
@@ -350,13 +444,40 @@ export function TeleprompterDisplay({
       if (countdown === 1) {
         setCountdown(null);
         setIsPlaying(true);
+        if (recordEnabled) {
+          void startRecording();
+        }
         return;
       }
       setCountdown((prev) => (prev === null ? prev : prev - 1));
     }, 1000);
 
     return () => window.clearTimeout(timeoutId);
-  }, [countdown]);
+  }, [countdown, recordEnabled, startRecording]);
+
+  useEffect(() => {
+    if (!recordEnabled) {
+      stopRecording();
+      stopPreviewStream();
+      setRecordingError(null);
+      if (recordedUrl) {
+        URL.revokeObjectURL(recordedUrl);
+        setRecordedUrl(null);
+      }
+      return;
+    }
+    void ensurePreview();
+  }, [recordEnabled, ensurePreview, stopPreviewStream, stopRecording, recordedUrl]);
+
+  useEffect(() => {
+    return () => {
+      stopRecording();
+      stopPreviewStream();
+      if (latestRecordedUrlRef.current) {
+        URL.revokeObjectURL(latestRecordedUrlRef.current);
+      }
+    };
+  }, [stopPreviewStream, stopRecording]);
 
   const renderContent = () => {
     return parsedScript.map((part, index) => {
@@ -462,6 +583,13 @@ export function TeleprompterDisplay({
                 <RotateCcw className="w-4 h-4 mr-1" />
                 Reiniciar
               </Button>
+              {recordedUrl && !isRecording && (
+                <Button asChild size="sm" variant="outline">
+                  <a href={recordedUrl} download="teleprompter.webm">
+                    Salvar vídeo
+                  </a>
+                </Button>
+              )}
               <Button
                 onClick={() => setShowControls((prev) => !prev)}
                 size="sm"
@@ -502,6 +630,22 @@ export function TeleprompterDisplay({
               <Button onClick={toggleFullscreen} size="sm" variant="outline">
                 {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
               </Button>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="recordVideo"
+                  checked={recordEnabled}
+                  onCheckedChange={(value) => setRecordEnabled(Boolean(value))}
+                />
+                <Label htmlFor="recordVideo" className="text-sm">
+                  Gravar vídeo
+                </Label>
+                {isRecording && (
+                  <span className="flex items-center gap-1 text-xs text-red-500">
+                    <span className="h-2 w-2 rounded-full bg-red-500" />
+                    REC
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -596,7 +740,7 @@ export function TeleprompterDisplay({
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-12">Média</span>
+              <span className="text-xs text-muted-foreground w-12">Média</span>
                   <Button
                     type="button"
                     size="sm"
@@ -705,6 +849,23 @@ export function TeleprompterDisplay({
           className="absolute inset-x-0 bottom-0 h-24 z-10 pointer-events-none"
           style={{ background: `linear-gradient(to top, ${backgroundColor}, transparent)` }}
         />
+
+        {recordEnabled && (
+          <div className="absolute right-4 top-4 z-20 w-36 h-24 rounded-lg border border-white/30 bg-black/40 overflow-hidden">
+            <video
+              ref={previewRef}
+              className="h-full w-full object-cover scale-x-[-1]"
+              muted
+              playsInline
+              autoPlay
+            />
+            {recordingError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/70 px-2 text-center text-xs text-red-200">
+                {recordingError}
+              </div>
+            )}
+          </div>
+        )}
 
         {countdown !== null && (
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">

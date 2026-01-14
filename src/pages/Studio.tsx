@@ -235,17 +235,20 @@ export default function Studio() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-primary">
             <Sparkles className="w-5 h-5" />
             <span className="font-semibold">ThinkAndTalk</span>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Bem-vindo, {user?.email ?? "Visitante"}
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <Button variant="outline" size="sm" onClick={handleNewScript}>
               Novo roteiro
             </Button>
             <Button variant="outline" size="sm" onClick={handleViewScripts}>
-              Ver scripts gerados
+              Meus Roteiros
             </Button>
             <Button variant="ghost" size="sm" onClick={() => signOut()} className="gap-2 whitespace-nowrap">
               <LogOut className="w-4 h-4" />
