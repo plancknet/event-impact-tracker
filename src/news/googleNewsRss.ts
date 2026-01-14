@@ -42,6 +42,7 @@ export async function fetchGoogleNewsRss(
       term: sanitizedTerm,
       language: options.language ?? "en",
       region: options.region ?? "US",
+      allowGuest: true,
     },
   });
 
