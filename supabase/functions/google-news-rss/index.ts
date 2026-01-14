@@ -36,10 +36,16 @@ serve(async (req) => {
     const allowGuest = body?.allowGuest === true;
 
     // === Authentication Check ===
-    const authHeader = req.headers.get('Authorization');
     let userId = "guest";
+    if (!allowGuest) {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized', xml: '' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
-    if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.replace('Bearer ', '');
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
       const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -50,22 +56,13 @@ serve(async (req) => {
 
       const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
       if (claimsError || !claimsData?.claims) {
-        if (allowGuest) {
-          userId = "guest";
-        } else {
-          return new Response(
-            JSON.stringify({ error: 'Unauthorized', xml: '' }),
-            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-      } else {
-        userId = claimsData.claims.sub;
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized', xml: '' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
-    } else if (!allowGuest) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized', xml: '' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+
+      userId = claimsData.claims.sub;
     }
 
     console.log("Authenticated user:", userId);
