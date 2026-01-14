@@ -241,8 +241,12 @@ export default function Studio() {
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="container max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex flex-col text-primary">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5" />
+            <div className="flex items-center gap-3">
+              <img
+                src="/imgs/TAT_Logo_sem_fundo_500px.png"
+                alt="ThinkAndTalk"
+                className="h-10 w-auto"
+              />
               <span className="font-semibold">ThinkAndTalk</span>
             </div>
             <div className="text-sm text-muted-foreground">
