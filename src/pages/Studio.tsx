@@ -34,6 +34,12 @@ export default function Studio() {
   const [autoFetchTrigger, setAutoFetchTrigger] = useState(0);
   const [pendingGeneration, setPendingGeneration] = useState<PendingGeneration | null>(null);
 
+  useEffect(() => {
+    if (!user) {
+      sessionStorage.setItem("draftCreatorProfile", JSON.stringify(profile));
+    }
+  }, [profile, user]);
+
   const handleStepChange = (step: number) => {
     if (step === 6) {
       setShowOnboarding(false);

@@ -40,6 +40,18 @@ export function useCreatorProfile() {
         });
         setHasProfile(true);
       } else {
+        const draftRaw = sessionStorage.getItem("draftCreatorProfile");
+        if (draftRaw) {
+          try {
+            const draft = JSON.parse(draftRaw) as Partial<CreatorProfile>;
+            setProfile({ ...DEFAULT_CREATOR_PROFILE, ...draft });
+            setHasProfile(false);
+            return;
+          } catch (parseError) {
+            console.error("Failed to parse draft creator profile:", parseError);
+            sessionStorage.removeItem("draftCreatorProfile");
+          }
+        }
         setProfile(DEFAULT_CREATOR_PROFILE);
         setHasProfile(false);
       }
@@ -115,6 +127,7 @@ export function useCreatorProfile() {
       }
 
       setProfile(profileData as CreatorProfile);
+      sessionStorage.removeItem("draftCreatorProfile");
       return true;
     } catch (err) {
       console.error("Failed to save creator profile:", err);
