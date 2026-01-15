@@ -28,24 +28,24 @@ export function LanguageSelector() {
   const { language, setLanguage } = useLanguage();
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1">
       <Button
-        variant={language === "pt" ? "default" : "outline"}
+        variant="ghost"
         size="sm"
         onClick={() => setLanguage("pt")}
-        className="gap-2"
+        className={`gap-1 px-2 text-xs ${language === "pt" ? "text-foreground" : "text-muted-foreground"}`}
       >
         <BrazilFlag />
-        PT
+        <span className="sr-only">PT</span>
       </Button>
       <Button
-        variant={language === "en" ? "default" : "outline"}
+        variant="ghost"
         size="sm"
         onClick={() => setLanguage("en")}
-        className="gap-2"
+        className={`gap-1 px-2 text-xs ${language === "en" ? "text-foreground" : "text-muted-foreground"}`}
       >
         <UsFlag />
-        EN
+        <span className="sr-only">EN</span>
       </Button>
     </div>
   );
