@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -17,9 +17,10 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR, enUS } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/i18n";
 
 interface ScriptHistoryItem {
   id: string;
@@ -62,6 +63,7 @@ export function ScriptHistory({
   defaultOpen = false,
 }: ScriptHistoryProps) {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [scripts, setScripts] = useState<ScriptHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -106,7 +108,7 @@ export function ScriptHistory({
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
 
-    if (!confirm("Deseja excluir este roteiro?")) return;
+    if (!confirm(t("Deseja excluir este roteiro?"))) return;
 
     try {
       const { error } = await supabase
@@ -193,7 +195,7 @@ export function ScriptHistory({
           <button className="w-full p-4 flex items-center justify-between text-left hover:bg-muted/50 transition-colors rounded-t-xl">
             <div className="flex items-center gap-3">
               <FileText className="w-4 h-4 text-muted-foreground" />
-              <h3 className="font-semibold">Histórico de Roteiros</h3>
+              <h3 className="font-semibold">{t("Histórico de Roteiros")}</h3>
               {scripts.length > 0 && (
                 <Badge variant="secondary" className="text-xs">
                   {scripts.length}
@@ -212,14 +214,14 @@ export function ScriptHistory({
               <div className="relative flex-1 min-w-[220px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar roteiros..."
+                  placeholder={t("Buscar roteiros...")}
                   value={searchFilter}
                   onChange={(e) => setSearchFilter(e.target.value)}
                   className="pl-9 h-9"
                 />
               </div>
               <Input
-                placeholder="Filtrar por tema"
+                placeholder={t("Filtrar por tema")}
                 value={topicFilter}
                 onChange={(e) => setTopicFilter(e.target.value)}
                 className="h-9 w-full sm:w-[220px]"
@@ -240,7 +242,7 @@ export function ScriptHistory({
                     onClick={() => toggleSort("preview")}
                     className="flex items-center gap-1 text-left"
                   >
-                    Roteiro
+                    {t("Roteiro")}
                     <ArrowUpDown className="w-3 h-3" />
                   </button>
                   <button
@@ -248,7 +250,7 @@ export function ScriptHistory({
                     onClick={() => toggleSort("topic")}
                     className="flex items-center gap-1 text-left"
                   >
-                    Tema
+                    {t("Tema")}
                     <ArrowUpDown className="w-3 h-3" />
                   </button>
                   <button
@@ -256,7 +258,7 @@ export function ScriptHistory({
                     onClick={() => toggleSort("created_at")}
                     className="flex items-center gap-1 text-left"
                   >
-                    Data
+                    {t("Data")}
                     <ArrowUpDown className="w-3 h-3" />
                   </button>
                   <div />
@@ -266,8 +268,8 @@ export function ScriptHistory({
                   {sortedScripts.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">
                       {scripts.length === 0
-                        ? "Nenhum roteiro salvo ainda"
-                        : "Nenhum roteiro encontrado"}
+                        ? t("Nenhum roteiro salvo ainda")
+                        : t("Nenhum roteiro encontrado")}
                     </p>
                   ) : (
                     sortedScripts.map((script) => (
@@ -287,7 +289,9 @@ export function ScriptHistory({
                           {getTopicFromParams(script.parameters_json) || "-"}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {format(new Date(script.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          {format(new Date(script.created_at), "dd/MM/yyyy HH:mm", {
+                            locale: language === "pt" ? ptBR : enUS,
+                          })}
                         </div>
                         <div className="flex justify-end gap-2">
                           {onOpenTeleprompter && (
@@ -324,3 +328,4 @@ export function ScriptHistory({
     </Collapsible>
   );
 }
+

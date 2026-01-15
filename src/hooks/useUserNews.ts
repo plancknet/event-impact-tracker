@@ -1,6 +1,7 @@
-import { useState, useCallback } from "react";
+﻿import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { useLanguage } from "@/i18n";
 
 export interface UserNewsItem {
   id: string;
@@ -28,11 +29,11 @@ interface FetchedNewsItem {
 
 export function useUserNews() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [newsItems, setNewsItems] = useState<UserNewsItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load news from database
   const loadNews = useCallback(async (topic?: string) => {
     if (!user) {
       setIsLoading(false);
@@ -62,17 +63,16 @@ export function useUserNews() {
       return items;
     } catch (err) {
       console.error("Failed to load news:", err);
-      setError("Não foi possível carregar as notícias.");
+      setError(t("Não foi possível carregar as notícias."));
       return [];
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, t]);
 
-  // Fetch news from Google RSS and save to database (or keep locally for guests)
   const fetchAndSaveNews = useCallback(async (topic: string, language: string = "pt-BR") => {
     if (!topic.trim()) {
-      setError("Defina um tema principal.");
+      setError(t("Defina um tema principal."));
       return [];
     }
 
@@ -120,14 +120,12 @@ export function useUserNews() {
         return guestItems;
       }
 
-      // First, clear old news for this topic
       await supabase
         .from("user_news_items")
         .delete()
         .eq("user_id", user.id)
         .eq("topic", topic);
 
-      // Fetch fresh news from edge function
       const { data, error: fetchError } = await supabase.functions.invoke("google-news-rss", {
         body: {
           term: topic,
@@ -139,7 +137,6 @@ export function useUserNews() {
 
       if (fetchError) throw fetchError;
 
-      // Parse XML response
       const xmlText = data?.xml || "";
       const items = parseRssXml(xmlText);
 
@@ -148,7 +145,6 @@ export function useUserNews() {
         return [];
       }
 
-      // Save to database
       const now = new Date().toISOString();
       const newsToInsert = items.map((item, index) => ({
         user_id: user.id,
@@ -175,14 +171,13 @@ export function useUserNews() {
       return savedItems;
     } catch (err) {
       console.error("Failed to fetch and save news:", err);
-      setError("Não foi possível buscar as notícias. Tente novamente.");
+      setError(t("Não foi possível buscar as notícias. Tente novamente."));
       return [];
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, t]);
 
-  // Delete all news for a topic
   const clearNews = useCallback(async (topic?: string) => {
     if (!user) {
       setNewsItems([]);
@@ -217,7 +212,6 @@ export function useUserNews() {
   };
 }
 
-// Parse Google News RSS XML
 function parseRssXml(xml: string): FetchedNewsItem[] {
   if (!xml) return [];
 
@@ -233,7 +227,6 @@ function parseRssXml(xml: string): FetchedNewsItem[] {
       const source = item.querySelector("source")?.textContent || "";
       const description = item.querySelector("description")?.textContent || "";
 
-      // Parse date
       let publishedAt: string | undefined;
       if (pubDate) {
         const date = new Date(pubDate);
@@ -242,7 +235,6 @@ function parseRssXml(xml: string): FetchedNewsItem[] {
         }
       }
 
-      // Extract source from HTML in description if not available
       let parsedSource = source;
       if (!parsedSource && description) {
         const sourceMatch = description.match(/<font[^>]*>([^<]+)<\/font>/);
@@ -251,14 +243,12 @@ function parseRssXml(xml: string): FetchedNewsItem[] {
         }
       }
 
-      // Clean HTML from description to get summary
       let summary = description
         .replace(/<[^>]+>/g, " ")
         .replace(/&nbsp;/g, " ")
         .replace(/\s+/g, " ")
         .trim();
 
-      // Limit summary length
       if (summary.length > 300) {
         summary = summary.slice(0, 297) + "...";
       }

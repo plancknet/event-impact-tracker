@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useCreatorProfile } from "@/hooks/useCreatorProfile";
@@ -11,6 +11,8 @@ import { LogOut, Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { UserNewsItem } from "@/hooks/useUserNews";
 import type { CreatorProfile } from "@/types/creatorProfile";
+import { useLanguage } from "@/i18n";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 type PendingGeneration = {
   profile: CreatorProfile;
@@ -22,6 +24,7 @@ type PendingGeneration = {
 export default function Studio() {
   const { signOut, user } = useAuth();
   const { profile, isLoading, saveProfile, updateProfile } = useCreatorProfile();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [showOnboarding, setShowOnboarding] = useState(true);
@@ -229,7 +232,7 @@ export default function Studio() {
           onClick={() => setShowTeleprompter(false)}
           className="fixed top-4 right-4 text-white/70 hover:text-white z-50"
         >
-          Sair
+          {t("Sair")}
         </Button>
       </div>
     );
@@ -249,15 +252,16 @@ export default function Studio() {
               />
             </div>
             <div className="text-sm text-muted-foreground">
-              Bem-vindo, {user?.email ?? "Visitante"}
+              {t("Bem-vindo, {name}", { name: user?.email ?? t("Visitante") })}
             </div>
           </div>
+          <LanguageSelector />
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <Button variant="outline" size="sm" onClick={handleNewScript}>
-              Novo roteiro
+              {t("Novo roteiro")}
             </Button>
             <Button variant="outline" size="sm" onClick={handleViewScripts} disabled={!user}>
-              Meus Roteiros
+              {t("Meus Roteiros")}
             </Button>
             <Button
               variant="ghost"
@@ -267,7 +271,7 @@ export default function Studio() {
               disabled={!user}
             >
               <LogOut className="w-4 h-4" />
-              Sair
+              {t("Sair")}
             </Button>
           </div>
         </div>
@@ -277,13 +281,20 @@ export default function Studio() {
       <main className="container max-w-6xl mx-auto px-4 py-8">
         <div className="md:hidden sticky top-[72px] z-30 bg-background/95 backdrop-blur border-b mb-6">
           <div className="py-3">
-              <OnboardingProgress
-                currentStep={onboardingStep}
-                totalSteps={6}
-                stepLabels={["Você", "Público", "Formato", "Estilo", "Objetivo", "Roteiros"]}
-                onStepChange={handleStepChange}
-                orientation="horizontal"
-              />
+            <OnboardingProgress
+              currentStep={onboardingStep}
+              totalSteps={6}
+              stepLabels={[
+                t("Você"),
+                t("Público"),
+                t("Formato"),
+                t("Estilo"),
+                t("Objetivo"),
+                t("Roteiros"),
+              ]}
+              onStepChange={handleStepChange}
+              orientation="horizontal"
+            />
           </div>
         </div>
 
@@ -292,7 +303,14 @@ export default function Studio() {
             <OnboardingProgress
               currentStep={onboardingStep}
               totalSteps={6}
-              stepLabels={["Você", "Público", "Formato", "Estilo", "Objetivo", "Roteiros"]}
+              stepLabels={[
+                t("Você"),
+                t("Público"),
+                t("Formato"),
+                t("Estilo"),
+                t("Objetivo"),
+                t("Roteiros"),
+              ]}
               onStepChange={handleStepChange}
               orientation="vertical"
             />
@@ -331,3 +349,7 @@ export default function Studio() {
     </div>
   );
 }
+
+
+
+

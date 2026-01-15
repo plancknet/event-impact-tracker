@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { ScriptHistory } from "./ScriptHistory";
 import { useUserNews, UserNewsItem } from "@/hooks/useUserNews";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/i18n";
 
 interface ScriptGeneratorProps {
   profile: CreatorProfile;
@@ -92,6 +93,7 @@ export function ScriptGenerator({
   onPendingGenerationHandled,
 }: ScriptGeneratorProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [complementaryPrompt, setComplementaryPrompt] = useState("");
   const [currentTone, setCurrentTone] = useState(profile.speaking_tone);
   const [currentDuration, setCurrentDuration] = useState(profile.target_duration);
@@ -118,7 +120,6 @@ export function ScriptGenerator({
     setLocalNewsItems,
   } = useUserNews();
 
-  // Load existing news when component mounts
   useEffect(() => {
     if (profile.main_topic) {
       loadNews(profile.main_topic);
@@ -141,7 +142,7 @@ export function ScriptGenerator({
     setSaveSuccess(null);
     onScriptChange("");
     clearNews();
-  }, [resetTrigger, onScriptChange, clearNews, profile.speaking_tone, profile.target_duration, profile.video_type]);
+  }, [resetTrigger, onScriptChange, clearNews, profile.speaking_tone, profile.target_duration, profile.video_type, pendingGeneration]);
 
   useEffect(() => {
     if (autoFetchTrigger <= 0) return;
@@ -166,7 +167,6 @@ export function ScriptGenerator({
 
   useEffect(() => {
     if (!pendingGeneration || pendingAppliedRef.current) return;
-    // Only proceed if user is logged in
     if (!user) return;
     pendingAppliedRef.current = true;
 
@@ -178,7 +178,6 @@ export function ScriptGenerator({
         complementaryPrompt: pendingPrompt,
       } = pendingGeneration;
 
-      // Set UI state first
       setHasStarted(true);
       setSelectedNewsIds(pendingNewsIds);
       setComplementaryPrompt(pendingPrompt || "");
@@ -189,7 +188,6 @@ export function ScriptGenerator({
       onApplyProfile(pendingProfile);
       setLocalNewsItems(selectedNews);
 
-      // Small delay to ensure state is settled
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       const result = await onGenerate(
@@ -287,7 +285,7 @@ export function ScriptGenerator({
   const handleSaveScript = async () => {
     if (!generatedScript.trim()) return;
     if (!user) {
-      setSaveError("Você precisa estar logado para salvar.");
+      setSaveError(t("Você precisa estar logado para salvar."));
       return;
     }
 
@@ -326,10 +324,10 @@ export function ScriptGenerator({
       }
 
       setHistoryRefreshTrigger((prev) => prev + 1);
-      setSaveSuccess("Roteiro salvo.");
+      setSaveSuccess(t("Roteiro salvo."));
     } catch (err) {
       console.error("Failed to save script:", err);
-      setSaveError("Não foi possível salvar o roteiro.");
+      setSaveError(t("Não foi possível salvar o roteiro."));
     } finally {
       setIsSaving(false);
     }
@@ -427,29 +425,29 @@ export function ScriptGenerator({
 
       <div className="rounded-2xl border bg-card p-6 md:p-8 space-y-4">
         <div>
-          <h2 className="text-lg font-semibold">Gerar roteiro</h2>
+          <h2 className="text-lg font-semibold">{t("Gerar roteiro")}</h2>
           <p className="text-sm text-muted-foreground">
-            Sobre: {profile.main_topic || "Defina um tema no seu perfil"}
+            {t("Sobre:")} {profile.main_topic || t("Defina um tema no seu perfil")}
             {selectedNewsIds.length > 0 && (
               <span className="ml-2 text-primary">
-                ({selectedNewsIds.length} notícia(s) selecionada(s))
+                {t("({count} notícia(s) selecionada(s))", { count: String(selectedNewsIds.length) })}
               </span>
             )}
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="complementaryPrompt">Prompt complementar</Label>
+          <Label htmlFor="complementaryPrompt">{t("Prompt complementar")}</Label>
           <Textarea
             id="complementaryPrompt"
             value={complementaryPrompt}
             onChange={(e) => setComplementaryPrompt(e.target.value)}
-            placeholder="Adicione instruções específicas para personalizar o roteiro, ex: 'Foque nos aspectos de segurança' ou 'Use um tom mais crítico'..."
+            placeholder={t("Adicione instruções específicas para personalizar o roteiro, ex: 'Foque nos aspectos de segurança' ou 'Use um tom mais crítico'...")}
             rows={4}
             className="resize-none"
           />
           <p className="text-xs text-muted-foreground">
-            Opcional: instruções adicionais para guiar a geração do roteiro
+            {t("Opcional: instruções adicionais para guiar a geração do roteiro")}
           </p>
         </div>
       </div>
@@ -463,19 +461,19 @@ export function ScriptGenerator({
         {isGenerating ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin" />
-            Gerando roteiro...
+            {t("Gerando roteiro...")}
           </>
         ) : (
           <>
             <Sparkles className="w-5 h-5" />
-            Gerar Roteiro
+            {t("Gerar Roteiro")}
           </>
         )}
       </Button>
 
       {selectedNewsIds.length === 0 && !complementaryPrompt.trim() && (
         <p className="text-sm text-muted-foreground text-center">
-          Selecione pelo menos uma notícia ou adicione um prompt complementar
+          {t("Selecione pelo menos uma notícia ou adicione um prompt complementar")}
         </p>
       )}
 
@@ -494,7 +492,7 @@ export function ScriptGenerator({
             {saveSuccess && <span className="text-primary">{saveSuccess}</span>}
           </div>
           <Button onClick={handleSaveScript} disabled={isSaving || !generatedScript.trim()}>
-            {isSaving ? "Salvando..." : "Salvar roteiro"}
+            {isSaving ? t("Salvando...") : t("Salvar roteiro")}
           </Button>
         </div>
       )}
@@ -516,4 +514,8 @@ export function ScriptGenerator({
       )}
     </div>
   );
-}
+}
+
+
+
+

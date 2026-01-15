@@ -1,5 +1,6 @@
-import { cn } from "@/lib/utils";
+﻿import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
+import { useLanguage } from "@/i18n";
 
 interface ScriptOutputProps {
   script: string;
@@ -8,6 +9,8 @@ interface ScriptOutputProps {
 }
 
 export function ScriptOutput({ script, isLoading, onEdit }: ScriptOutputProps) {
+  const { t } = useLanguage();
+
   if (isLoading) {
     return (
       <div className="rounded-xl border bg-card p-8">
@@ -19,7 +22,7 @@ export function ScriptOutput({ script, isLoading, onEdit }: ScriptOutputProps) {
           <div className="h-4 bg-muted rounded w-4/5" />
         </div>
         <p className="text-center text-muted-foreground mt-8">
-          Gerando seu roteiro...
+          {t("Gerando seu roteiro...")}
         </p>
       </div>
     );
@@ -28,9 +31,9 @@ export function ScriptOutput({ script, isLoading, onEdit }: ScriptOutputProps) {
   if (!script) {
     return (
       <div className="rounded-xl border border-dashed bg-muted/30 p-12 text-center">
-        <p className="text-muted-foreground">Seu roteiro aparecerá aqui</p>
+        <p className="text-muted-foreground">{t("Seu roteiro aparecerá aqui")}</p>
         <p className="text-sm text-muted-foreground/70 mt-2">
-          Clique em "Gerar Roteiro" para começar
+          {t("Clique em \"Gerar Roteiro\" para começar")}
         </p>
       </div>
     );
@@ -39,7 +42,7 @@ export function ScriptOutput({ script, isLoading, onEdit }: ScriptOutputProps) {
   return (
     <div className="rounded-xl border bg-card p-6 md:p-8">
       <div className="space-y-3">
-        <div className="text-sm font-medium text-muted-foreground">Texto do roteiro</div>
+        <div className="text-sm font-medium text-muted-foreground">{t("Texto do roteiro")}</div>
         <Textarea
           value={script}
           onChange={(event) => onEdit?.(event.target.value)}
@@ -48,9 +51,10 @@ export function ScriptOutput({ script, isLoading, onEdit }: ScriptOutputProps) {
           readOnly={!onEdit}
         />
         <p className="text-xs text-muted-foreground">
-          Você pode editar o texto a qualquer momento antes de salvar.
+          {t("Você pode editar o texto a qualquer momento antes de salvar.")}
         </p>
       </div>
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -11,34 +11,37 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { useLanguage } from "@/i18n";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
-const authSchema = z
-  .object({
-    mode: z.enum(["login", "signup"]),
-    email: z.string().email("Email inválido"),
-    password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
-    confirmPassword: z.string().optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.mode !== "signup") return;
-    if (!data.confirmPassword) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["confirmPassword"],
-        message: "Confirme a senha.",
-      });
-      return;
-    }
-    if (data.password !== data.confirmPassword) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["confirmPassword"],
-        message: "As senhas não conferem.",
-      });
-    }
-  });
+const createAuthSchema = (t: (key: string) => string) =>
+  z
+    .object({
+      mode: z.enum(["login", "signup"]),
+      email: z.string().email(t("Email inválido")),
+      password: z.string().min(6, t("A senha deve ter pelo menos 6 caracteres")),
+      confirmPassword: z.string().optional(),
+    })
+    .superRefine((data, ctx) => {
+      if (data.mode !== "signup") return;
+      if (!data.confirmPassword) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["confirmPassword"],
+          message: t("Confirme a senha."),
+        });
+        return;
+      }
+      if (data.password !== data.confirmPassword) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["confirmPassword"],
+          message: t("As senhas não conferem."),
+        });
+      }
+    });
 
-type AuthFormData = z.infer<typeof authSchema>;
+type AuthFormData = z.infer<ReturnType<typeof createAuthSchema>>;
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -47,6 +50,7 @@ export default function Auth() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { user, loading, signIn, signUp } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -59,14 +63,14 @@ export default function Auth() {
     setError(null);
     setIsGoogleLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/`,
         },
       });
-      if (error) {
-        setError(error.message);
+      if (oauthError) {
+        setError(oauthError.message);
       }
     } finally {
       setIsGoogleLoading(false);
@@ -74,7 +78,7 @@ export default function Auth() {
   };
 
   const form = useForm<AuthFormData>({
-    resolver: zodResolver(authSchema),
+    resolver: zodResolver(createAuthSchema(t)),
     defaultValues: {
       mode: "login",
       email: "",
@@ -109,29 +113,29 @@ export default function Auth() {
 
     try {
       if (isLogin) {
-        const { error } = await signIn(data.email, data.password);
-        if (error) {
-          if (error.message.includes("Invalid login credentials")) {
-            setError("Email ou senha incorretos.");
+        const { error: signInError } = await signIn(data.email, data.password);
+        if (signInError) {
+          if (signInError.message.includes("Invalid login credentials")) {
+            setError(t("Email ou senha incorretos."));
           } else {
-            setError(error.message);
+            setError(signInError.message);
           }
         }
       } else {
-        const { error } = await signUp(data.email, data.password);
-        if (error) {
-          if (error.message.includes("User already registered")) {
-            setError("Este email já está cadastrado. Faça login.");
+        const { error: signUpError } = await signUp(data.email, data.password);
+        if (signUpError) {
+          if (signUpError.message.includes("User already registered")) {
+            setError(t("Este email já está cadastrado. Faça login."));
           } else {
-            setError(error.message);
+            setError(signUpError.message);
           }
         } else {
           const { error: signInError } = await signIn(data.email, data.password);
           if (signInError) {
-            setError("Conta criada, mas não foi possível entrar automaticamente.");
+            setError(t("Conta criada, mas não foi possível entrar automaticamente."));
             return;
           }
-          setSuccessMessage("Conta criada com sucesso!");
+          setSuccessMessage(t("Conta criada com sucesso!"));
           navigate(redirectTo, { replace: true });
         }
       }
@@ -160,8 +164,10 @@ export default function Auth() {
       <div className="min-h-screen bg-[#f7f9fc] flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md space-y-8">
           <h1 className="text-center text-3xl font-semibold text-blue-700 md:text-4xl">
-            Crie agora sua <span className="text-emerald-500">conta</span> e obtenha seu{" "}
-            <span className="text-emerald-500">roteiro</span>
+            {t("Crie agora sua ")}
+            <span className="text-emerald-500">{t("conta")}</span>
+            {t(" e obtenha seu ")}
+            <span className="text-emerald-500">{t("roteiro")}</span>
           </h1>
           <Card className="w-full border border-slate-100 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.4)]">
             <CardContent className="pt-6">
@@ -172,7 +178,7 @@ export default function Auth() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>{t("Email")}</FormLabel>
                         <FormControl>
                           <Input type="email" placeholder="seu@email.com" {...field} />
                         </FormControl>
@@ -186,7 +192,7 @@ export default function Auth() {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Senha</FormLabel>
+                        <FormLabel>{t("Senha")}</FormLabel>
                         <FormControl>
                           <Input type="password" placeholder="******" {...field} />
                         </FormControl>
@@ -201,7 +207,7 @@ export default function Auth() {
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Confirmar senha</FormLabel>
+                          <FormLabel>{t("Confirmar senha")}</FormLabel>
                           <FormControl>
                             <Input type="password" placeholder="******" {...field} />
                           </FormControl>
@@ -211,9 +217,7 @@ export default function Auth() {
                     />
                   )}
 
-                  {error && (
-                    <p className="text-sm text-destructive text-center">{error}</p>
-                  )}
+                  {error && <p className="text-sm text-destructive text-center">{error}</p>}
 
                   {successMessage && (
                     <p className="text-sm text-primary text-center">{successMessage}</p>
@@ -224,10 +228,8 @@ export default function Auth() {
                     className="w-full bg-blue-600 hover:bg-blue-700"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : null}
-                    Criar conta
+                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    {t("Criar conta")}
                   </Button>
                 </form>
               </Form>
@@ -248,15 +250,15 @@ export default function Auth() {
             className="h-8 w-auto sm:h-10"
           />
           <nav className="hidden items-center gap-6 text-sm text-slate-600 md:flex">
-            <button className="hover:text-slate-900">Planos</button>
-            <button className="hover:text-slate-900">Recursos</button>
-            <button className="flex items-center gap-2 hover:text-slate-900">Português</button>
+            <button className="hover:text-slate-900">{t("Planos")}</button>
+            <button className="hover:text-slate-900">{t("Recursos")}</button>
           </nav>
+          <LanguageSelector />
           <Button
             className="rounded-full bg-blue-600 px-6 hover:bg-blue-700"
             onClick={() => navigate("/?trial=1")}
           >
-            Testar Grátis
+            {t("Testar Grátis")}
           </Button>
         </div>
       </header>
@@ -264,14 +266,22 @@ export default function Auth() {
       <main className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 py-12 md:grid-cols-[1.2fr_1fr] md:py-16">
         <section className="space-y-6">
           <h1 className="text-4xl font-semibold leading-tight text-blue-700 md:text-5xl">
-            Crie <span className="text-emerald-500">Roteiros</span> para{" "}
-            <span className="text-emerald-500">Vídeos</span> em segundos, usando{" "}
-            <span className="text-emerald-500">IA</span>.
+            {t("Crie ")}
+            <span className="text-emerald-500">{t("Roteiros")}</span>
+            {t(" para ")}
+            <span className="text-emerald-500">{t("Vídeos")}</span>
+            {t(" em segundos, usando ")}
+            <span className="text-emerald-500">{t("IA")}</span>.
           </h1>
           <p className="text-base text-slate-600 md:text-lg">
-            Crie roteiros personalizados para YouTube, Instagram, TikTok, Reels, Shorts,
-            Lives e muito mais, adaptados ao seu público, tom de voz e objetivo. Rode o
-            texto em um teleprompter com ajustes finos.
+            {t(
+              "Centralize suas ideias e transforme pensamentos em falas naturais para vídeos, podcasts e apresentações."
+            )}
+          </p>
+          <p className="text-base text-slate-600 md:text-lg">
+            {t(
+              "Crie scripts personalizados para YouTube, Instagram, TikTok, Reels, Shorts, Lives e muito mais — adaptados ao seu público, tom de voz e objetivo. Rode o texto em um teleprompter com ajustes fino."
+            )}
           </p>
         </section>
 
@@ -279,12 +289,10 @@ export default function Auth() {
           <Card className="w-full max-w-md border border-slate-100 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.4)]">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl font-bold">
-                {isLogin ? "Entrar" : "Criar conta"}
+                {isLogin ? t("Entrar") : t("Criar conta")}
               </CardTitle>
               <CardDescription>
-                {isLogin
-                  ? "Entre com sua conta para continuar"
-                  : "Crie uma conta para começar"}
+                {isLogin ? t("Entre com sua conta para continuar") : t("Crie uma conta para começar")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -295,7 +303,7 @@ export default function Auth() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>{t("Email")}</FormLabel>
                         <FormControl>
                           <Input type="email" placeholder="seu@email.com" {...field} />
                         </FormControl>
@@ -309,7 +317,7 @@ export default function Auth() {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Senha</FormLabel>
+                        <FormLabel>{t("Senha")}</FormLabel>
                         <FormControl>
                           <Input type="password" placeholder="******" {...field} />
                         </FormControl>
@@ -324,7 +332,7 @@ export default function Auth() {
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Confirmar senha</FormLabel>
+                          <FormLabel>{t("Confirmar senha")}</FormLabel>
                           <FormControl>
                             <Input type="password" placeholder="******" {...field} />
                           </FormControl>
@@ -334,9 +342,7 @@ export default function Auth() {
                     />
                   )}
 
-                  {error && (
-                    <p className="text-sm text-destructive text-center">{error}</p>
-                  )}
+                  {error && <p className="text-sm text-destructive text-center">{error}</p>}
 
                   {successMessage && (
                     <p className="text-sm text-primary text-center">{successMessage}</p>
@@ -347,10 +353,8 @@ export default function Auth() {
                     className="w-full bg-blue-600 hover:bg-blue-700"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : null}
-                    {isLogin ? "Entrar" : "Criar conta"}
+                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    {isLogin ? t("Entrar") : t("Criar conta")}
                   </Button>
                 </form>
               </Form>
@@ -358,7 +362,7 @@ export default function Auth() {
               <div className="relative my-6">
                 <Separator />
                 <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-                  ou
+                  {t("ou")}
                 </span>
               </div>
 
@@ -391,7 +395,7 @@ export default function Auth() {
                     />
                   </svg>
                 )}
-                Continuar com Google
+                {t("Continuar com Google")}
               </Button>
 
               <div className="mt-4 text-center">
@@ -400,9 +404,7 @@ export default function Auth() {
                   onClick={toggleMode}
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
-                  {isLogin
-                    ? "Não tem conta? Criar conta"
-                    : "Já tem conta? Entrar"}
+                  {isLogin ? t("Não tem conta? Criar conta") : t("Já tem conta? Entrar")}
                 </button>
               </div>
             </CardContent>

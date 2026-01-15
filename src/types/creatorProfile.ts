@@ -1,4 +1,4 @@
-// Creator profile type and options for onboarding and script generation
+﻿// Creator profile type and options for onboarding and script generation
 
 export interface CreatorProfile {
   id?: string;
@@ -80,12 +80,12 @@ export const DURATION_OPTIONS = [
 ];
 
 export const PLATFORM_OPTIONS = [
-  { value: "YouTube", label: "YouTube", icon: "📺" },
-  { value: "Instagram", label: "Instagram", icon: "📷" },
-  { value: "TikTok", label: "TikTok", icon: "🎵" },
-  { value: "LinkedIn", label: "LinkedIn", icon: "💼" },
-  { value: "Twitter", label: "Twitter/X", icon: "𝕏" },
-  { value: "Podcast", label: "Podcast", icon: "🎙️" },
+  { value: "YouTube", label: "YouTube" },
+  { value: "Instagram", label: "Instagram" },
+  { value: "TikTok", label: "TikTok" },
+  { value: "LinkedIn", label: "LinkedIn" },
+  { value: "Twitter", label: "Twitter/X" },
+  { value: "Podcast", label: "Podcast" },
 ];
 
 export const TONE_OPTIONS = [
@@ -105,12 +105,12 @@ export const ENERGY_OPTIONS = [
 ];
 
 export const GOAL_OPTIONS = [
-  { value: "informar", label: "Informar", description: "Compartilhar notícias", icon: "📰" },
-  { value: "educar", label: "Educar", description: "Ensinar conceitos", icon: "📚" },
-  { value: "entreter", label: "Entreter", description: "Divertir audiência", icon: "🎭" },
-  { value: "inspirar", label: "Inspirar", description: "Motivar pessoas", icon: "✨" },
-  { value: "vender", label: "Vender", description: "Promover produtos", icon: "💰" },
-  { value: "engajar", label: "Engajar", description: "Criar comunidade", icon: "🤝" },
+  { value: "informar", label: "Informar", description: "Compartilhar notícias" },
+  { value: "educar", label: "Educar", description: "Ensinar conceitos" },
+  { value: "entreter", label: "Entreter", description: "Divertir audiência" },
+  { value: "inspirar", label: "Inspirar", description: "Motivar pessoas" },
+  { value: "vender", label: "Vender", description: "Promover produtos" },
+  { value: "engajar", label: "Engajar", description: "Criar comunidade" },
 ];
 
 export const LANGUAGE_OPTIONS = [
@@ -131,3 +131,4 @@ export const NEWS_LANGUAGE_OPTIONS = [
   { value: "de-DE", label: "Alemão" },
   { value: "it-IT", label: "Italiano" },
 ];
+

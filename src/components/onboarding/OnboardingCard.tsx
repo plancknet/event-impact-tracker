@@ -1,6 +1,7 @@
-import { ReactNode } from "react";
+﻿import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { useLanguage } from "@/i18n";
 
 interface OnboardingCardProps {
   title: string;
@@ -20,19 +21,18 @@ export function OnboardingCard({
   onBack,
   onNext,
   onSkip,
-  nextLabel = "Continuar",
+  nextLabel,
   canContinue = true,
   isLoading = false,
   showSkip = true,
 }: OnboardingCardProps) {
+  const { t } = useLanguage();
+  const effectiveNextLabel = nextLabel ?? t("Continuar");
+
   return (
     <div className="w-full max-w-2xl mx-auto animate-in">
-      {/* Content */}
-      <div className="mb-8">
-        {children}
-      </div>
-      
-      {/* Navigation */}
+      <div className="mb-8">{children}</div>
+
       <div className="flex items-center justify-between gap-4">
         <div>
           {onBack && (
@@ -43,11 +43,11 @@ export function OnboardingCard({
               className="gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              Voltar
+              {t("Voltar")}
             </Button>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2">
           {showSkip && onSkip && (
             <Button
@@ -56,10 +56,10 @@ export function OnboardingCard({
               disabled={isLoading}
               className="text-muted-foreground"
             >
-              Pular
+              {t("Pular")}
             </Button>
           )}
-          
+
           {onNext && (
             <Button
               onClick={onNext}
@@ -70,7 +70,7 @@ export function OnboardingCard({
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  {nextLabel}
+                  {effectiveNextLabel}
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -81,3 +81,4 @@ export function OnboardingCard({
     </div>
   );
 }
+

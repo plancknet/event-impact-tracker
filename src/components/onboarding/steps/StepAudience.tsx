@@ -1,8 +1,9 @@
-import { OnboardingCard } from "../OnboardingCard";
+﻿import { OnboardingCard } from "../OnboardingCard";
 import { OptionCard } from "../OptionCard";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { CreatorProfile, AUDIENCE_TYPE_OPTIONS } from "@/types/creatorProfile";
+import { useLanguage } from "@/i18n";
 
 interface StepAudienceProps {
   profile: CreatorProfile;
@@ -13,28 +14,28 @@ interface StepAudienceProps {
 }
 
 export function StepAudience({ profile, onChange, onBack, onNext, onSkip }: StepAudienceProps) {
+  const { t } = useLanguage();
   const ageMin = Math.max(0, Math.min(100, profile.audience_age_min));
   const ageMax = Math.max(ageMin, Math.min(100, profile.audience_age_max));
   const genderSplit = Math.max(0, Math.min(100, profile.audience_gender_split));
 
   return (
     <OnboardingCard
-      title="Seu público"
-      subtitle="Para quem você cria conteúdo?"
+      title={t("Seu público")}
+      subtitle={t("Para quem você cria conteúdo?")}
       onBack={onBack}
       onNext={onNext}
       onSkip={onSkip}
     >
       <div className="space-y-8">
-        {/* Audience type */}
         <div className="space-y-3">
-          <Label className="text-base font-medium">Quem é sua audiência principal?</Label>
+          <Label className="text-base font-medium">{t("Quem é sua audiência principal?")}</Label>
           <div className="grid grid-cols-2 gap-3">
             {AUDIENCE_TYPE_OPTIONS.map((option) => (
               <OptionCard
                 key={option.value}
-                label={option.label}
-                description={option.description}
+                label={t(option.label)}
+                description={t(option.description)}
                 selected={profile.audience_type === option.value}
                 onClick={() => onChange({ audience_type: option.value })}
                 compact
@@ -43,13 +44,14 @@ export function StepAudience({ profile, onChange, onBack, onNext, onSkip }: Step
           </div>
         </div>
 
-        {/* Age range */}
         <div className="space-y-4">
-          <Label className="text-base font-medium">Faixa etária do público</Label>
+          <Label className="text-base font-medium">{t("Faixa etária do público")}</Label>
           <div className="px-2">
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>0</span>
-              <span className="font-medium text-foreground">{ageMin} - {ageMax} anos</span>
+              <span className="font-medium text-foreground">
+                {t("{min} - {max} anos", { min: String(ageMin), max: String(ageMax) })}
+              </span>
               <span>100</span>
             </div>
             <Slider
@@ -67,13 +69,12 @@ export function StepAudience({ profile, onChange, onBack, onNext, onSkip }: Step
           </div>
         </div>
 
-        {/* Gender split */}
         <div className="space-y-4">
-          <Label className="text-base font-medium">Distribuição de sexo</Label>
+          <Label className="text-base font-medium">{t("Distribuição de sexo")}</Label>
           <div className="grid gap-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Masculino</span>
+                <span>{t("Masculino")}</span>
                 <span className="font-medium text-foreground">{genderSplit}%</span>
               </div>
               <Slider
@@ -90,7 +91,7 @@ export function StepAudience({ profile, onChange, onBack, onNext, onSkip }: Step
 
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Feminino</span>
+                <span>{t("Feminino")}</span>
                 <span className="font-medium text-foreground">{100 - genderSplit}%</span>
               </div>
               <Slider
@@ -110,3 +111,4 @@ export function StepAudience({ profile, onChange, onBack, onNext, onSkip }: Step
     </OnboardingCard>
   );
 }
+

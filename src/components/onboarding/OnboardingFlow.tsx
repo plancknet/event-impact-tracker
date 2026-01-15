@@ -1,10 +1,11 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { StepCreator } from "./steps/StepCreator";
 import { StepAudience } from "./steps/StepAudience";
 import { StepFormat } from "./steps/StepFormat";
 import { StepStyle } from "./steps/StepStyle";
 import { StepGoal } from "./steps/StepGoal";
 import { CreatorProfile } from "@/types/creatorProfile";
+import { useLanguage } from "@/i18n";
 
 interface OnboardingFlowProps {
   profile: CreatorProfile;
@@ -24,6 +25,7 @@ export function OnboardingFlow({
   onComplete,
 }: OnboardingFlowProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useLanguage();
 
   const handleNext = () => {
     if (currentStep < PROFILE_STEPS) {
@@ -54,10 +56,10 @@ export function OnboardingFlow({
     <div className="pb-20">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground tracking-tight">
-          Configure seu perfil de criador
+          {t("Configure seu perfil de criador")}
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Vamos personalizar seus roteiros para soar como você.
+          {t("Vamos personalizar seus roteiros para soar como você.")}
         </p>
       </div>
       {currentStep === 1 && (
@@ -111,3 +113,4 @@ export function OnboardingFlow({
     </div>
   );
 }
+

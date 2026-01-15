@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+﻿import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +24,7 @@ import {
   Minus,
   Plus,
 } from "lucide-react";
+import { useLanguage } from "@/i18n";
 
 export interface TeleprompterSettings {
   speed: number;
@@ -110,6 +111,7 @@ export function TeleprompterDisplay({
   const [recordingError, setRecordingError] = useState<string | null>(null);
   const [shouldDownload, setShouldDownload] = useState(false);
   const [recordOrientation, setRecordOrientation] = useState<"portrait" | "landscape">("portrait");
+  const { t } = useLanguage();
 
   // Notify parent of settings changes
   const notifySettingsChange = useCallback(() => {
@@ -241,7 +243,7 @@ export function TeleprompterDisplay({
       }
     } catch (err) {
       console.error("Failed to access camera:", err);
-      setRecordingError("Não foi possível acessar a câmera.");
+      setRecordingError(t("Não foi possível acessar a câmera."));
       setRecordEnabled(false);
     }
   }, [recordOrientation]);
@@ -324,7 +326,7 @@ export function TeleprompterDisplay({
       setIsRecording(true);
     } catch (err) {
       console.error("Failed to start recording:", err);
-      setRecordingError("Não foi possível iniciar a gravação.");
+      setRecordingError(t("Não foi possível iniciar a gravação."));
       setIsRecording(false);
     }
   }, [ensurePreview, isRecording, recordedUrl, shouldDownload, triggerDownload]);
@@ -555,13 +557,13 @@ export function TeleprompterDisplay({
         const pauseLabel = (() => {
           switch (part.pauseType) {
             case "pause-short":
-              return "Pausa curta";
+              return t("Pausa curta");
             case "pause-medium":
-              return "Pausa média";
+              return t("Pausa média");
             case "pause-long":
-              return "Pausa longa";
+              return t("Pausa longa");
             default:
-              return "Pausa";
+              return t("Pausa");
           }
         })();
         const pauseClass = (() => {
@@ -625,23 +627,23 @@ export function TeleprompterDisplay({
             <div className="flex items-center gap-2 flex-wrap">
               {onBack && (
                 <Button onClick={onBack} size="sm" variant="outline">
-                  Voltar
+                  {t("Voltar")}
                 </Button>
               )}
               {!isPlaying ? (
                 <Button onClick={handleStart} size="sm" disabled={countdown !== null}>
                   <Play className="w-4 h-4 mr-1" />
-                  {countdown !== null ? "Preparando" : "Iniciar"}
+                  {countdown !== null ? t("Preparando") : t("Iniciar")}
                 </Button>
               ) : (
                 <Button onClick={handlePauseToggle} size="sm" variant={isPaused ? "default" : "secondary"}>
                   <Pause className="w-4 h-4 mr-1" />
-                  {isPaused ? "Continuar" : "Pausar"}
+                  {isPaused ? t("Continuar") : t("Pausar")}
                 </Button>
               )}
               <Button onClick={handleRestart} size="sm" variant="outline">
                 <RotateCcw className="w-4 h-4 mr-1" />
-                Reiniciar
+                {t("Reiniciar")}
               </Button>
               <div className="flex items-center gap-2 flex-nowrap">
                 <Button
@@ -655,7 +657,7 @@ export function TeleprompterDisplay({
                   variant="outline"
                   disabled={!isRecording}
                 >
-                  Parar Gravação
+                  {t("Parar Gravação")}
                 </Button>
                 <Checkbox
                   id="recordVideo"
@@ -663,7 +665,7 @@ export function TeleprompterDisplay({
                   onCheckedChange={(value) => setRecordEnabled(Boolean(value))}
                 />
                 <Label htmlFor="recordVideo" className="text-sm">
-                  Gravar vídeo
+                  {t("Gravar vídeo")}
                 </Label>
                 {isRecording && (
                   <span className="flex items-center gap-1 text-xs text-red-500">
@@ -672,10 +674,28 @@ export function TeleprompterDisplay({
                   </span>
                 )}
               </div>
+              {recordEnabled && (
+                <div className="flex items-center gap-2 flex-nowrap">
+                  <Button
+                    size="sm"
+                    variant={recordOrientation === "portrait" ? "default" : "outline"}
+                    onClick={() => setRecordOrientation("portrait")}
+                  >
+                    {t("Vertical")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={recordOrientation === "landscape" ? "default" : "outline"}
+                    onClick={() => setRecordOrientation("landscape")}
+                  >
+                    {t("Horizontal")}
+                  </Button>
+                </div>
+              )}
               {recordedUrl && !isRecording && (
                 <Button asChild size="sm" variant="outline">
                   <a href={recordedUrl} download="teleprompter.webm">
-                    Salvar vídeo
+                    {t("Salvar vídeo")}
                   </a>
                 </Button>
               )}
@@ -685,7 +705,7 @@ export function TeleprompterDisplay({
                 variant="outline"
               >
                 {showControls ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
-                {showControls ? "Recolher" : "Expandir"}
+                {showControls ? t("Recolher") : t("Expandir")}
               </Button>
             </div>
 
@@ -725,10 +745,10 @@ export function TeleprompterDisplay({
           {showControls && (
             <div className="mt-3 flex items-center gap-4 flex-wrap">
               <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Fonte</span>
+              <span className="text-xs text-muted-foreground">{t("Fonte")}</span>
               <Select value={fontFamily} onValueChange={setFontFamily}>
                 <SelectTrigger className="w-[170px] h-8">
-                  <SelectValue placeholder="Fonte" />
+                  <SelectValue placeholder={t("Fonte")} />
                 </SelectTrigger>
                 <SelectContent>
                   {FONT_OPTIONS.map((font) => (
@@ -740,7 +760,7 @@ export function TeleprompterDisplay({
               </Select>
               </div>
               <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Tamanho</span>
+              <span className="text-xs text-muted-foreground">{t("Tamanho")}</span>
               <div className="w-36">
                 <Slider
                   value={[fontSize]}
@@ -753,30 +773,30 @@ export function TeleprompterDisplay({
               <span className="text-xs text-muted-foreground w-10">{fontSize}px</span>
               </div>
               <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Cor</span>
+              <span className="text-xs text-muted-foreground">{t("Cor")}</span>
               <input
                 type="color"
                 value={textColor}
                 onChange={(e) => setTextColor(e.target.value)}
                 className="h-8 w-10 rounded border border-border bg-transparent p-0"
-                aria-label="Cor da fonte"
+                aria-label={t("Cor da fonte")}
               />
               </div>
               <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Fundo</span>
+              <span className="text-xs text-muted-foreground">{t("Fundo")}</span>
               <input
                 type="color"
                 value={backgroundColor}
                 onChange={(e) => setBackgroundColor(e.target.value)}
                 className="h-8 w-10 rounded border border-border bg-transparent p-0"
-                aria-label="Cor do fundo"
+                aria-label={t("Cor do fundo")}
               />
               </div>
               <div className="flex flex-col gap-3 w-full sm:w-auto">
-              <span className="text-xs text-muted-foreground">Pausas (s)</span>
+              <span className="text-xs text-muted-foreground">{t("Pausas (s)")}</span>
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-12">Curta</span>
+                  <span className="text-xs text-muted-foreground w-12">{t("Curta")}</span>
                   <Button
                     type="button"
                     size="sm"
@@ -784,7 +804,7 @@ export function TeleprompterDisplay({
                     onClick={() =>
                       handlePauseDurationChange("pause-short", pauseDurations["pause-short"] / 1000 - 0.5)
                     }
-                    aria-label="Diminuir pausa curta"
+                    aria-label={t("Diminuir pausa curta")}
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
@@ -804,7 +824,7 @@ export function TeleprompterDisplay({
                     onClick={() =>
                       handlePauseDurationChange("pause-short", pauseDurations["pause-short"] / 1000 + 0.5)
                     }
-                    aria-label="Aumentar pausa curta"
+                    aria-label={t("Aumentar pausa curta")}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -813,7 +833,7 @@ export function TeleprompterDisplay({
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground w-12">Média</span>
+              <span className="text-xs text-muted-foreground w-12">{t("Média")}</span>
                   <Button
                     type="button"
                     size="sm"
@@ -821,7 +841,7 @@ export function TeleprompterDisplay({
                     onClick={() =>
                       handlePauseDurationChange("pause-medium", pauseDurations["pause-medium"] / 1000 - 0.5)
                     }
-                    aria-label="Diminuir pausa média"
+                    aria-label={t("Diminuir pausa média")}
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
@@ -841,7 +861,7 @@ export function TeleprompterDisplay({
                     onClick={() =>
                       handlePauseDurationChange("pause-medium", pauseDurations["pause-medium"] / 1000 + 0.5)
                     }
-                    aria-label="Aumentar pausa média"
+                    aria-label={t("Aumentar pausa média")}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -850,7 +870,7 @@ export function TeleprompterDisplay({
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground w-12">Longa</span>
+                  <span className="text-xs text-muted-foreground w-12">{t("Longa")}</span>
                   <Button
                     type="button"
                     size="sm"
@@ -858,7 +878,7 @@ export function TeleprompterDisplay({
                     onClick={() =>
                       handlePauseDurationChange("pause-long", pauseDurations["pause-long"] / 1000 - 0.5)
                     }
-                    aria-label="Diminuir pausa longa"
+                    aria-label={t("Diminuir pausa longa")}
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
@@ -878,7 +898,7 @@ export function TeleprompterDisplay({
                     onClick={() =>
                       handlePauseDurationChange("pause-long", pauseDurations["pause-long"] / 1000 + 0.5)
                     }
-                    aria-label="Aumentar pausa longa"
+                    aria-label={t("Aumentar pausa longa")}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -971,3 +991,7 @@ export function TeleprompterDisplay({
     </div>
   );
 }
+
+
+
+

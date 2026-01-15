@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+﻿import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -19,8 +19,9 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { format, isValid } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR, enUS } from "date-fns/locale";
 import type { UserNewsItem } from "@/hooks/useUserNews";
+import { useLanguage } from "@/i18n";
 
 interface NewsGridProps {
   newsItems: UserNewsItem[];
@@ -46,6 +47,7 @@ export function NewsGrid({
   onSelectionChange,
   onRefresh,
 }: NewsGridProps) {
+  const { t, language } = useLanguage();
   const [isOpen, setIsOpen] = useState(true);
   const [searchFilter, setSearchFilter] = useState("");
   const [sourceFilter, setSourceFilter] = useState("");
@@ -129,7 +131,7 @@ export function NewsGrid({
     if (!dateStr) return "-";
     const date = new Date(dateStr);
     if (!isValid(date)) return "-";
-    return format(date, "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
+    return format(date, "dd/MM/yyyy HH:mm:ss", { locale: language === "pt" ? ptBR : enUS });
   };
 
   return (
@@ -138,10 +140,13 @@ export function NewsGrid({
         <CollapsibleTrigger asChild>
           <button className="w-full p-4 flex items-center justify-between text-left hover:bg-muted/50 transition-colors rounded-t-xl">
             <div className="flex items-center gap-3">
-              <h3 className="font-semibold">Notícias encontradas</h3>
+              <h3 className="font-semibold">{t("Notícias encontradas")}</h3>
               {newsItems.length > 0 && (
                 <Badge variant="secondary" className="text-xs">
-                  {selectedIds.length}/{newsItems.length} selecionadas
+                  {t("{selected}/{total} selecionadas", {
+                    selected: String(selectedIds.length),
+                    total: String(newsItems.length),
+                  })}
                 </Badge>
               )}
             </div>
@@ -158,26 +163,27 @@ export function NewsGrid({
               >
                 <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
               </Button>
-              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
+              <ChevronDown
+                className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
+              />
             </div>
           </button>
         </CollapsibleTrigger>
 
         <CollapsibleContent>
           <div className="border-t p-4 space-y-4">
-            {/* Filters and actions */}
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative flex-1 min-w-[220px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar notícias..."
+                  placeholder={t("Buscar notícias...")}
                   value={searchFilter}
                   onChange={(e) => setSearchFilter(e.target.value)}
                   className="pl-9 h-9"
                 />
               </div>
               <Input
-                placeholder="Filtrar por fonte"
+                placeholder={t("Filtrar por fonte")}
                 value={sourceFilter}
                 onChange={(e) => setSourceFilter(e.target.value)}
                 className="h-9 w-full sm:w-[180px]"
@@ -187,32 +193,29 @@ export function NewsGrid({
                   checked={showSelectedOnly}
                   onCheckedChange={(checked) => setShowSelectedOnly(Boolean(checked))}
                 />
-                Somente selecionadas
+                {t("Somente selecionadas")}
               </div>
               <Button variant="outline" size="sm" onClick={handleSelectAll} className="h-9">
                 <CheckSquare className="w-4 h-4 mr-1" />
-                Todas
+                {t("Todas")}
               </Button>
               <Button variant="outline" size="sm" onClick={handleDeselectAll} className="h-9">
                 <Square className="w-4 h-4 mr-1" />
-                Nenhuma
+                {t("Nenhuma")}
               </Button>
             </div>
 
-            {/* Loading */}
             {isLoading && (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-muted-foreground">Buscando notícias...</span>
+                <span className="ml-2 text-muted-foreground">{t("Buscando notícias...")}</span>
               </div>
             )}
 
-            {/* Error */}
             {error && !isLoading && (
               <p className="text-center text-destructive py-4">{error}</p>
             )}
 
-            {/* News grid */}
             {!isLoading && !error && (
               <div className="space-y-2">
                 <div className="hidden md:grid grid-cols-[40px_2fr_1fr_1fr_2fr_36px] gap-3 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -222,7 +225,7 @@ export function NewsGrid({
                     onClick={() => toggleSort("title")}
                     className="flex items-center gap-1 text-left"
                   >
-                    Título
+                    {t("Título")}
                     <ArrowUpDown className="w-3 h-3" />
                   </button>
                   <button
@@ -230,7 +233,7 @@ export function NewsGrid({
                     onClick={() => toggleSort("source")}
                     className="flex items-center gap-1 text-left"
                   >
-                    Fonte
+                    {t("Fonte")}
                     <ArrowUpDown className="w-3 h-3" />
                   </button>
                   <button
@@ -238,17 +241,17 @@ export function NewsGrid({
                     onClick={() => toggleSort("published_at")}
                     className="flex items-center gap-1 text-left"
                   >
-                    Data
+                    {t("Data")}
                     <ArrowUpDown className="w-3 h-3" />
                   </button>
-                  <div>Resumo</div>
+                  <div>{t("Resumo")}</div>
                   <div />
                 </div>
 
                 <div className="max-h-[420px] overflow-y-auto space-y-2">
                   {sortedNews.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">
-                      Nenhuma notícia encontrada
+                      {t("Nenhuma notícia encontrada")}
                     </p>
                   ) : (
                     sortedNews.map((item) => (
@@ -303,3 +306,4 @@ export function NewsGrid({
     </Collapsible>
   );
 }
+

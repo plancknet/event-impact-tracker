@@ -1,15 +1,17 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Loader2, ArrowRight, PartyPopper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/i18n";
 
 export default function PremiumSuccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [verifying, setVerifying] = useState(true);
   const [verified, setVerified] = useState(false);
 
@@ -24,7 +26,7 @@ export default function PremiumSuccess() {
 
       try {
         const { data: sessionData } = await supabase.auth.getSession();
-        
+
         const response = await supabase.functions.invoke("verify-subscription", {
           headers: {
             Authorization: `Bearer ${sessionData.session?.access_token}`,
@@ -50,7 +52,7 @@ export default function PremiumSuccess() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Verificando pagamento...</p>
+          <p className="text-muted-foreground">{t("Verificando pagamento...")}</p>
         </div>
       </div>
     );
@@ -67,26 +69,26 @@ export default function PremiumSuccess() {
             <PartyPopper className="h-6 w-6 text-warning absolute -top-1 -right-1" />
           </div>
           <CardTitle className="text-2xl font-bold">
-            {verified ? "Parabéns!" : "Obrigado!"}
+            {verified ? t("Parabéns!") : t("Obrigado!")}
           </CardTitle>
           <CardDescription className="text-base">
             {verified
-              ? "Sua assinatura foi ativada com sucesso!"
-              : "Seu pagamento está sendo processado."}
+              ? t("Sua assinatura foi ativada com sucesso!")
+              : t("Seu pagamento está sendo processado.")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <p className="text-muted-foreground">
             {verified
-              ? "Você agora tem acesso a todos os recursos do ThinkAndTalk Pro. Comece a criar conteúdo incrível!"
-              : "Em alguns instantes você terá acesso a todos os recursos premium."}
+              ? t("Você agora tem acesso a todos os recursos do ThinkAndTalk Pro. Comece a criar conteúdo incrível!")
+              : t("Em alguns instantes você terá acesso a todos os recursos premium.")}
           </p>
           <Button
             size="lg"
             className="w-full gap-2"
             onClick={() => navigate("/")}
           >
-            Começar a usar
+            {t("Começar a usar")}
             <ArrowRight className="h-4 w-4" />
           </Button>
         </CardContent>
@@ -94,3 +96,4 @@ export default function PremiumSuccess() {
     </div>
   );
 }
+

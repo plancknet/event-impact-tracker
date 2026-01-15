@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+﻿import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -21,6 +21,7 @@ import {
   DURATION_OPTIONS,
   VIDEO_TYPE_OPTIONS,
 } from "@/types/creatorProfile";
+import { useLanguage } from "@/i18n";
 
 interface ScriptControlsProps {
   onRegenerate: () => void;
@@ -49,6 +50,7 @@ export function ScriptControls({
   currentFormat,
   scriptText,
 }: ScriptControlsProps) {
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -60,7 +62,6 @@ export function ScriptControls({
 
   return (
     <div className="space-y-6">
-      {/* Primary actions */}
       <div className="flex flex-wrap gap-3">
         <Button
           onClick={onRegenerate}
@@ -69,7 +70,7 @@ export function ScriptControls({
           className="gap-2"
         >
           <RefreshCw className={`w-4 h-4 ${isGenerating ? "animate-spin" : ""}`} />
-          Regenerar
+          {t("Regenerar")}
         </Button>
 
         <Button
@@ -79,7 +80,7 @@ export function ScriptControls({
           disabled={!scriptText}
         >
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-          {copied ? "Copiado!" : "Copiar"}
+          {copied ? t("Copiado!") : t("Copiar")}
         </Button>
 
         <Button
@@ -88,17 +89,15 @@ export function ScriptControls({
           disabled={!scriptText}
         >
           <Maximize2 className="w-4 h-4" />
-          Teleprompter
+          {t("Teleprompter")}
         </Button>
       </div>
 
-      {/* Adjustment controls */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-xl bg-muted/50">
-        {/* Tone */}
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Volume2 className="w-4 h-4" />
-            Tom
+            {t("Tom")}
           </label>
           <Select value={currentTone} onValueChange={onAdjustTone}>
             <SelectTrigger>
@@ -114,11 +113,10 @@ export function ScriptControls({
           </Select>
         </div>
 
-        {/* Duration */}
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Clock className="w-4 h-4" />
-            Duração
+            {t("Duração")}
           </label>
           <Select value={currentDuration} onValueChange={onAdjustDuration}>
             <SelectTrigger>
@@ -134,11 +132,10 @@ export function ScriptControls({
           </Select>
         </div>
 
-        {/* Format */}
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Sparkles className="w-4 h-4" />
-            Formato
+            {t("Formato")}
           </label>
           <Select value={currentFormat} onValueChange={onAdjustFormat}>
             <SelectTrigger>
@@ -157,3 +154,4 @@ export function ScriptControls({
     </div>
   );
 }
+

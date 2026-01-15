@@ -1,4 +1,5 @@
-import { cn } from "@/lib/utils";
+﻿import { cn } from "@/lib/utils";
+import { useLanguage } from "@/i18n";
 
 interface OnboardingProgressProps {
   currentStep: number;
@@ -12,11 +13,19 @@ interface OnboardingProgressProps {
 export function OnboardingProgress({
   currentStep,
   totalSteps,
-  stepLabels = ["Você", "Público", "Formato", "Estilo", "Notícias"],
+  stepLabels,
   onStepChange,
   orientation = "vertical",
   className,
 }: OnboardingProgressProps) {
+  const { t } = useLanguage();
+  const labels = stepLabels ?? [
+    t("Você"),
+    t("Público"),
+    t("Formato"),
+    t("Estilo"),
+    t("Objetivo"),
+  ];
   const progress = totalSteps > 1 ? ((currentStep - 1) / (totalSteps - 1)) * 100 : 0;
 
   if (orientation === "horizontal") {
@@ -28,7 +37,7 @@ export function OnboardingProgress({
           style={{ width: `${progress}%` }}
         />
         <div className="grid grid-cols-6 gap-2">
-          {stepLabels.slice(0, totalSteps).map((label, index) => {
+          {labels.slice(0, totalSteps).map((label, index) => {
             const stepNumber = index + 1;
             const isCompleted = stepNumber < currentStep;
             const isCurrent = stepNumber === currentStep;
@@ -73,7 +82,7 @@ export function OnboardingProgress({
       />
 
       <div className="flex flex-col gap-4 pl-6">
-        {stepLabels.slice(0, totalSteps).map((label, index) => {
+        {labels.slice(0, totalSteps).map((label, index) => {
           const stepNumber = index + 1;
           const isCompleted = stepNumber < currentStep;
           const isCurrent = stepNumber === currentStep;
@@ -108,3 +117,4 @@ export function OnboardingProgress({
     </div>
   );
 }
+
