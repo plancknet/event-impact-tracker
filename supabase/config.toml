@@ -20,3 +20,18 @@ verify_jwt = false
 
 [functions.google-news-rss]
 verify_jwt = false
+
+[functions.create-checkout-session]
+verify_jwt = false
+
+[functions.verify-payment]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.create-subscription-checkout]
+verify_jwt = false
+
+[functions.verify-subscription]
+verify_jwt = false
