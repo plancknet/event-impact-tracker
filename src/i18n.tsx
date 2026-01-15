@@ -24,8 +24,6 @@ const translations: Record<Language, TranslationMap> = {
     " em segundos, usando ": " in seconds, using ",
     "Vídeos": "Videos",
     "IA": "AI",
-    "Centralize suas ideias e transforme pensamentos em falas naturais para vídeos, podcasts e apresentações.":
-      "Centralize your ideas and turn thoughts into natural speech for videos, podcasts, and presentations.",
     "Crie scripts personalizados para YouTube, Instagram, TikTok, Reels, Shorts, Lives e muito mais — adaptados ao seu público, tom de voz e objetivo. Rode o texto em um teleprompter com ajustes fino.":
       "Create personalized scripts for YouTube, Instagram, TikTok, Reels, Shorts, Lives, and more — tailored to your audience, tone, and goal. Run the text in a teleprompter with fine adjustments.",
     "Crie agora sua ": "Create your ",
@@ -39,7 +37,6 @@ const translations: Record<Language, TranslationMap> = {
     "As senhas não conferem.": "Passwords do not match.",
     "Criar conta": "Create account",
     "Entrar": "Sign in",
-    "Entre com sua conta para continuar": "Sign in to continue",
     "Crie uma conta para começar": "Create an account to get started",
     "ou": "or",
     "Continuar com Google": "Continue with Google",

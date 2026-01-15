@@ -275,11 +275,6 @@ export default function Auth() {
           </h1>
           <p className="text-base text-slate-600 md:text-lg">
             {t(
-              "Centralize suas ideias e transforme pensamentos em falas naturais para vídeos, podcasts e apresentações."
-            )}
-          </p>
-          <p className="text-base text-slate-600 md:text-lg">
-            {t(
               "Crie scripts personalizados para YouTube, Instagram, TikTok, Reels, Shorts, Lives e muito mais — adaptados ao seu público, tom de voz e objetivo. Rode o texto em um teleprompter com ajustes fino."
             )}
           </p>
@@ -291,9 +286,9 @@ export default function Auth() {
               <CardTitle className="text-2xl font-bold">
                 {isLogin ? t("Entrar") : t("Criar conta")}
               </CardTitle>
-              <CardDescription>
-                {isLogin ? t("Entre com sua conta para continuar") : t("Crie uma conta para começar")}
-              </CardDescription>
+              {!isLogin && (
+                <CardDescription>{t("Crie uma conta para começar")}</CardDescription>
+              )}
             </CardHeader>
             <CardContent>
               <Form {...form}>
