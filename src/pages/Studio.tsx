@@ -107,7 +107,10 @@ export default function Studio() {
       })) || [];
       const effectiveProfile = profileOverride || profile;
 
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
       const { data, error } = await supabase.functions.invoke("generate-teleprompter-script", {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
         body: {
           newsItems,
           parameters: {
@@ -144,7 +147,10 @@ export default function Studio() {
   const handleRegenerate = async (adjustments: { tone?: string; duration?: string; format?: string }): Promise<{ scriptId?: string } | void> => {
     setIsGenerating(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
       const { data, error } = await supabase.functions.invoke("generate-teleprompter-script", {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
         body: {
           newsItems: [],
           parameters: {

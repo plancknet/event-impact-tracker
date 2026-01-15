@@ -38,7 +38,10 @@ export async function generateTeleprompterScript(
     feedback?: { question: string; answer: string }[];
   },
 ): Promise<TeleprompterGenerationResult> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData.session?.access_token;
   const { data, error } = await supabase.functions.invoke("generate-teleprompter-script", {
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
     body: {
       newsItems,
       parameters,
