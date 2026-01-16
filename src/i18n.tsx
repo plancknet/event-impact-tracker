@@ -147,7 +147,6 @@ const translations: Record<Language, TranslationMap> = {
     "Configure seu perfil de criador": "Configure your creator profile",
     "Vamos personalizar seus roteiros para soar como você.":
       "Let's personalize your scripts to sound like you.",
-    "Continuar": "Continue",
     "Pular": "Skip",
     "Sobre você": "About you",
     "Conte-nos sobre seu conteúdo e experiência":
@@ -273,7 +272,6 @@ const translations: Record<Language, TranslationMap> = {
     "Promover produtos": "Promote products",
     "Engajar": "Engage",
     "Criar comunidade": "Build a community",
-    "Português": "Portuguese",
     "Inglês": "English",
     "Espanhol": "Spanish",
     "Francês": "French",
@@ -365,7 +363,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       const template = map[key] || key;
       if (!vars) return template;
       return Object.keys(vars).reduce(
-        (result, token) => result.replaceAll(`{${token}}`, vars[token]),
+        (result, token) => result.split(`{${token}}`).join(vars[token]),
         template
       );
     },
