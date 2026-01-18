@@ -7,6 +7,7 @@ import Studio from "@/pages/Studio";
 import Auth from "@/pages/Auth";
 import Premium from "@/pages/Premium";
 import PremiumSuccess from "@/pages/PremiumSuccess";
+import Quiz from "@/pages/Quiz";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -18,6 +19,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          <Route path="/quiz" element={<Quiz />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/premium" element={<Premium />} />
           <Route path="/premium/success" element={<PremiumSuccess />} />
