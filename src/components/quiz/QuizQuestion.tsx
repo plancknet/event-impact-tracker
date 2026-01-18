@@ -95,7 +95,15 @@ const QuizQuestion = ({
         )}
       >
         {/* Question Text */}
-        <div className="text-center mb-8 space-y-2">
+        <div className="text-center mb-8 space-y-3">
+          {currentIndex === 0 && (
+            <h1
+              className="text-2xl sm:text-3xl font-semibold text-quiz-foreground"
+              style={{ fontFamily: quizFontFamily }}
+            >
+              Programa de Criação de Vídeo personalizado
+            </h1>
+          )}
           <h2
             className="text-xl sm:text-2xl font-semibold text-quiz-foreground leading-tight"
             style={{ fontFamily: quizFontFamily }}

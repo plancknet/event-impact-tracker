@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import QuizWelcome from "@/components/quiz/QuizWelcome";
 import QuizQuestion from "@/components/quiz/QuizQuestion";
 import QuizTransition from "@/components/quiz/QuizTransition";
 import QuizCoupon from "@/components/quiz/QuizCoupon";
@@ -45,7 +44,7 @@ export interface QuizAnswers {
 
 const Quiz = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState<QuizStep>("welcome");
+  const [step, setStep] = useState<QuizStep>("questions");
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<QuizAnswers>({});
   const [email, setEmail] = useState("");
@@ -75,6 +74,11 @@ const Quiz = () => {
     }
     setStep("questions");
   };
+
+  useEffect(() => {
+    void handleStart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Save answer and advance
   const handleAnswer = async (questionKey: string, value: string | string[]) => {
@@ -228,10 +232,6 @@ const Quiz = () => {
         </div>
       </header>
 
-      {step === "welcome" && (
-        <QuizWelcome onStart={handleStart} />
-      )}
-      
       {step === "questions" && (
         <QuizQuestion
           question={QUIZ_QUESTIONS[currentQuestion]}
