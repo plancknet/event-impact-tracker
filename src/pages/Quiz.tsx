@@ -2,11 +2,11 @@ import { useState, useEffect, Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import QuizQuestion from "@/components/quiz/QuizQuestion";
-import { QUIZ_QUESTIONS } from "@/components/quiz/quizData";
 import { LanguageSelector } from "@/components/LanguageSelector";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Baby, GraduationCap, Briefcase, Users, UserCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { QuizQuestionData } from "@/components/quiz/quizTypes";
 
 const QuizTransition = lazy(() => import("@/components/quiz/QuizTransition"));
 const QuizCoupon = lazy(() => import("@/components/quiz/QuizCoupon"));
@@ -47,6 +47,21 @@ const Quiz = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState<QuizStep>("questions");
   const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [questions, setQuestions] = useState<QuizQuestionData[]>([
+    {
+      key: "age_range",
+      question: "Quantos anos você tem?",
+      options: [
+        { value: "under_18", label: "Menor de 18 anos", icon: Baby },
+        { value: "18_24", label: "18-24", icon: GraduationCap },
+        { value: "25_34", label: "25-34", icon: Briefcase },
+        { value: "35_44", label: "35-44", icon: Users },
+        { value: "45_plus", label: "45+", icon: UserCheck },
+      ],
+    },
+  ]);
+  const [isQuestionsLoaded, setIsQuestionsLoaded] = useState(false);
+  const [pendingAdvance, setPendingAdvance] = useState(false);
   const [answers, setAnswers] = useState<QuizAnswers>({});
   const [email, setEmail] = useState("");
   const [quizId, setQuizId] = useState<string | null>(null);
@@ -81,6 +96,22 @@ const Quiz = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    import("@/components/quiz/quizData")
+      .then((module) => {
+        if (!active) return;
+        setQuestions(module.QUIZ_QUESTIONS);
+        setIsQuestionsLoaded(true);
+      })
+      .catch((error) => {
+        console.error("Failed to load quiz questions:", error);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   // Save answer and advance
   const handleAnswer = async (questionKey: string, value: string | string[]) => {
     const newAnswers = { ...answers, [questionKey]: value };
@@ -98,11 +129,16 @@ const Quiz = () => {
     setSlideDirection("left");
     
     setTimeout(() => {
-      if (currentQuestion < QUIZ_QUESTIONS.length - 1) {
-        setCurrentQuestion(currentQuestion + 1);
-      } else {
-        setStep("transition");
+      const nextIndex = currentQuestion + 1;
+      if (nextIndex < questions.length) {
+        setCurrentQuestion(nextIndex);
+        return;
       }
+      if (!isQuestionsLoaded) {
+        setPendingAdvance(true);
+        return;
+      }
+      setStep("transition");
     }, 300);
   };
 
@@ -194,6 +230,16 @@ const Quiz = () => {
     setCurrentQuestion((prev) => Math.max(0, prev - 1));
   };
 
+  useEffect(() => {
+    if (!pendingAdvance || !isQuestionsLoaded) return;
+    setPendingAdvance(false);
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+    } else {
+      setStep("transition");
+    }
+  }, [pendingAdvance, isQuestionsLoaded, currentQuestion, questions.length]);
+
   return (
     <div className="min-h-screen bg-quiz-background">
       <header className="border-b bg-quiz-card/80 backdrop-blur-sm sticky top-0 z-40">
@@ -225,7 +271,7 @@ const Quiz = () => {
                   <div
                     className="h-full bg-gradient-to-r from-quiz-blue to-quiz-purple transition-all duration-500 ease-out rounded-full"
                     style={{
-                      width: `${((currentQuestion + 1) / QUIZ_QUESTIONS.length) * 100}%`,
+                      width: `${((currentQuestion + 1) / questions.length) * 100}%`,
                     }}
                   />
                 </div>
@@ -238,11 +284,11 @@ const Quiz = () => {
 
       {step === "questions" && (
         <QuizQuestion
-          question={QUIZ_QUESTIONS[currentQuestion]}
+          question={questions[currentQuestion]}
           currentIndex={currentQuestion}
-          totalQuestions={QUIZ_QUESTIONS.length}
+          totalQuestions={questions.length}
           onAnswer={handleAnswer}
-          selectedAnswer={answers[QUIZ_QUESTIONS[currentQuestion].key as keyof QuizAnswers]}
+          selectedAnswer={answers[questions[currentQuestion].key as keyof QuizAnswers]}
           slideDirection={slideDirection}
         />
       )}

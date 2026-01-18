@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Check } from "lucide-react";
-import { QuizQuestionData } from "./quizData";
+import { QuizQuestionData } from "./quizTypes";
 import { cn } from "@/lib/utils";
 
 interface QuizQuestionProps {
