@@ -57,6 +57,16 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        quiz: {
+          background: "hsl(var(--quiz-background))",
+          foreground: "hsl(var(--quiz-foreground))",
+          card: "hsl(var(--quiz-card))",
+          border: "hsl(var(--quiz-border))",
+          muted: "hsl(var(--quiz-muted))",
+          blue: "hsl(var(--quiz-blue))",
+          purple: "hsl(var(--quiz-purple))",
+          selected: "hsl(var(--quiz-selected))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

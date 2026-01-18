@@ -83,6 +83,96 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_responses: {
+        Row: {
+          age_range: string | null
+          audience_age: string | null
+          audience_gender: string | null
+          audience_type: string | null
+          biggest_challenge: string | null
+          comfort_recording: string | null
+          completed_at: string | null
+          content_goal: string | null
+          coupon_code: string | null
+          coupon_revealed: boolean | null
+          created_at: string
+          creator_level: string | null
+          editing_time: string | null
+          email: string | null
+          energy_level: string | null
+          id: string
+          main_goal: string | null
+          niche: string | null
+          planning_style: string | null
+          platforms: string[] | null
+          publish_frequency: string | null
+          result_goal: string | null
+          speaking_tone: string | null
+          updated_at: string
+          user_id: string | null
+          video_duration: string | null
+          video_format: string | null
+        }
+        Insert: {
+          age_range?: string | null
+          audience_age?: string | null
+          audience_gender?: string | null
+          audience_type?: string | null
+          biggest_challenge?: string | null
+          comfort_recording?: string | null
+          completed_at?: string | null
+          content_goal?: string | null
+          coupon_code?: string | null
+          coupon_revealed?: boolean | null
+          created_at?: string
+          creator_level?: string | null
+          editing_time?: string | null
+          email?: string | null
+          energy_level?: string | null
+          id?: string
+          main_goal?: string | null
+          niche?: string | null
+          planning_style?: string | null
+          platforms?: string[] | null
+          publish_frequency?: string | null
+          result_goal?: string | null
+          speaking_tone?: string | null
+          updated_at?: string
+          user_id?: string | null
+          video_duration?: string | null
+          video_format?: string | null
+        }
+        Update: {
+          age_range?: string | null
+          audience_age?: string | null
+          audience_gender?: string | null
+          audience_type?: string | null
+          biggest_challenge?: string | null
+          comfort_recording?: string | null
+          completed_at?: string | null
+          content_goal?: string | null
+          coupon_code?: string | null
+          coupon_revealed?: boolean | null
+          created_at?: string
+          creator_level?: string | null
+          editing_time?: string | null
+          email?: string | null
+          energy_level?: string | null
+          id?: string
+          main_goal?: string | null
+          niche?: string | null
+          planning_style?: string | null
+          platforms?: string[] | null
+          publish_frequency?: string | null
+          result_goal?: string | null
+          speaking_tone?: string | null
+          updated_at?: string
+          user_id?: string | null
+          video_duration?: string | null
+          video_format?: string | null
+        }
+        Relationships: []
+      }
       teleprompter_scripts: {
         Row: {
           created_at: string
