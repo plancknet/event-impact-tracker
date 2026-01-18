@@ -121,7 +121,14 @@ const QuizQuestion = ({
         </div>
 
         {/* Options */}
-        <div className="w-full grid gap-3 md:grid-cols-2">
+        <div
+          className={cn(
+            "w-full grid gap-3",
+            ["age_range", "publish_frequency", "editing_time", "creator_level", "audience_age", "video_duration", "energy_level"].includes(question.key)
+              ? "grid-cols-1"
+              : "md:grid-cols-2"
+          )}
+        >
           {question.options.map((option) => {
             const selected = isSelected(option.value);
             const IconComponent = option.icon;
