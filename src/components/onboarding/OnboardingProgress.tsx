@@ -62,7 +62,7 @@ export function OnboardingProgress({
                     !isCompleted && !isCurrent && "bg-muted text-muted-foreground",
                   )}
                 >
-                  {isCompleted ? "OK" : stepNumber}
+                  <span className="sr-only">{stepNumber}</span>
                 </div>
                 <span className="text-[10px] leading-tight">{label}</span>
               </button>
@@ -99,16 +99,16 @@ export function OnboardingProgress({
                 !isCompleted && !isCurrent && "text-muted-foreground",
               )}
             >
-              <div
-                className={cn(
-                  "w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all",
-                  isCompleted && "bg-primary text-primary-foreground",
-                  isCurrent && "bg-primary/10 text-primary border-2 border-primary",
-                  !isCompleted && !isCurrent && "bg-muted text-muted-foreground",
-                )}
-              >
-                {isCompleted ? "OK" : stepNumber}
-              </div>
+                <div
+                  className={cn(
+                    "w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all",
+                    isCompleted && "bg-primary text-primary-foreground",
+                    isCurrent && "bg-primary/10 text-primary border-2 border-primary",
+                    !isCompleted && !isCurrent && "bg-muted text-muted-foreground",
+                  )}
+                >
+                  <span className="sr-only">{stepNumber}</span>
+                </div>
               <span className="text-sm">{label}</span>
             </button>
           );

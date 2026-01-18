@@ -8,6 +8,8 @@ import QuizCoupon from "@/components/quiz/QuizCoupon";
 import QuizEmailCapture from "@/components/quiz/QuizEmailCapture";
 import QuizResults from "@/components/quiz/QuizResults";
 import { QUIZ_QUESTIONS } from "@/components/quiz/quizData";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { ArrowLeft } from "lucide-react";
 
 export type QuizStep = 
   | "welcome" 
@@ -120,8 +122,37 @@ const Quiz = () => {
     navigate("/premium");
   };
 
+  const handleBackQuestion = () => {
+    if (currentQuestion <= 0) return;
+    setSlideDirection("right");
+    setCurrentQuestion((prev) => Math.max(0, prev - 1));
+  };
+
   return (
     <div className="min-h-screen bg-quiz-background">
+      <header className="border-b bg-quiz-card/80 backdrop-blur-sm sticky top-0 z-40">
+        <div className="container max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            {step === "questions" && currentQuestion > 0 && (
+              <button
+                type="button"
+                onClick={handleBackQuestion}
+                className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-quiz-border/60 text-quiz-muted hover:text-quiz-foreground hover:border-quiz-purple/40 transition-colors"
+                aria-label="Voltar"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+            )}
+            <img
+              src="/imgs/ThinkAndTalk.png"
+              alt="ThinkAndTalk"
+              className="h-8 w-auto"
+            />
+          </div>
+          <LanguageSelector />
+        </div>
+      </header>
+
       {step === "welcome" && (
         <QuizWelcome onStart={handleStart} />
       )}

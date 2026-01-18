@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CreatorProfile, EXPERTISE_OPTIONS } from "@/types/creatorProfile";
 import { useLanguage } from "@/i18n";
+import { BadgeCheck, Leaf, Sparkles, Zap } from "lucide-react";
 
 interface StepCreatorProps {
   profile: CreatorProfile;
@@ -15,6 +16,15 @@ interface StepCreatorProps {
 export function StepCreator({ profile, onChange, onNext, onSkip }: StepCreatorProps) {
   const { t } = useLanguage();
   const canContinue = profile.main_topic.trim().length > 0;
+  const quizFontClass =
+    "font-[Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,'Helvetica_Neue',Arial,sans-serif]";
+
+  const expertiseIcons: Record<string, JSX.Element> = {
+    iniciante: <Leaf className="h-4 w-4" />,
+    intermediario: <Sparkles className="h-4 w-4" />,
+    avancado: <Zap className="h-4 w-4" />,
+    especialista: <BadgeCheck className="h-4 w-4" />,
+  };
 
   return (
     <OnboardingCard
@@ -27,7 +37,10 @@ export function StepCreator({ profile, onChange, onNext, onSkip }: StepCreatorPr
     >
       <div className="space-y-8">
         <div className="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
-          <Label htmlFor="main_topic" className="text-base font-medium text-emerald-800">
+          <Label
+            htmlFor="main_topic"
+            className={`text-base font-medium text-emerald-800 ${quizFontClass}`}
+          >
             {t("Sobre o que vamos falar hoje?")}
           </Label>
           <Input
@@ -35,15 +48,15 @@ export function StepCreator({ profile, onChange, onNext, onSkip }: StepCreatorPr
             value={profile.main_topic}
             onChange={(e) => onChange({ main_topic: e.target.value })}
             placeholder={t("Ex: Bitcoin, Finanças, Marketing Digital, Culinária...")}
-            className="h-12 text-base bg-white/80 border-emerald-200 focus-visible:ring-emerald-400"
+            className={`h-12 text-base bg-white/80 border-emerald-200 focus-visible:ring-emerald-400 ${quizFontClass}`}
           />
-          <p className="text-sm text-muted-foreground">
+          <p className={`text-sm text-muted-foreground ${quizFontClass}`}>
             {t("Separe múltiplos temas por vírgula")}
           </p>
         </div>
 
         <div className="space-y-3">
-          <Label className="text-base font-medium">
+          <Label className={`text-base font-medium ${quizFontClass}`}>
             {t("Qual é o seu nível como criador?")}
           </Label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -52,6 +65,7 @@ export function StepCreator({ profile, onChange, onNext, onSkip }: StepCreatorPr
                 <OptionCard
                   label={t(option.label)}
                   description={t(option.description)}
+                  icon={expertiseIcons[option.value] ?? <Sparkles className="h-4 w-4" />}
                   selected={profile.expertise_level === option.value}
                   onClick={() => onChange({ expertise_level: option.value })}
                   compact
@@ -64,4 +78,3 @@ export function StepCreator({ profile, onChange, onNext, onSkip }: StepCreatorPr
     </OnboardingCard>
   );
 }
-
