@@ -78,7 +78,7 @@ const QuizQuestion = ({
   return (
     <div className="min-h-screen flex flex-col px-4 py-6 sm:px-6">
       {/* Progress Bar */}
-      <div className="w-full max-w-lg mx-auto mb-8">
+      <div className="w-full max-w-lg mx-auto mb-4 md:hidden">
         <div className="h-2 bg-quiz-card rounded-full overflow-hidden">
           <div 
             className="h-full bg-gradient-to-r from-quiz-blue to-quiz-purple transition-all duration-500 ease-out rounded-full"
@@ -113,7 +113,7 @@ const QuizQuestion = ({
         </div>
 
         {/* Options */}
-        <div className="w-full space-y-3">
+        <div className="w-full grid gap-3 md:grid-cols-2">
           {question.options.map((option) => {
             const selected = isSelected(option.value);
             const IconComponent = option.icon;

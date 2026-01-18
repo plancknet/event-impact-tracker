@@ -10,6 +10,8 @@ import QuizResults from "@/components/quiz/QuizResults";
 import { QUIZ_QUESTIONS } from "@/components/quiz/quizData";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { ArrowLeft } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 export type QuizStep = 
   | "welcome" 
@@ -49,6 +51,8 @@ const Quiz = () => {
   const [email, setEmail] = useState("");
   const [quizId, setQuizId] = useState<string | null>(null);
   const [slideDirection, setSlideDirection] = useState<"left" | "right">("left");
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   // Create quiz response on start
   const handleStart = async () => {
@@ -118,8 +122,40 @@ const Quiz = () => {
   };
 
   const handleActivatePlan = () => {
-    // Navigate to premium page or auth
-    navigate("/premium");
+    if (!user) {
+      navigate("/auth?mode=signup&redirect=/premium");
+      return;
+    }
+
+    const startCheckout = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const response = await supabase.functions.invoke("create-subscription-checkout", {
+          headers: {
+            Authorization: `Bearer ${sessionData.session?.access_token}`,
+          },
+        });
+
+        if (response.error) {
+          throw new Error(response.error.message || "Erro ao criar sessão de pagamento");
+        }
+
+        if (response.data?.url) {
+          window.location.href = response.data.url;
+        } else {
+          throw new Error("URL de checkout não retornada");
+        }
+      } catch (error: unknown) {
+        console.error("Subscription error:", error);
+        toast({
+          title: "Erro ao iniciar assinatura",
+          description: error instanceof Error ? error.message : "Tente novamente mais tarde.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    void startCheckout();
   };
 
   const handleBackQuestion = () => {
@@ -133,6 +169,11 @@ const Quiz = () => {
       <header className="border-b bg-quiz-card/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="container max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
+            <img
+              src="/imgs/ThinkAndTalk.png"
+              alt="ThinkAndTalk"
+              className="h-8 w-auto"
+            />
             {step === "questions" && currentQuestion > 0 && (
               <button
                 type="button"
@@ -143,13 +184,22 @@ const Quiz = () => {
                 <ArrowLeft className="h-4 w-4" />
               </button>
             )}
-            <img
-              src="/imgs/ThinkAndTalk.png"
-              alt="ThinkAndTalk"
-              className="h-8 w-auto"
-            />
           </div>
-          <LanguageSelector />
+          <div className="flex items-center gap-4">
+            {step === "questions" && (
+              <div className="hidden md:block w-[240px]">
+                <div className="h-2 bg-quiz-card rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-quiz-blue to-quiz-purple transition-all duration-500 ease-out rounded-full"
+                    style={{
+                      width: `${((currentQuestion + 1) / QUIZ_QUESTIONS.length) * 100}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+            <LanguageSelector />
+          </div>
         </div>
       </header>
 

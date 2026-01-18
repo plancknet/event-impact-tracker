@@ -1,6 +1,13 @@
-import { 
-  Star, CheckCircle, Target, Zap, ArrowRight, 
-  Lightbulb, Users, Mic, FileText
+﻿import {
+  Star,
+  CheckCircle,
+  Target,
+  Zap,
+  ArrowRight,
+  Lightbulb,
+  Users,
+  Mic,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuizAnswers } from "@/pages/Quiz";
@@ -11,13 +18,11 @@ interface QuizResultsProps {
 }
 
 const getProfileAnalysis = (answers: QuizAnswers) => {
-  // Determine profile name based on answers
   let profileName = "Criador em Evolução";
   let strengths: string[] = [];
   let mainChallenge = "";
   let recommendation = "";
 
-  // Analyze creator level
   switch (answers.creator_level) {
     case "beginner":
       profileName = "Criador Iniciante";
@@ -33,7 +38,6 @@ const getProfileAnalysis = (answers: QuizAnswers) => {
       break;
   }
 
-  // Add niche to profile name
   const nicheMap: Record<string, string> = {
     education: "de Educação",
     business: "de Negócios",
@@ -45,7 +49,6 @@ const getProfileAnalysis = (answers: QuizAnswers) => {
     profileName += ` ${nicheMap[answers.niche]}`;
   }
 
-  // Determine strengths
   if (answers.comfort_recording === "very_comfortable") {
     strengths.push("Confiança ao falar para câmera");
   }
@@ -68,23 +71,20 @@ const getProfileAnalysis = (answers: QuizAnswers) => {
     }
   }
 
-  // Fallback strengths
   if (strengths.length === 0) {
     strengths = ["Vontade de aprender", "Disposição para crescer"];
   }
 
-  // Determine main challenge
   const challengeMap: Record<string, string> = {
     lack_ideas: "Geração de ideias de conteúdo",
     poor_editing: "Habilidades de edição",
     no_engagement: "Engajamento da audiência",
     shyness: "Confiança ao gravar",
   };
-  mainChallenge = answers.biggest_challenge 
+  mainChallenge = answers.biggest_challenge
     ? challengeMap[answers.biggest_challenge] || "Encontrar seu fluxo criativo"
     : "Estruturar sua produção de vídeos";
 
-  // Determine recommendation
   if (answers.biggest_challenge === "lack_ideas" || answers.planning_style === "no_script") {
     recommendation = "Roteiros inteligentes gerados por IA para nunca mais faltar ideias";
   } else if (answers.biggest_challenge === "shyness" || answers.comfort_recording === "avoid") {
@@ -104,7 +104,6 @@ const QuizResults = ({ answers, onActivate }: QuizResultsProps) => {
   return (
     <div className="min-h-screen flex flex-col px-4 py-8 sm:px-6 animate-fade-in">
       <div className="w-full max-w-lg mx-auto flex flex-col space-y-6">
-        {/* Header */}
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-quiz-selected rounded-full text-quiz-purple font-medium text-sm">
             <Target className="h-4 w-4" />
@@ -115,9 +114,7 @@ const QuizResults = ({ answers, onActivate }: QuizResultsProps) => {
           </h1>
         </div>
 
-        {/* Profile Card */}
         <div className="bg-quiz-card rounded-2xl p-6 border border-quiz-border shadow-lg space-y-6">
-          {/* Profile Name */}
           <div className="text-center pb-4 border-b border-quiz-border">
             <p className="text-sm text-quiz-muted mb-1">Seu perfil:</p>
             <h2 className="text-xl font-bold bg-gradient-to-r from-quiz-blue to-quiz-purple bg-clip-text text-transparent">
@@ -125,7 +122,6 @@ const QuizResults = ({ answers, onActivate }: QuizResultsProps) => {
             </h2>
           </div>
 
-          {/* Strengths */}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Zap className="h-5 w-5 text-quiz-purple" />
@@ -141,30 +137,23 @@ const QuizResults = ({ answers, onActivate }: QuizResultsProps) => {
             </ul>
           </div>
 
-          {/* Main Challenge */}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Lightbulb className="h-5 w-5 text-quiz-purple" />
               <h3 className="font-semibold text-quiz-foreground">Principal Desafio</h3>
             </div>
-            <p className="text-quiz-muted bg-quiz-muted/30 rounded-lg p-3">
-              {mainChallenge}
-            </p>
+            <p className="text-quiz-muted bg-quiz-muted/30 rounded-lg p-3">{mainChallenge}</p>
           </div>
 
-          {/* What you need */}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <FileText className="h-5 w-5 text-quiz-purple" />
               <h3 className="font-semibold text-quiz-foreground">O que você precisa agora</h3>
             </div>
-            <p className="text-quiz-foreground font-medium">
-              {recommendation}
-            </p>
+            <p className="text-quiz-foreground font-medium">{recommendation}</p>
           </div>
         </div>
 
-        {/* Offer Card */}
         <div className="bg-gradient-to-br from-quiz-blue/10 to-quiz-purple/10 rounded-2xl p-6 border border-quiz-purple/20 space-y-4">
           <p className="text-quiz-foreground leading-relaxed">
             Criamos um plano sob medida para você criar vídeos com mais{" "}
@@ -187,7 +176,6 @@ const QuizResults = ({ answers, onActivate }: QuizResultsProps) => {
           </Button>
         </div>
 
-        {/* Social Proof */}
         <div className="text-center space-y-3 pb-8">
           <div className="flex items-center justify-center gap-1">
             {[...Array(5)].map((_, i) => (
