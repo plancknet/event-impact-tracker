@@ -17,7 +17,7 @@ const QuizCoupon = ({ onReveal }: QuizCouponProps) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
 
     // Set canvas size
@@ -45,7 +45,7 @@ const QuizCoupon = ({ onReveal }: QuizCouponProps) => {
     const canvas = canvasRef.current;
     if (!canvas) return 0;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return 0;
 
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -66,7 +66,7 @@ const QuizCoupon = ({ onReveal }: QuizCouponProps) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
 
     ctx.globalCompositeOperation = "destination-out";

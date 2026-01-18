@@ -1,16 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import QuizQuestion from "@/components/quiz/QuizQuestion";
-import QuizTransition from "@/components/quiz/QuizTransition";
-import QuizCoupon from "@/components/quiz/QuizCoupon";
-import QuizEmailCapture from "@/components/quiz/QuizEmailCapture";
-import QuizResults from "@/components/quiz/QuizResults";
 import { QUIZ_QUESTIONS } from "@/components/quiz/quizData";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+
+const QuizTransition = lazy(() => import("@/components/quiz/QuizTransition"));
+const QuizCoupon = lazy(() => import("@/components/quiz/QuizCoupon"));
+const QuizEmailCapture = lazy(() => import("@/components/quiz/QuizEmailCapture"));
+const QuizResults = lazy(() => import("@/components/quiz/QuizResults"));
 
 export type QuizStep = 
   | "welcome" 
@@ -202,6 +203,9 @@ const Quiz = () => {
               src="/imgs/ThinkAndTalk.png"
               alt="ThinkAndTalk"
               className="h-8 w-auto"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
             />
             {step === "questions" && currentQuestion > 0 && (
               <button
@@ -244,23 +248,31 @@ const Quiz = () => {
       )}
       
       {step === "transition" && (
-        <QuizTransition onComplete={handleTransitionComplete} />
+        <Suspense fallback={<div className="min-h-screen" />}>
+          <QuizTransition onComplete={handleTransitionComplete} />
+        </Suspense>
       )}
       
       {step === "coupon" && (
-        <QuizCoupon onReveal={handleCouponRevealed} />
+        <Suspense fallback={<div className="min-h-screen" />}>
+          <QuizCoupon onReveal={handleCouponRevealed} />
+        </Suspense>
       )}
       
       {step === "email" && (
-        <QuizEmailCapture onSubmit={handleEmailSubmit} />
+        <Suspense fallback={<div className="min-h-screen" />}>
+          <QuizEmailCapture onSubmit={handleEmailSubmit} />
+        </Suspense>
       )}
       
       {step === "results" && (
-        <QuizResults 
-          answers={answers} 
-          onActivate={handleActivatePlan}
-          isLoading={isCheckoutLoading}
-        />
+        <Suspense fallback={<div className="min-h-screen" />}>
+          <QuizResults 
+            answers={answers} 
+            onActivate={handleActivatePlan}
+            isLoading={isCheckoutLoading}
+          />
+        </Suspense>
       )}
     </div>
   );
