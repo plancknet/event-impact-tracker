@@ -8,6 +8,7 @@
   Users,
   Mic,
   FileText,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuizAnswers } from "@/pages/Quiz";
@@ -15,6 +16,7 @@ import { QuizAnswers } from "@/pages/Quiz";
 interface QuizResultsProps {
   answers: QuizAnswers;
   onActivate: () => void;
+  isLoading?: boolean;
 }
 
 const getProfileAnalysis = (answers: QuizAnswers) => {
@@ -98,7 +100,7 @@ const getProfileAnalysis = (answers: QuizAnswers) => {
   return { profileName, strengths, mainChallenge, recommendation };
 };
 
-const QuizResults = ({ answers, onActivate }: QuizResultsProps) => {
+const QuizResults = ({ answers, onActivate, isLoading = false }: QuizResultsProps) => {
   const { profileName, strengths, mainChallenge, recommendation } = getProfileAnalysis(answers);
 
   return (
@@ -169,10 +171,20 @@ const QuizResults = ({ answers, onActivate }: QuizResultsProps) => {
           <Button
             onClick={onActivate}
             size="lg"
+            disabled={isLoading}
             className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple hover:opacity-90 transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
           >
-            Ativar meu plano personalizado
-            <ArrowRight className="ml-2 h-5 w-5" />
+            {isLoading ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Processando...
+              </>
+            ) : (
+              <>
+                Ativar meu plano personalizado
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </>
+            )}
           </Button>
         </div>
 

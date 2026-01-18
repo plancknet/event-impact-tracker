@@ -51,19 +51,27 @@ const Quiz = () => {
   const [email, setEmail] = useState("");
   const [quizId, setQuizId] = useState<string | null>(null);
   const [slideDirection, setSlideDirection] = useState<"left" | "right">("left");
-  const { user } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
 
   // Create quiz response on start
   const handleStart = async () => {
-    const { data, error } = await supabase
+    const newQuizId = crypto.randomUUID();
+    const { error } = await supabase
       .from("quiz_responses")
-      .insert({})
-      .select("id")
-      .single();
+      .insert({ id: newQuizId });
 
-    if (data) {
-      setQuizId(data.id);
+    if (error) {
+      console.error("Failed to create quiz response:", error);
+      toast({
+        title: "Erro ao iniciar o quiz",
+        description: "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+      setQuizId(null);
+    } else {
+      setQuizId(newQuizId);
     }
     setStep("questions");
   };
@@ -122,17 +130,32 @@ const Quiz = () => {
   };
 
   const handleActivatePlan = () => {
+    if (authLoading) {
+      toast({
+        title: "Aguardando autenticação",
+        description: "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!user) {
       navigate("/auth?mode=signup&redirect=/premium");
       return;
     }
 
     const startCheckout = async () => {
+      setIsCheckoutLoading(true);
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken =
+          session?.access_token ||
+          (await supabase.auth.getSession()).data.session?.access_token;
+
+        if (!accessToken) {
+          throw new Error("Sessão inválida. Faça login novamente.");
+        }
         const response = await supabase.functions.invoke("create-subscription-checkout", {
           headers: {
-            Authorization: `Bearer ${sessionData.session?.access_token}`,
+            Authorization: `Bearer ${accessToken}`,
           },
         });
 
@@ -152,6 +175,8 @@ const Quiz = () => {
           description: error instanceof Error ? error.message : "Tente novamente mais tarde.",
           variant: "destructive",
         });
+      } finally {
+        setIsCheckoutLoading(false);
       }
     };
 
@@ -234,6 +259,7 @@ const Quiz = () => {
         <QuizResults 
           answers={answers} 
           onActivate={handleActivatePlan}
+          isLoading={isCheckoutLoading}
         />
       )}
     </div>
