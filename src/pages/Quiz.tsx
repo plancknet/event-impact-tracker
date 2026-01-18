@@ -245,14 +245,24 @@ const Quiz = () => {
       <header className="border-b bg-quiz-card/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="container max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <img
-              src="/imgs/ThinkAndTalk.png"
-              alt="ThinkAndTalk"
-              className="h-8 w-auto"
-              loading="eager"
-              decoding="async"
-              fetchPriority="high"
-            />
+            <picture>
+              <source
+                type="image/avif"
+                srcSet="/imgs/ThinkAndTalk-64.avif 1x, /imgs/ThinkAndTalk-128.avif 2x"
+              />
+              <source
+                type="image/webp"
+                srcSet="/imgs/ThinkAndTalk-64.webp 1x, /imgs/ThinkAndTalk-128.webp 2x"
+              />
+              <img
+                src="/imgs/ThinkAndTalk.png"
+                alt="ThinkAndTalk"
+                className="h-8 w-auto"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
+              />
+            </picture>
             {step === "questions" && currentQuestion > 0 && (
               <button
                 type="button"
