@@ -124,7 +124,7 @@ const QuizQuestion = ({
         <div
           className={cn(
             "w-full grid gap-3",
-            ["age_range", "publish_frequency", "editing_time", "creator_level", "audience_age", "video_duration", "energy_level"].includes(question.key)
+            ["age_range", "editing_time", "creator_level", "audience_age", "video_duration", "energy_level"].includes(question.key)
               ? "grid-cols-1"
               : "md:grid-cols-2"
           )}

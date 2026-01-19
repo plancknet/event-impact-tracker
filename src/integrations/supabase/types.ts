@@ -86,6 +86,7 @@ export type Database = {
       quiz_responses: {
         Row: {
           age_range: string | null
+          gender: string | null
           audience_age: string | null
           audience_gender: string | null
           audience_type: string | null
@@ -115,6 +116,7 @@ export type Database = {
         }
         Insert: {
           age_range?: string | null
+          gender?: string | null
           audience_age?: string | null
           audience_gender?: string | null
           audience_type?: string | null
@@ -144,6 +146,7 @@ export type Database = {
         }
         Update: {
           age_range?: string | null
+          gender?: string | null
           audience_age?: string | null
           audience_gender?: string | null
           audience_type?: string | null
