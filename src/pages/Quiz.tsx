@@ -12,10 +12,11 @@ const QuizTransition = lazy(() => import("@/components/quiz/QuizTransition"));
 const QuizCoupon = lazy(() => import("@/components/quiz/QuizCoupon"));
 const QuizEmailCapture = lazy(() => import("@/components/quiz/QuizEmailCapture"));
 const QuizResults = lazy(() => import("@/components/quiz/QuizResults"));
+const QuizAgeHighlight = lazy(() => import("@/components/quiz/QuizAgeHighlight"));
 
 export type QuizStep = 
-  | "welcome" 
   | "questions" 
+  | "age_highlight"
   | "transition" 
   | "coupon" 
   | "email" 
@@ -63,6 +64,7 @@ const Quiz = () => {
   ]);
   const [isQuestionsLoaded, setIsQuestionsLoaded] = useState(false);
   const [pendingAdvance, setPendingAdvance] = useState(false);
+  const [ageHighlightNextIndex, setAgeHighlightNextIndex] = useState<number | null>(null);
   const [answers, setAnswers] = useState<QuizAnswers>({});
   const [email, setEmail] = useState("");
   const [quizId, setQuizId] = useState<string | null>(null);
@@ -130,6 +132,12 @@ const Quiz = () => {
     setSlideDirection("left");
     
     setTimeout(() => {
+      if (questionKey === "gender") {
+        setAgeHighlightNextIndex(currentQuestion + 1);
+        setStep("age_highlight");
+        return;
+      }
+
       const nextIndex = currentQuestion + 1;
       if (nextIndex < questions.length) {
         setCurrentQuestion(nextIndex);
@@ -231,6 +239,21 @@ const Quiz = () => {
     setCurrentQuestion((prev) => Math.max(0, prev - 1));
   };
 
+  const handleAgeHighlightContinue = () => {
+    if (ageHighlightNextIndex !== null && ageHighlightNextIndex < questions.length) {
+      setCurrentQuestion(ageHighlightNextIndex);
+      setStep("questions");
+      setAgeHighlightNextIndex(null);
+      return;
+    }
+    if (!isQuestionsLoaded) {
+      setPendingAdvance(true);
+      setStep("questions");
+      return;
+    }
+    setStep("transition");
+  };
+
   useEffect(() => {
     if (!pendingAdvance || !isQuestionsLoaded) return;
     setPendingAdvance(false);
@@ -276,7 +299,7 @@ const Quiz = () => {
             )}
           </div>
           <div className="flex items-center gap-4">
-            {step === "questions" && (
+            {(step === "questions" || step === "age_highlight") && (
               <div className="hidden md:block w-[240px]">
                 <div className="h-2 bg-quiz-card rounded-full overflow-hidden">
                   <div
@@ -302,6 +325,17 @@ const Quiz = () => {
           selectedAnswer={answers[questions[currentQuestion].key as keyof QuizAnswers]}
           slideDirection={slideDirection}
         />
+      )}
+
+      {step === "age_highlight" && (
+        <Suspense fallback={<div className="min-h-screen" />}>
+          <QuizAgeHighlight
+            ageRange={answers.age_range}
+            currentIndex={currentQuestion}
+            totalQuestions={questions.length}
+            onContinue={handleAgeHighlightContinue}
+          />
+        </Suspense>
       )}
       
       {step === "transition" && (
