@@ -148,6 +148,10 @@
   .animate-in {
     animation: fade-in 0.3s ease-out;
   }
+
+  .animate-slide-soft {
+    animation: slide-soft 0.28s ease-out;
+  }
   
   @keyframes fade-in {
     from {
@@ -168,6 +172,15 @@
     to {
       opacity: 1;
       transform: scale(1);
+    }
+  }
+
+  @keyframes slide-soft {
+    from {
+      transform: translateY(6px);
+    }
+    to {
+      transform: translateY(0);
     }
   }
   
