@@ -121,7 +121,7 @@ const Quiz = () => {
     setAnswers(newAnswers);
 
     // Save to database
-    if (quizId) {
+    if (quizId && questionKey !== "gender") {
       await supabase
         .from("quiz_responses")
         .update({ [questionKey]: value })
@@ -287,16 +287,16 @@ const Quiz = () => {
                 fetchPriority="high"
               />
             </picture>
-            {step === "questions" && currentQuestion > 0 && (
+            {(step === "questions" && currentQuestion > 0) || step === "age_highlight" ? (
               <button
                 type="button"
-                onClick={handleBackQuestion}
+                onClick={step === "age_highlight" ? () => setStep("questions") : handleBackQuestion}
                 className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-quiz-border/60 text-quiz-muted hover:text-quiz-foreground hover:border-quiz-purple/40 transition-colors"
                 aria-label="Voltar"
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>
-            )}
+            ) : null}
           </div>
           <div className="flex items-center gap-4">
             {(step === "questions" || step === "age_highlight") && (

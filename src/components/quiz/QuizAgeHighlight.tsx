@@ -7,12 +7,30 @@ interface QuizAgeHighlightProps {
   onContinue: () => void;
 }
 
-const ageImageMap: Record<string, string> = {
-  under_18: "/imgs/m18.png",
-  "18_24": "/imgs/18-24.png",
-  "25_34": "/imgs/25-34.png",
-  "35_44": "/imgs/35-44.png",
-  "45_plus": "/imgs/45m8.png",
+const ageImageSources: Record<
+  string,
+  { avif: string; webp: string }
+> = {
+  under_18: {
+    avif: "/imgs/m18-512.avif 1x, /imgs/m18-1024.avif 2x",
+    webp: "/imgs/m18-512.webp 1x, /imgs/m18-1024.webp 2x",
+  },
+  "18_24": {
+    avif: "/imgs/18-24-512.avif 1x, /imgs/18-24-1024.avif 2x",
+    webp: "/imgs/18-24-512.webp 1x, /imgs/18-24-1024.webp 2x",
+  },
+  "25_34": {
+    avif: "/imgs/25-34-512.avif 1x, /imgs/25-34-1024.avif 2x",
+    webp: "/imgs/25-34-512.webp 1x, /imgs/25-34-1024.webp 2x",
+  },
+  "35_44": {
+    avif: "/imgs/35-44-512.avif 1x, /imgs/35-44-1024.avif 2x",
+    webp: "/imgs/35-44-512.webp 1x, /imgs/35-44-1024.webp 2x",
+  },
+  "45_plus": {
+    avif: "/imgs/45m-512.avif 1x, /imgs/45m-1024.avif 2x",
+    webp: "/imgs/45m-512.webp 1x, /imgs/45m-1024.webp 2x",
+  },
 };
 
 const QuizAgeHighlight = ({
@@ -22,7 +40,7 @@ const QuizAgeHighlight = ({
   onContinue,
 }: QuizAgeHighlightProps) => {
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
-  const imageSrc = ageRange ? ageImageMap[ageRange] : undefined;
+  const imageSources = ageRange ? ageImageSources[ageRange] : undefined;
   const quizFontFamily =
     "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
@@ -40,14 +58,18 @@ const QuizAgeHighlight = ({
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg mx-auto">
         <div className="w-full grid gap-4">
           <div className="w-full rounded-2xl border border-quiz-border/60 bg-quiz-card p-4 flex items-center justify-center">
-            {imageSrc ? (
-              <img
-                src={imageSrc}
-                alt="Depoimento"
-                className="max-h-64 w-auto object-contain"
-                loading="eager"
-                decoding="async"
-              />
+            {imageSources ? (
+              <picture>
+                <source type="image/avif" srcSet={imageSources.avif} />
+                <source type="image/webp" srcSet={imageSources.webp} />
+                <img
+                  srcSet={imageSources.webp}
+                  alt="Depoimento"
+                  className="max-h-64 w-auto object-contain"
+                  loading="eager"
+                  decoding="async"
+                />
+              </picture>
             ) : (
               <div className="h-40 w-full rounded-xl bg-quiz-selected/30" />
             )}
