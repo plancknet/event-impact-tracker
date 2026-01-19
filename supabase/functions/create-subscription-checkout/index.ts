@@ -37,18 +37,28 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       {
         global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         },
       },
     );
 
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
+    // Try to get user, but don't require authentication
+    let user = null;
+    let userEmail: string | undefined;
+    
+    if (token) {
+      const { data } = await supabaseClient.auth.getUser(token);
+      user = data.user;
+      userEmail = user?.email ?? undefined;
+    }
 
-    if (!user?.email) {
-      throw new Error("Usuário não autenticado.");
+    // Parse request body for quiz response ID
+    let quizResponseId: string | undefined;
+    try {
+      const body = await req.json();
+      quizResponseId = body?.quizResponseId;
+    } catch {
+      // No body or invalid JSON, continue without it
     }
 
     const priceId = Deno.env.get("STRIPE_THINKANDTALK_PRICE_ID");
@@ -65,21 +75,26 @@ serve(async (req) => {
       apiVersion: "2024-06-20",
     });
 
-    const { data: profile } = await supabaseClient
-      .from("users")
-      .select("stripe_customer_id")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    let customerId: string | null = null;
 
-    let customerId = profile?.stripe_customer_id ?? null;
+    // Only look up customer if user is authenticated
+    if (user?.id && userEmail) {
+      const { data: profile } = await supabaseClient
+        .from("users")
+        .select("stripe_customer_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-    if (!customerId) {
-      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-      if (customers.data.length > 0) {
-        customerId = customers.data[0].id;
-        await supabaseClient
-          .from("users")
-          .upsert({ user_id: user.id, email: user.email, stripe_customer_id: customerId });
+      customerId = profile?.stripe_customer_id ?? null;
+
+      if (!customerId) {
+        const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
+        if (customers.data.length > 0) {
+          customerId = customers.data[0].id;
+          await supabaseClient
+            .from("users")
+            .upsert({ user_id: user.id, email: userEmail, stripe_customer_id: customerId });
+        }
       }
     }
 
@@ -87,19 +102,21 @@ serve(async (req) => {
       ? origin
       : Deno.env.get("SITE_URL") ?? ALLOWED_ORIGINS[0];
 
-    console.log("Creating checkout session for user:", user.id, "email:", user.email);
+    console.log("Creating checkout session", user?.id ? `for user: ${user.id}` : "for guest", userEmail ? `email: ${userEmail}` : "");
+
+    const metadata: Record<string, string> = {};
+    if (user?.id) metadata.userId = user.id;
+    if (quizResponseId) metadata.quizResponseId = quizResponseId;
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId ?? undefined,
-      customer_email: customerId ? undefined : user.email,
+      customer_email: customerId ? undefined : userEmail,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
       success_url: `${successOrigin}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${successOrigin}/premium`,
       allow_promotion_codes: true,
-      metadata: {
-        userId: user.id,
-      },
+      metadata,
     });
 
     console.log("Checkout session created:", session.id);

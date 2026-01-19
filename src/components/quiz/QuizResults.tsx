@@ -11,9 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { QuizAnswers } from "@/pages/Quiz";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 interface QuizResultsProps {
@@ -105,25 +103,19 @@ const getProfileAnalysis = (answers: QuizAnswers) => {
 const QuizResults = ({ answers, quizResponseId }: QuizResultsProps) => {
   const { profileName, strengths, mainChallenge, recommendation } = getProfileAnalysis(answers);
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { user } = useAuth();
   const { toast } = useToast();
 
   const handleActivatePlan = async () => {
-    if (!user) {
-      // Redirect to auth with quiz response ID so we can link after signup
-      navigate(`/auth?mode=signup&redirect=/premium${quizResponseId ? `&quiz_id=${quizResponseId}` : ''}`);
-      return;
-    }
-
     setIsLoading(true);
     try {
+      // Get session if user is logged in, but don't require it
       const { data: sessionData } = await supabase.auth.getSession();
 
       const response = await supabase.functions.invoke("create-subscription-checkout", {
-        headers: {
-          Authorization: `Bearer ${sessionData.session?.access_token}`,
-        },
+        headers: sessionData.session?.access_token
+          ? { Authorization: `Bearer ${sessionData.session.access_token}` }
+          : {},
+        body: { quizResponseId },
       });
 
       if (response.error) {
