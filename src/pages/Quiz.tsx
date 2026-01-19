@@ -132,7 +132,7 @@ const Quiz = () => {
     setSlideDirection("left");
     
     setTimeout(() => {
-      if (questionKey === "gender") {
+      if (questionKey === "main_goal") {
         setAgeHighlightNextIndex(currentQuestion + 1);
         setStep("age_highlight");
         return;
