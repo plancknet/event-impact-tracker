@@ -22,12 +22,17 @@ const QuizQuestion = ({
 }: QuizQuestionProps) => {
   const [localSelected, setLocalSelected] = useState<string[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [offsetX, setOffsetX] = useState(0);
 
   // Reset local selection when question changes
   useEffect(() => {
     if (question.multiSelect) {
       setLocalSelected(Array.isArray(selectedAnswer) ? selectedAnswer : []);
     }
+    const initialOffset = slideDirection === "left" ? 16 : -16;
+    setOffsetX(initialOffset);
+    const frame = requestAnimationFrame(() => setOffsetX(0));
+    return () => cancelAnimationFrame(frame);
   }, [question.key, selectedAnswer, question.multiSelect]);
 
   const handleOptionClick = (value: string) => {
@@ -77,7 +82,12 @@ const QuizQuestion = ({
       </div>
 
       {/* Question Content */}
-      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg mx-auto">
+      <div
+        className={cn(
+          "flex-1 flex flex-col items-center justify-center w-full max-w-lg mx-auto transition-transform duration-300 ease-out"
+        )}
+        style={{ transform: `translateX(${offsetX}px)` }}
+      >
         {/* Question Text */}
         <div className="text-center mb-8 space-y-3">
           {currentIndex === 0 && (
