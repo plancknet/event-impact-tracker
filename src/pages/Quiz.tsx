@@ -54,9 +54,9 @@ const Quiz = () => {
       question: "Quantos anos você tem?",
       options: [
         { value: "under_18", label: "Até 18 anos", icon: Baby },
-        { value: "18_24", label: "18–24", icon: GraduationCap },
-        { value: "25_34", label: "25–34", icon: Briefcase },
-        { value: "35_44", label: "35–44", icon: Users },
+        { value: "18_24", label: "18-24", icon: GraduationCap },
+        { value: "25_34", label: "25-34", icon: Briefcase },
+        { value: "35_44", label: "35-44", icon: Users },
         { value: "45_plus", label: "45+", icon: UserCheck },
       ],
     },
