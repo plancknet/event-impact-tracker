@@ -22,14 +22,12 @@ const QuizQuestion = ({
 }: QuizQuestionProps) => {
   const [localSelected, setLocalSelected] = useState<string[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [showContent, setShowContent] = useState(true);
 
   // Reset local selection when question changes
   useEffect(() => {
     if (question.multiSelect) {
       setLocalSelected(Array.isArray(selectedAnswer) ? selectedAnswer : []);
     }
-    setShowContent(true);
   }, [question.key, selectedAnswer, question.multiSelect]);
 
   const handleOptionClick = (value: string) => {
@@ -41,26 +39,17 @@ const QuizQuestion = ({
         : [...localSelected, value];
       setLocalSelected(newSelected);
     } else {
-      // Single select - animate and advance
       setIsAnimating(true);
-      setShowContent(false);
-      
-      setTimeout(() => {
-        onAnswer(question.key, value);
-        setIsAnimating(false);
-      }, 300);
+      onAnswer(question.key, value);
+      setIsAnimating(false);
     }
   };
 
   const handleMultiSelectConfirm = () => {
     if (localSelected.length > 0) {
       setIsAnimating(true);
-      setShowContent(false);
-      
-      setTimeout(() => {
-        onAnswer(question.key, localSelected);
-        setIsAnimating(false);
-      }, 300);
+      onAnswer(question.key, localSelected);
+      setIsAnimating(false);
     }
   };
 
@@ -88,12 +77,7 @@ const QuizQuestion = ({
       </div>
 
       {/* Question Content */}
-      <div 
-        className={cn(
-          "flex-1 flex flex-col items-center justify-center w-full max-w-lg mx-auto transition-all duration-300",
-          showContent ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
-        )}
-      >
+      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg mx-auto">
         {/* Question Text */}
         <div className="text-center mb-8 space-y-3">
           {currentIndex === 0 && (
