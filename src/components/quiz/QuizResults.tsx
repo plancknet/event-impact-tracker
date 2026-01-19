@@ -1,22 +1,24 @@
-﻿import {
+import {
   Star,
   CheckCircle,
   Target,
   Zap,
   ArrowRight,
   Lightbulb,
-  Users,
-  Mic,
   FileText,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuizAnswers } from "@/pages/Quiz";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuizResultsProps {
   answers: QuizAnswers;
-  onActivate: () => void;
-  isLoading?: boolean;
+  quizResponseId?: string;
 }
 
 const getProfileAnalysis = (answers: QuizAnswers) => {
@@ -100,8 +102,50 @@ const getProfileAnalysis = (answers: QuizAnswers) => {
   return { profileName, strengths, mainChallenge, recommendation };
 };
 
-const QuizResults = ({ answers, onActivate, isLoading = false }: QuizResultsProps) => {
+const QuizResults = ({ answers, quizResponseId }: QuizResultsProps) => {
   const { profileName, strengths, mainChallenge, recommendation } = getProfileAnalysis(answers);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const handleActivatePlan = async () => {
+    if (!user) {
+      // Redirect to auth with quiz response ID so we can link after signup
+      navigate(`/auth?mode=signup&redirect=/premium${quizResponseId ? `&quiz_id=${quizResponseId}` : ''}`);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+
+      const response = await supabase.functions.invoke("create-subscription-checkout", {
+        headers: {
+          Authorization: `Bearer ${sessionData.session?.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Erro ao iniciar assinatura");
+      }
+
+      if (response.data?.url) {
+        window.location.href = response.data.url;
+      } else {
+        throw new Error("URL de checkout não retornada");
+      }
+    } catch (error: unknown) {
+      console.error("Subscription error:", error);
+      toast({
+        title: "Erro ao iniciar assinatura",
+        description: error instanceof Error ? error.message : "Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col px-4 py-8 sm:px-6 animate-fade-in">
@@ -169,7 +213,7 @@ const QuizResults = ({ answers, onActivate, isLoading = false }: QuizResultsProp
           </div>
 
           <Button
-            onClick={onActivate}
+            onClick={handleActivatePlan}
             size="lg"
             disabled={isLoading}
             className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple hover:opacity-90 transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02]"

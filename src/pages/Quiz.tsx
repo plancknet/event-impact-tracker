@@ -326,8 +326,7 @@ const Quiz = () => {
         <Suspense fallback={<div className="min-h-screen" />}>
           <QuizResults 
             answers={answers} 
-            onActivate={handleActivatePlan}
-            isLoading={isCheckoutLoading}
+            quizResponseId={quizId || undefined}
           />
         </Suspense>
       )}
