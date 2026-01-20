@@ -325,16 +325,13 @@ const Quiz = () => {
           <div className="flex items-center gap-4">
             {(step === "questions" || step === "age_highlight" || step === "processing") && (
               <div className="hidden md:block w-[240px]">
-                <div
-                  className="grid gap-1"
-                  style={{ gridTemplateColumns: `repeat(${questions.length}, minmax(0, 1fr))` }}
-                >
-                  {Array.from({ length: questions.length }).map((_, index) => (
-                    <span
-                      key={index}
-                      className={index <= currentQuestion ? "h-2 rounded-full bg-quiz-purple" : "h-2 rounded-full bg-quiz-card"}
-                    />
-                  ))}
+                <div className="h-2 bg-quiz-card rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-quiz-blue to-quiz-purple transition-all duration-500 ease-out rounded-full"
+                    style={{
+                      width: `${((currentQuestion + 1) / questions.length) * 100}%`,
+                    }}
+                  />
                 </div>
               </div>
             )}
