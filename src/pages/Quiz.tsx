@@ -367,6 +367,7 @@ const Quiz = () => {
           <QuizProcessing
             currentIndex={currentQuestion}
             totalQuestions={questions.length}
+            answers={answers}
             onComplete={handleProcessingComplete}
           />
         </Suspense>
