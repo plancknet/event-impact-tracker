@@ -62,7 +62,8 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
           className={visibleLines >= 2 ? "text-quiz-foreground font-medium transition-opacity duration-300 opacity-100" : "text-quiz-foreground font-medium transition-opacity duration-300 opacity-0"}
           style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
         >
-          Vamos te ajudar {challengePhrase}, criando um{" "}
+          Vamos te ajudar{" "}
+          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{challengePhrase}</span>, criando um{" "}
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>roteiro</span> pr?tico.
         </p>
         <p
