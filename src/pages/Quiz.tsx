@@ -14,10 +14,12 @@ const QuizEmailCapture = lazy(() => import("@/components/quiz/QuizEmailCapture")
 const QuizResults = lazy(() => import("@/components/quiz/QuizResults"));
 const QuizAgeHighlight = lazy(() => import("@/components/quiz/QuizAgeHighlight"));
 const QuizProcessing = lazy(() => import("@/components/quiz/QuizProcessing"));
+const QuizMidMessage = lazy(() => import("@/components/quiz/QuizMidMessage"));
 
 export type QuizStep = 
   | "questions" 
   | "age_highlight"
+  | "mid_message"
   | "processing"
   | "transition" 
   | "coupon" 
@@ -68,6 +70,7 @@ const Quiz = () => {
   const [pendingAdvance, setPendingAdvance] = useState(false);
   const [ageHighlightNextIndex, setAgeHighlightNextIndex] = useState<number | null>(null);
   const [processingNextIndex, setProcessingNextIndex] = useState<number | null>(null);
+  const [midMessageNextIndex, setMidMessageNextIndex] = useState<number | null>(null);
   const [answers, setAnswers] = useState<QuizAnswers>({});
   const [email, setEmail] = useState("");
   const [quizId, setQuizId] = useState<string | null>(null);
@@ -138,6 +141,12 @@ const Quiz = () => {
       if (questionKey === "main_goal") {
         setAgeHighlightNextIndex(currentQuestion + 1);
         setStep("age_highlight");
+        return;
+      }
+
+      if (questionKey === "audience_gender") {
+        setMidMessageNextIndex(currentQuestion + 1);
+        setStep("mid_message");
         return;
       }
 
@@ -263,6 +272,21 @@ const Quiz = () => {
     setStep("transition");
   };
 
+  const handleMidMessageContinue = () => {
+    if (midMessageNextIndex !== null && midMessageNextIndex < questions.length) {
+      setCurrentQuestion(midMessageNextIndex);
+      setStep("questions");
+      setMidMessageNextIndex(null);
+      return;
+    }
+    if (!isQuestionsLoaded) {
+      setPendingAdvance(true);
+      setStep("questions");
+      return;
+    }
+    setStep("transition");
+  };
+
   const handleProcessingComplete = () => {
     if (processingNextIndex !== null && processingNextIndex < questions.length) {
       setCurrentQuestion(processingNextIndex);
@@ -311,10 +335,10 @@ const Quiz = () => {
                 fetchPriority="high"
               />
             </picture>
-            {(step === "questions" && currentQuestion > 0) || step === "age_highlight" ? (
+            {(step === "questions" && currentQuestion > 0) || step === "age_highlight" || step === "mid_message" ? (
               <button
                 type="button"
-                onClick={step === "age_highlight" ? () => setStep("questions") : handleBackQuestion}
+                onClick={step === "age_highlight" || step === "mid_message" ? () => setStep("questions") : handleBackQuestion}
                 className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-quiz-border/60 text-quiz-muted hover:text-quiz-foreground hover:border-quiz-purple/40 transition-colors"
                 aria-label="Voltar"
               >
@@ -323,7 +347,7 @@ const Quiz = () => {
             ) : null}
           </div>
           <div className="flex items-center gap-4">
-            {(step === "questions" || step === "age_highlight" || step === "processing") && (
+            {(step === "questions" || step === "age_highlight" || step === "mid_message" || step === "processing") && (
               <div className="hidden md:block w-[240px]">
                 <div className="h-2 bg-quiz-card rounded-full overflow-hidden">
                   <div
