@@ -365,14 +365,16 @@ const Quiz = () => {
       </header>
 
       {step === "questions" && (
-        <QuizQuestion
-          question={questions[currentQuestion]}
-          currentIndex={currentQuestion}
-          totalQuestions={questions.length}
-          onAnswer={handleAnswer}
-          selectedAnswer={answers[questions[currentQuestion].key as keyof QuizAnswers]}
-          slideDirection={slideDirection}
-        />
+        <div key={`question-${currentQuestion}`} className="animate-fade-in">
+          <QuizQuestion
+            question={questions[currentQuestion]}
+            currentIndex={currentQuestion}
+            totalQuestions={questions.length}
+            onAnswer={handleAnswer}
+            selectedAnswer={answers[questions[currentQuestion].key as keyof QuizAnswers]}
+            slideDirection={slideDirection}
+          />
+        </div>
       )}
 
       {step === "age_highlight" && (

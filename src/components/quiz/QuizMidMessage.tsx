@@ -13,7 +13,7 @@ const QuizMidMessage = ({ currentIndex, totalQuestions, onContinue }: QuizMidMes
   const highlightClass = "text-quiz-blue font-semibold";
 
   return (
-    <div className="min-h-screen flex flex-col px-4 pt-2 pb-6 sm:px-6">
+    <div className="min-h-screen flex flex-col px-4 pt-2 pb-6 sm:px-6 animate-fade-in">
       <div className="w-full max-w-lg mx-auto mb-2 md:hidden">
         <div className="h-2 bg-quiz-card rounded-full overflow-hidden">
           <div
@@ -29,8 +29,8 @@ const QuizMidMessage = ({ currentIndex, totalQuestions, onContinue }: QuizMidMes
           style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
         >
           Falta bem pouco para ter uma{" "}
-          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>IA treinada</span> e configurada para voc?, para gerar{" "}
-          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>roteiro de v?deos</span> em um teleprompter.
+          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>IA treinada</span> e configurada para você, para gerar{" "}
+          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>roteiro de vídeos</span> em um teleprompter.
         </p>
 
         <Button

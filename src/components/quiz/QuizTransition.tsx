@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface QuizTransitionProps {
   onComplete: () => void;
@@ -24,6 +24,10 @@ const QuizTransition = ({ onComplete }: QuizTransitionProps) => {
   const [currentProofIndex, setCurrentProofIndex] = useState(0);
   const [progress, setProgress] = useState(0);
 
+  const handleComplete = useCallback(() => {
+    onComplete();
+  }, [onComplete]);
+
   useEffect(() => {
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
@@ -46,7 +50,7 @@ const QuizTransition = ({ onComplete }: QuizTransitionProps) => {
     }, 2500);
 
     const completeTimeout = setTimeout(() => {
-      onComplete();
+      handleComplete();
     }, 8000);
 
     return () => {
@@ -55,7 +59,7 @@ const QuizTransition = ({ onComplete }: QuizTransitionProps) => {
       clearInterval(proofInterval);
       clearTimeout(completeTimeout);
     };
-  }, [onComplete]);
+  }, [handleComplete]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 animate-fade-in">
@@ -64,6 +68,7 @@ const QuizTransition = ({ onComplete }: QuizTransitionProps) => {
           src="/imgs/TAT_Logo_sem_fundo_500px.png"
           alt="ThinkAndTalk"
           className="w-24 h-24 object-contain animate-pulse"
+          loading="eager"
         />
 
         <div className="relative">

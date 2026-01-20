@@ -65,7 +65,7 @@ const QuizQuestion = ({
   };
 
   return (
-    <div className="min-h-screen flex flex-col px-4 pt-2 pb-6 sm:px-6">
+    <div className="min-h-screen flex flex-col px-4 pt-2 pb-6 sm:px-6 animate-fade-in">
       {/* Progress Bar */}
       <div className="w-full max-w-lg mx-auto mb-2 md:hidden">
         <div className="h-2 bg-quiz-card rounded-full overflow-hidden">
@@ -80,7 +80,8 @@ const QuizQuestion = ({
       <div
         key={question.key}
         className={cn(
-          "flex-1 flex flex-col items-center justify-center w-full max-w-lg mx-auto animate-slide-soft"
+          "flex-1 flex flex-col items-center justify-center w-full max-w-lg mx-auto",
+          "animate-fade-in"
         )}
       >
         {/* Question Text */}
