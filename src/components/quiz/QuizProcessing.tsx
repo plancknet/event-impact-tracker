@@ -9,25 +9,24 @@ interface QuizProcessingProps {
 }
 
 const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: QuizProcessingProps) => {
-  const progress = ((currentIndex + 1) / totalQuestions) * 100;
-  const [activeSegment, setActiveSegment] = useState(0);
   const [canContinue, setCanContinue] = useState(false);
+  const [visibleLines, setVisibleLines] = useState(0);
   const quizFontFamily =
     "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
   const highlightClass = "text-quiz-blue font-semibold";
 
   const confidencePhraseMap: Record<string, string> = {
-    sometimes_insecure: "ter segurança",
+    sometimes_insecure: "ter seguran?a",
     freeze_lose_words: "destravar",
-    avoid: "não procrastinar",
-    very_uncomfortable: "ficar confortável",
+    avoid: "n?o procrastinar",
+    very_uncomfortable: "ficar confort?vel",
   };
 
   const challengePhraseMap: Record<string, string> = {
-    lack_ideas: "te dar ideias práticas",
-    poor_editing: "te dar dicas mágicas de edição",
-    no_engagement: "te ajudar no engajamento",
-    shyness: "te ajudar superar a timidez",
+    lack_ideas: "a ter ideias",
+    poor_editing: "a editar",
+    no_engagement: "no engajamento",
+    shyness: "a superar a timidez",
   };
 
   const timePhraseMap: Record<string, string> = {
@@ -38,20 +37,22 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
   };
 
   const confidencePhrase =
-    (answers.comfort_recording && confidencePhraseMap[answers.comfort_recording]) || "ter segurança";
+    (answers.comfort_recording && confidencePhraseMap[answers.comfort_recording]) || "ter seguran?a";
   const challengePhrase =
-    (answers.biggest_challenge && challengePhraseMap[answers.biggest_challenge]) || "ter ideias";
+    (answers.biggest_challenge && challengePhraseMap[answers.biggest_challenge]) || "a ter ideias";
   const timePhrase = (answers.editing_time && timePhraseMap[answers.editing_time]) || "30 minutos";
 
   useEffect(() => {
-    setActiveSegment(0);
     setCanContinue(false);
-    const first = setTimeout(() => setActiveSegment(1), 1700);
-    const second = setTimeout(() => setActiveSegment(2), 3400);
+    setVisibleLines(0);
+    const first = setTimeout(() => setVisibleLines(1), 1500);
+    const second = setTimeout(() => setVisibleLines(2), 3000);
+    const third = setTimeout(() => setVisibleLines(3), 4500);
     const ready = setTimeout(() => setCanContinue(true), 5000);
     return () => {
       clearTimeout(first);
       clearTimeout(second);
+      clearTimeout(third);
       clearTimeout(ready);
     };
   }, []);
@@ -60,27 +61,27 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
     <div className="min-h-screen flex flex-col px-4 pt-2 pb-6 sm:px-6">
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg mx-auto text-center space-y-5">
         <p
-          className="text-quiz-foreground font-medium"
+          className={visibleLines >= 1 ? "text-quiz-foreground font-medium transition-opacity duration-300 opacity-100" : "text-quiz-foreground font-medium transition-opacity duration-300 opacity-0"}
           style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
         >
           Nossa <span className={highlightClass} style={{ fontSize: "1.95rem" }}>IA</span> vai criar um plano{" "}
-          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>personalizado</span> para você{" "}
-          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{confidencePhrase}</span> gravando vídeos.
-          Vamos {" "}
-          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{challengePhrase}</span>, criando um{" "}
-          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>roteiro</span> prático. Em menos de{" "}
-          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{timePhrase}</span> seu vídeo estará pronto.
+          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>personalizado</span> para voc?{" "}
+          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{confidencePhrase}</span> gravando v?deos.
         </p>
-        <div className="w-full max-w-xs">
-          <div className="grid grid-cols-3 gap-2">
-            {[0, 1, 2].map((index) => (
-              <span
-                key={index}
-                className={index <= activeSegment ? "h-2 rounded-full bg-emerald-500" : "h-2 rounded-full bg-quiz-card"}
-              />
-            ))}
-          </div>
-        </div>
+        <p
+          className={visibleLines >= 2 ? "text-quiz-foreground font-medium transition-opacity duration-300 opacity-100" : "text-quiz-foreground font-medium transition-opacity duration-300 opacity-0"}
+          style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
+        >
+          Vamos te ajudar {challengePhrase}, criando um{" "}
+          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>roteiro</span> pr?tico.
+        </p>
+        <p
+          className={visibleLines >= 3 ? "text-quiz-foreground font-medium transition-opacity duration-300 opacity-100" : "text-quiz-foreground font-medium transition-opacity duration-300 opacity-0"}
+          style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
+        >
+          Em menos de{" "}
+          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{timePhrase}</span> seu v?deo estar? pronto.
+        </p>
         <button
           type="button"
           onClick={onComplete}
