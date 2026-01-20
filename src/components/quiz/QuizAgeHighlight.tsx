@@ -91,7 +91,7 @@ const QuizAgeHighlight = ({
             className="text-quiz-foreground font-medium text-center"
             style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
           >
-            Em menos de 7 dias eles conseguiram aumentar o número de{" "}
+            Em menos de 7 dias eles conseguiram aumentar o número de{" "}. Você também vai conseguir!
             <span className={highlightClass} style={{ fontSize: "1.95rem" }}>
               {goalPhrase || "seguidores"}
             </span>
