@@ -387,6 +387,16 @@ const Quiz = () => {
         </Suspense>
       )}
 
+      {step === "mid_message" && (
+        <Suspense fallback={<div className="min-h-screen" />}>
+          <QuizMidMessage
+            currentIndex={currentQuestion}
+            totalQuestions={questions.length}
+            onContinue={handleMidMessageContinue}
+          />
+        </Suspense>
+      )}
+
       {step === "processing" && (
         <Suspense fallback={<div className="min-h-screen" />}>
           <QuizProcessing
