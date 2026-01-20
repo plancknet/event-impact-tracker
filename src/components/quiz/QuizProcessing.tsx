@@ -63,13 +63,13 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
           className="text-quiz-foreground font-medium"
           style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
         >
-          Nós vamos criar um plano{" "}
+          Nossa <span className={highlightClass} style={{ fontSize: "1.95rem" }}>IA</span> vai criar um plano{" "}
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>personalizado</span> para você{" "}
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{confidencePhrase}</span> gravando vídeos.
           Vamos {" "}
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{challengePhrase}</span>, criando um{" "}
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>roteiro</span> prático. Em menos de{" "}
-          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{timePhrase}</span>seu vídeo estará pronto.
+          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{timePhrase}</span> seu vídeo estará pronto.
         </p>
         <div className="w-full max-w-xs">
           <div className="grid grid-cols-3 gap-2">
