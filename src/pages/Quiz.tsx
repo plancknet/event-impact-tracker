@@ -13,10 +13,12 @@ const QuizCoupon = lazy(() => import("@/components/quiz/QuizCoupon"));
 const QuizEmailCapture = lazy(() => import("@/components/quiz/QuizEmailCapture"));
 const QuizResults = lazy(() => import("@/components/quiz/QuizResults"));
 const QuizAgeHighlight = lazy(() => import("@/components/quiz/QuizAgeHighlight"));
+const QuizProcessing = lazy(() => import("@/components/quiz/QuizProcessing"));
 
 export type QuizStep = 
   | "questions" 
   | "age_highlight"
+  | "processing"
   | "transition" 
   | "coupon" 
   | "email" 
@@ -65,6 +67,7 @@ const Quiz = () => {
   const [isQuestionsLoaded, setIsQuestionsLoaded] = useState(false);
   const [pendingAdvance, setPendingAdvance] = useState(false);
   const [ageHighlightNextIndex, setAgeHighlightNextIndex] = useState<number | null>(null);
+  const [processingNextIndex, setProcessingNextIndex] = useState<number | null>(null);
   const [answers, setAnswers] = useState<QuizAnswers>({});
   const [email, setEmail] = useState("");
   const [quizId, setQuizId] = useState<string | null>(null);
@@ -135,6 +138,12 @@ const Quiz = () => {
       if (questionKey === "main_goal") {
         setAgeHighlightNextIndex(currentQuestion + 1);
         setStep("age_highlight");
+        return;
+      }
+
+      if (currentQuestion === 6) {
+        setProcessingNextIndex(currentQuestion + 1);
+        setStep("processing");
         return;
       }
 
@@ -254,6 +263,21 @@ const Quiz = () => {
     setStep("transition");
   };
 
+  const handleProcessingComplete = () => {
+    if (processingNextIndex !== null && processingNextIndex < questions.length) {
+      setCurrentQuestion(processingNextIndex);
+      setStep("questions");
+      setProcessingNextIndex(null);
+      return;
+    }
+    if (!isQuestionsLoaded) {
+      setPendingAdvance(true);
+      setStep("questions");
+      return;
+    }
+    setStep("transition");
+  };
+
   useEffect(() => {
     if (!pendingAdvance || !isQuestionsLoaded) return;
     setPendingAdvance(false);
@@ -299,7 +323,7 @@ const Quiz = () => {
             ) : null}
           </div>
           <div className="flex items-center gap-4">
-            {(step === "questions" || step === "age_highlight") && (
+            {(step === "questions" || step === "age_highlight" || step === "processing") && (
               <div className="hidden md:block w-[240px]">
                 <div className="h-2 bg-quiz-card rounded-full overflow-hidden">
                   <div
@@ -334,6 +358,16 @@ const Quiz = () => {
             currentIndex={currentQuestion}
             totalQuestions={questions.length}
             onContinue={handleAgeHighlightContinue}
+          />
+        </Suspense>
+      )}
+
+      {step === "processing" && (
+        <Suspense fallback={<div className="min-h-screen" />}>
+          <QuizProcessing
+            currentIndex={currentQuestion}
+            totalQuestions={questions.length}
+            onComplete={handleProcessingComplete}
           />
         </Suspense>
       )}
