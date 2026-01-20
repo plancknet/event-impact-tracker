@@ -24,10 +24,10 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
   };
 
   const challengePhraseMap: Record<string, string> = {
-    lack_ideas: "ter ideias",
-    poor_editing: "editar",
-    no_engagement: "engajar",
-    shyness: "superar a timidez",
+    lack_ideas: "te dar ideias práticas",
+    poor_editing: "te dar dicas mágicas de edição",
+    no_engagement: "te ajudar no engajamento",
+    shyness: "te ajudar superar a timidez",
   };
 
   const timePhraseMap: Record<string, string> = {
@@ -75,7 +75,7 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
           Nós vamos criar um plano{" "}
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>personalizado</span> para você{" "}
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{confidencePhrase}</span> gravando vídeos.
-          Vamos te orientar em como{" "}
+          Vamos {" "}
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{challengePhrase}</span>, criando um{" "}
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>roteiro</span> prático em menos de{" "}
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{timePhrase}</span>.
