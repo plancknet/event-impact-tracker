@@ -49,15 +49,15 @@ const QuizAgeHighlight = ({
 
   const goalPhraseMap: Record<string, string> = {
     more_followers: "seguidores",
-    more_views: "visualiza??es",
-    more_engagement: "a??es de engajamento",
+    more_views: "visualizações",
+    more_engagement: "ações de engajamento",
     more_messages_sales: "mensagens/vendas",
   };
 
   const goalPhrase = mainGoal ? goalPhraseMap[mainGoal] : undefined;
 
   return (
-    <div className="min-h-screen flex flex-col px-4 pt-2 pb-6 sm:px-6">
+    <div className="min-h-screen flex flex-col px-4 pt-2 pb-6 sm:px-6 animate-fade-in">
       <div className="w-full max-w-lg mx-auto mb-2 md:hidden">
         <div className="h-2 bg-quiz-card rounded-full overflow-hidden">
           <div
@@ -91,11 +91,11 @@ const QuizAgeHighlight = ({
             className="text-quiz-foreground font-medium text-center"
             style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
           >
-            Em menos de 7 dias eles conseguiram aumentar o n?mero de{" "}
+            Em menos de 7 dias eles conseguiram aumentar o número de{" "}
             <span className={highlightClass} style={{ fontSize: "1.95rem" }}>
               {goalPhrase || "seguidores"}
             </span>
-            . Voc? tamb?m vai <span className={highlightClass} style={{ fontSize: "1.95rem" }}>conseguir</span>!
+            . Você também vai <span className={highlightClass} style={{ fontSize: "1.95rem" }}>conseguir</span>!
           </p>
 
           <Button
