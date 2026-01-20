@@ -49,8 +49,8 @@ const QuizAgeHighlight = ({
 
   const goalPhraseMap: Record<string, string> = {
     more_followers: "seguidores",
-    more_views: "visualizações",
-    more_engagement: "ações de engajamento",
+    more_views: "visualiza??es",
+    more_engagement: "a??es de engajamento",
     more_messages_sales: "mensagens/vendas",
   };
 
@@ -91,10 +91,11 @@ const QuizAgeHighlight = ({
             className="text-quiz-foreground font-medium text-center"
             style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
           >
-            Em menos de 7 dias eles conseguiram aumentar o número de{" "}
+            Em menos de 7 dias eles conseguiram aumentar o n?mero de{" "}
             <span className={highlightClass} style={{ fontSize: "1.95rem" }}>
-              {goalPhrase || "seguidores"}. Você também vai conseguir!
+              {goalPhrase || "seguidores"}
             </span>
+            . Voc? tamb?m vai <span className={highlightClass} style={{ fontSize: "1.95rem" }}>conseguir</span>!
           </p>
 
           <Button
