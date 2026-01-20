@@ -58,15 +58,6 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
 
   return (
     <div className="min-h-screen flex flex-col px-4 pt-2 pb-6 sm:px-6">
-      <div className="w-full max-w-lg mx-auto mb-2 md:hidden">
-        <div className="h-2 bg-quiz-card rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-quiz-blue to-quiz-purple transition-all duration-500 ease-out rounded-full"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
-
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg mx-auto text-center space-y-5">
         <p
           className="text-quiz-foreground font-medium"
@@ -77,8 +68,8 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{confidencePhrase}</span> gravando vídeos.
           Vamos {" "}
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{challengePhrase}</span>, criando um{" "}
-          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>roteiro</span> prático em menos de{" "}
-          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{timePhrase}</span>.
+          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>roteiro</span> prático. Em menos de{" "}
+          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{timePhrase}</span>seu vídeo estará pronto.
         </p>
         <div className="w-full max-w-xs">
           <div className="grid grid-cols-3 gap-2">
