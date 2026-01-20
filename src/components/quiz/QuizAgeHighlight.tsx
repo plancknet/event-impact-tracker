@@ -47,11 +47,13 @@ const QuizAgeHighlight = ({
   return (
     <div className="min-h-screen flex flex-col px-4 pt-2 pb-6 sm:px-6">
       <div className="w-full max-w-lg mx-auto mb-2 md:hidden">
-        <div className="h-2 bg-quiz-card rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-quiz-blue to-quiz-purple transition-all duration-500 ease-out rounded-full"
-            style={{ width: `${progress}%` }}
-          />
+        <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${totalQuestions}, minmax(0, 1fr))` }}>
+          {Array.from({ length: totalQuestions }).map((_, index) => (
+            <span
+              key={index}
+              className={index <= currentIndex ? "h-2 rounded-full bg-quiz-purple" : "h-2 rounded-full bg-quiz-card"}
+            />
+          ))}
         </div>
       </div>
 
