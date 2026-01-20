@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 
 interface QuizAgeHighlightProps {
   ageRange?: string;
+  mainGoal?: string;
   currentIndex: number;
   totalQuestions: number;
   onContinue: () => void;
@@ -35,6 +36,7 @@ const ageImageSources: Record<
 
 const QuizAgeHighlight = ({
   ageRange,
+  mainGoal,
   currentIndex,
   totalQuestions,
   onContinue,
@@ -43,6 +45,16 @@ const QuizAgeHighlight = ({
   const imageSources = ageRange ? ageImageSources[ageRange] : undefined;
   const quizFontFamily =
     "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+  const highlightClass = "text-quiz-blue font-semibold";
+
+  const goalPhraseMap: Record<string, string> = {
+    more_followers: "seguidores",
+    more_views: "visualizações",
+    more_engagement: "ações de engajamento",
+    more_messages_sales: "mensagens/vendas",
+  };
+
+  const goalPhrase = mainGoal ? goalPhraseMap[mainGoal] : undefined;
 
   return (
     <div className="min-h-screen flex flex-col px-4 pt-2 pb-6 sm:px-6">
@@ -77,9 +89,12 @@ const QuizAgeHighlight = ({
 
           <p
             className="text-quiz-foreground font-medium text-center"
-            style={{ fontFamily: quizFontFamily }}
+            style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
           >
-            Eles conseguiram e você também vai conseguir!
+            Em menos de 7 dias eles conseguiram aumentar o número de{" "}
+            <span className={highlightClass} style={{ fontSize: "1.95rem" }}>
+              {goalPhrase || "seguidores"}
+            </span>
           </p>
 
           <Button

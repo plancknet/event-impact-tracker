@@ -355,6 +355,7 @@ const Quiz = () => {
         <Suspense fallback={<div className="min-h-screen" />}>
           <QuizAgeHighlight
             ageRange={answers.age_range}
+            mainGoal={answers.main_goal}
             currentIndex={currentQuestion}
             totalQuestions={questions.length}
             onContinue={handleAgeHighlightContinue}
