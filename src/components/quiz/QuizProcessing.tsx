@@ -29,18 +29,10 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
     shyness: "a superar a timidez",
   };
 
-  const timePhraseMap: Record<string, string> = {
-    less_30min: "30 minutos",
-    "30min_1h": "1 hora",
-    "1_2h": "2 horas",
-    more_2h: "2 horas",
-  };
-
   const confidencePhrase =
     (answers.comfort_recording && confidencePhraseMap[answers.comfort_recording]) || "ter seguran?a";
   const challengePhrase =
     (answers.biggest_challenge && challengePhraseMap[answers.biggest_challenge]) || "a ter ideias";
-  const timePhrase = (answers.editing_time && timePhraseMap[answers.editing_time]) || "30 minutos";
 
   useEffect(() => {
     setCanContinue(false);
@@ -59,7 +51,7 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
 
   return (
     <div className="min-h-screen flex flex-col px-4 pt-2 pb-6 sm:px-6">
-      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg mx-auto text-center space-y-5">
+      <div className="flex-1 flex flex-col items-center justify-start w-full max-w-lg mx-auto text-center space-y-5 pt-6">
         <p
           className={visibleLines >= 1 ? "text-quiz-foreground font-medium transition-opacity duration-300 opacity-100" : "text-quiz-foreground font-medium transition-opacity duration-300 opacity-0"}
           style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
@@ -79,18 +71,19 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
           className={visibleLines >= 3 ? "text-quiz-foreground font-medium transition-opacity duration-300 opacity-100" : "text-quiz-foreground font-medium transition-opacity duration-300 opacity-0"}
           style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
         >
-          Em menos de{" "}
-          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{timePhrase}</span> seu v?deo estar? pronto.
+          Em menos de <span className={highlightClass} style={{ fontSize: "1.95rem" }}>5 minutos</span> seu v?deo estar? pronto.
         </p>
-        <button
-          type="button"
-          onClick={onComplete}
-          disabled={!canContinue}
-          className="w-full max-w-xs h-12 text-base font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple text-white rounded-xl shadow-lg hover:opacity-90 transition-all duration-300 hover:scale-[1.01]"
-          style={{ fontFamily: quizFontFamily }}
-        >
-          Continuar
-        </button>
+        {visibleLines >= 3 && (
+          <button
+            type="button"
+            onClick={onComplete}
+            disabled={!canContinue}
+            className="w-full max-w-xs h-12 text-base font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple text-white rounded-xl shadow-lg hover:opacity-90 transition-all duration-300 hover:scale-[1.01]"
+            style={{ fontFamily: quizFontFamily }}
+          >
+            Continuar
+          </button>
+        )}
       </div>
     </div>
   );
