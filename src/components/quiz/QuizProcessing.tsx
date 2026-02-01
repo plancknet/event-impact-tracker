@@ -49,13 +49,13 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
 
   return (
     <div className="min-h-screen flex flex-col px-4 pt-2 pb-6 sm:px-6 animate-fade-in">
-      <div className="flex-1 flex flex-col items-center justify-start w-full max-w-lg mx-auto text-center space-y-5 pt-6">
+      <div className="flex-1 flex flex-col items-center justify-start w-full max-w-lg mx-auto text-center space-y-5">
         <p
           className={`text-quiz-foreground font-medium transition-opacity duration-500 ${visibleLines >= 1 ? "opacity-100" : "opacity-0"}`}
           style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
         >
-          Nossa <span className={highlightClass} style={{ fontSize: "1.95rem" }}>IA</span> vai criar um aplicativo personalizado para você...{" "}
-          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>personalizado</span> para você{" "}
+          Nossa <span className={highlightClass} style={{ fontSize: "1.95rem" }}>IA</span> vai criar um{" "}
+          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>aplicativo</span> personalizado para você...{" "}
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{confidencePhrase}</span> gravando vídeos.
         </p>
         <p

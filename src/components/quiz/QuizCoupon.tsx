@@ -143,6 +143,10 @@ const QuizCoupon = ({ onReveal }: QuizCouponProps) => {
           </h2>
         </div>
 
+        <p className="text-quiz-foreground font-medium">
+          Seu perfil tem alto potencial com o uso do ThinkAndTalk.
+        </p>
+
         <p className="text-quiz-muted">
           Raspe o cupom abaixo para descobrir seu desconto especial
         </p>
