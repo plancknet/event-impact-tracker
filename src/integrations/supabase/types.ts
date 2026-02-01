@@ -86,6 +86,7 @@ export type Database = {
       quiz_responses: {
         Row: {
           age_range: string | null
+          answer_timestamps: Json | null
           audience_age: string | null
           audience_gender: string | null
           audience_type: string | null
@@ -97,6 +98,7 @@ export type Database = {
           coupon_revealed: boolean | null
           created_at: string
           creator_level: string | null
+          device_info: Json | null
           editing_time: string | null
           email: string | null
           energy_level: string | null
@@ -106,7 +108,9 @@ export type Database = {
           planning_style: string | null
           platforms: string[] | null
           publish_frequency: string | null
+          reached_results: boolean | null
           result_goal: string | null
+          session_started_at: string | null
           speaking_tone: string | null
           updated_at: string
           user_id: string | null
@@ -115,6 +119,7 @@ export type Database = {
         }
         Insert: {
           age_range?: string | null
+          answer_timestamps?: Json | null
           audience_age?: string | null
           audience_gender?: string | null
           audience_type?: string | null
@@ -126,6 +131,7 @@ export type Database = {
           coupon_revealed?: boolean | null
           created_at?: string
           creator_level?: string | null
+          device_info?: Json | null
           editing_time?: string | null
           email?: string | null
           energy_level?: string | null
@@ -135,7 +141,9 @@ export type Database = {
           planning_style?: string | null
           platforms?: string[] | null
           publish_frequency?: string | null
+          reached_results?: boolean | null
           result_goal?: string | null
+          session_started_at?: string | null
           speaking_tone?: string | null
           updated_at?: string
           user_id?: string | null
@@ -144,6 +152,7 @@ export type Database = {
         }
         Update: {
           age_range?: string | null
+          answer_timestamps?: Json | null
           audience_age?: string | null
           audience_gender?: string | null
           audience_type?: string | null
@@ -155,6 +164,7 @@ export type Database = {
           coupon_revealed?: boolean | null
           created_at?: string
           creator_level?: string | null
+          device_info?: Json | null
           editing_time?: string | null
           email?: string | null
           energy_level?: string | null
@@ -164,7 +174,9 @@ export type Database = {
           planning_style?: string | null
           platforms?: string[] | null
           publish_frequency?: string | null
+          reached_results?: boolean | null
           result_goal?: string | null
+          session_started_at?: string | null
           speaking_tone?: string | null
           updated_at?: string
           user_id?: string | null
