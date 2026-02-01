@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense, lazy } from "react";
+import { useState, useEffect, Suspense, lazy, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import QuizQuestion from "@/components/quiz/QuizQuestion";
@@ -49,6 +49,21 @@ export interface QuizAnswers {
   content_goal?: string;
 }
 
+interface AnswerTimestamp {
+  question_key: string;
+  answered_at: string;
+  step: string;
+  [key: string]: string; // Index signature for Json compatibility
+}
+
+// Get São Paulo timezone timestamp (UTC-3)
+const getSaoPauloTimestamp = () => {
+  return new Date().toLocaleString('sv-SE', { 
+    timeZone: 'America/Sao_Paulo',
+    hour12: false 
+  }).replace(' ', 'T') + '-03:00';
+};
+
 const Quiz = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState<QuizStep>("questions");
@@ -78,13 +93,50 @@ const Quiz = () => {
   const { user, session, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
+  
+  // Session tracking state
+  const answerTimestampsRef = useRef<AnswerTimestamp[]>([]);
+  const sessionStartedRef = useRef<string | null>(null);
 
-  // Create quiz response on start
+  // Get device info for tracking
+  const getDeviceInfo = () => {
+    return {
+      userAgent: navigator.userAgent,
+      language: navigator.language,
+      platform: navigator.platform,
+      screenWidth: window.screen.width,
+      screenHeight: window.screen.height,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      referrer: document.referrer || null,
+    };
+  };
+
+  // Track answer timestamp
+  const trackAnswerTimestamp = (questionKey: string, currentStep: string) => {
+    const timestamp: AnswerTimestamp = {
+      question_key: questionKey,
+      answered_at: getSaoPauloTimestamp(),
+      step: currentStep,
+    };
+    answerTimestampsRef.current = [...answerTimestampsRef.current, timestamp];
+    return answerTimestampsRef.current;
+  };
+
+  // Create quiz response on start with session tracking
   const handleStart = async () => {
     const newQuizId = crypto.randomUUID();
+    const startTime = getSaoPauloTimestamp();
+    sessionStartedRef.current = startTime;
+    
     const { error } = await supabase
       .from("quiz_responses")
-      .insert({ id: newQuizId });
+      .insert({ 
+        id: newQuizId,
+        session_started_at: startTime,
+        device_info: getDeviceInfo(),
+        answer_timestamps: [],
+      });
 
     if (error) {
       console.error("Failed to create quiz response:", error);
@@ -121,16 +173,22 @@ const Quiz = () => {
     };
   }, []);
 
-  // Save answer and advance
+  // Save answer and advance with timestamp tracking
   const handleAnswer = async (questionKey: string, value: string | string[]) => {
     const newAnswers = { ...answers, [questionKey]: value };
     setAnswers(newAnswers);
+    
+    // Track timestamp for this answer
+    const updatedTimestamps = trackAnswerTimestamp(questionKey, step);
 
-    // Save to database
+    // Save to database with timestamp
     if (quizId && questionKey !== "gender") {
       await supabase
         .from("quiz_responses")
-        .update({ [questionKey]: value })
+        .update({ 
+          [questionKey]: value,
+          answer_timestamps: updatedTimestamps,
+        })
         .eq("id", quizId);
     }
 
@@ -170,14 +228,22 @@ const Quiz = () => {
   };
 
   const handleTransitionComplete = () => {
+    // Track transition complete
+    trackAnswerTimestamp("transition_complete", "transition");
     setStep("coupon");
   };
 
   const handleCouponRevealed = async () => {
+    // Track coupon reveal
+    const updatedTimestamps = trackAnswerTimestamp("coupon_revealed", "coupon");
+    
     if (quizId) {
       await supabase
         .from("quiz_responses")
-        .update({ coupon_revealed: true })
+        .update({ 
+          coupon_revealed: true,
+          answer_timestamps: updatedTimestamps,
+        })
         .eq("id", quizId);
     }
     setStep("email");
@@ -185,12 +251,18 @@ const Quiz = () => {
 
   const handleEmailSubmit = async (submittedEmail: string) => {
     setEmail(submittedEmail);
+    
+    // Track email submission
+    const updatedTimestamps = trackAnswerTimestamp("email_submitted", "email");
+    
     if (quizId) {
       await supabase
         .from("quiz_responses")
         .update({ 
           email: submittedEmail,
-          completed_at: new Date().toISOString()
+          completed_at: getSaoPauloTimestamp(),
+          reached_results: true,
+          answer_timestamps: updatedTimestamps,
         })
         .eq("id", quizId);
     }
