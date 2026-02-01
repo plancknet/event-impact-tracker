@@ -54,7 +54,7 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
           className={`text-quiz-foreground font-medium transition-opacity duration-500 ${visibleLines >= 1 ? "opacity-100" : "opacity-0"}`}
           style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
         >
-          Nossa <span className={highlightClass} style={{ fontSize: "1.95rem" }}>IA</span> vai criar um plano{" "}
+          Nossa <span className={highlightClass} style={{ fontSize: "1.95rem" }}>IA</span> vai criar um aplicativo personalizado para você...{" "}
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>personalizado</span> para você{" "}
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{confidencePhrase}</span> gravando vídeos.
         </p>

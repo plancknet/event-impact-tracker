@@ -28,7 +28,7 @@ const QuizMidMessage = ({ currentIndex, totalQuestions, onContinue }: QuizMidMes
           className="text-quiz-foreground font-medium"
           style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
         >
-          Falta bem pouco para ter uma{" "}
+          Falta bem pouco para ter um aplicativo com{" "}
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>IA treinada</span> e configurada para você, para gerar{" "}
           <span className={highlightClass} style={{ fontSize: "1.95rem" }}>roteiro de vídeos</span> em um teleprompter.
         </p>
