@@ -37,9 +37,9 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
   useEffect(() => {
     setCanContinue(false);
     setVisibleLines(1);
-    const second = setTimeout(() => setVisibleLines(2), 1500);
-    const third = setTimeout(() => setVisibleLines(3), 3000);
-    const ready = setTimeout(() => setCanContinue(true), 5000);
+    const second = setTimeout(() => setVisibleLines(2), 3000);
+    const third = setTimeout(() => setVisibleLines(3), 6000);
+    const ready = setTimeout(() => setCanContinue(true), 9000);
     return () => {
       clearTimeout(second);
       clearTimeout(third);
