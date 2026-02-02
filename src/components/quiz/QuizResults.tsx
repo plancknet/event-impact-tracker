@@ -175,7 +175,7 @@ const QuizResults = ({ answers, quizResponseId }: QuizResultsProps) => {
               </>
             ) : (
               <>
-                Ativar meu aplicativo personaliado
+                Ativar meu aplicativo personalizado
                 <ArrowRight className="ml-2 h-5 w-5" />
               </>
             )}
