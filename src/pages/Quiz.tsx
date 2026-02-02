@@ -421,7 +421,7 @@ const Quiz = () => {
           <div className="flex items-center gap-4">
             {(step === "questions" || step === "age_highlight" || step === "mid_message" || step === "processing") && (
               <div className="hidden md:block w-[240px]">
-                <div className="h-2 bg-quiz-card rounded-full overflow-hidden">
+                <div className="h-1.5 bg-quiz-border/30 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-quiz-blue to-quiz-purple transition-all duration-500 ease-out rounded-full"
                     style={{
@@ -437,7 +437,7 @@ const Quiz = () => {
       </header>
 
       {step === "questions" && (
-        <div key={`question-${currentQuestion}`} className="animate-fade-in">
+        <div key={`question-${currentQuestion}`}>
           <QuizQuestion
             question={questions[currentQuestion]}
             currentIndex={currentQuestion}

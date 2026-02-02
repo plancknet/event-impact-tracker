@@ -1,11 +1,7 @@
 import {
   Star,
-  CheckCircle,
   Target,
-  Zap,
   ArrowRight,
-  Lightbulb,
-  FileText,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -140,9 +136,10 @@ const QuizResults = ({ answers, quizResponseId }: QuizResultsProps) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col px-4 py-8 sm:px-6 animate-fade-in">
+    <div className="min-h-screen flex flex-col px-4 py-8 sm:px-6 animate-slide-in-right">
       <div className="w-full max-w-lg mx-auto flex flex-col space-y-6">
-        <div className="text-center space-y-2">
+        {/* Header Badge */}
+        <div className="text-center space-y-2 animate-stagger-fade">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-quiz-selected rounded-full text-quiz-purple font-medium text-sm">
             <Target className="h-4 w-4" />
             Análise Completa
@@ -151,7 +148,12 @@ const QuizResults = ({ answers, quizResponseId }: QuizResultsProps) => {
             ThinkAndTalk personalizado para seu perfil
           </h1>
         </div>
-        <div className="bg-gradient-to-br from-quiz-blue/10 to-quiz-purple/10 rounded-2xl p-6 border border-quiz-purple/20 space-y-4">
+
+        {/* Main Card */}
+        <div 
+          className="bg-gradient-to-br from-quiz-blue/10 to-quiz-purple/10 rounded-2xl p-6 border border-quiz-purple/20 space-y-4 animate-scale-up-card"
+          style={{ animationDelay: "100ms" }}
+        >
           <p className="text-quiz-foreground leading-relaxed">
             Criamos um aplicativo com um plano sob medida para você criar vídeos com mais clareza, confiança e consistência usando roteiros inteligentes e teleprompter com IA.
           </p>
@@ -166,7 +168,7 @@ const QuizResults = ({ answers, quizResponseId }: QuizResultsProps) => {
             onClick={handleActivatePlan}
             size="lg"
             disabled={isLoading}
-            className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple hover:opacity-90 transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+            className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple hover:opacity-90 transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02]"
           >
             {isLoading ? (
               <>
@@ -182,7 +184,8 @@ const QuizResults = ({ answers, quizResponseId }: QuizResultsProps) => {
           </Button>
         </div>
 
-        <div className="text-center space-y-3 pb-8">
+        {/* Rating */}
+        <div className="text-center space-y-3 pb-8 animate-stagger-fade" style={{ animationDelay: "200ms" }}>
           <div className="flex items-center justify-center gap-1">
             {[...Array(5)].map((_, i) => (
               <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />

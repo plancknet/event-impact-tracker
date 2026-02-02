@@ -187,4 +187,103 @@
   .animate-scale-in {
     animation: scale-in 0.3s ease-out;
   }
+
+  /* BetterMe-style slide transitions */
+  @keyframes slide-in-from-right {
+    from {
+      transform: translateX(30%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-in-from-left {
+    from {
+      transform: translateX(-30%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-out-to-left {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(-30%);
+      opacity: 0;
+    }
+  }
+
+  @keyframes slide-out-to-right {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(30%);
+      opacity: 0;
+    }
+  }
+
+  /* Staggered fade for options */
+  @keyframes stagger-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Scale up animation for age cards */
+  @keyframes scale-up-card {
+    from {
+      opacity: 0;
+      transform: scale(0.92);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Animation classes */
+  .animate-slide-in-right {
+    animation: slide-in-from-right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-slide-in-left {
+    animation: slide-in-from-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-stagger-fade {
+    animation: stagger-fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  .animate-scale-up-card {
+    animation: scale-up-card 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-slide-in-right,
+    .animate-slide-in-left,
+    .animate-stagger-fade,
+    .animate-scale-up-card,
+    .animate-scale-in,
+    .animate-in,
+    .animate-slide-soft {
+      animation: none;
+    }
+  }
 }
