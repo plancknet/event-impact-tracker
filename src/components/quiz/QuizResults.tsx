@@ -151,51 +151,9 @@ const QuizResults = ({ answers, quizResponseId }: QuizResultsProps) => {
             ThinkAndTalk personalizado para seu perfil
           </h1>
         </div>
-
-        <div className="bg-quiz-card rounded-2xl p-6 border border-quiz-border shadow-lg space-y-6">
-          <div className="text-center pb-4 border-b border-quiz-border">
-            <p className="text-sm text-quiz-muted mb-1">Seu perfil:</p>
-            <h2 className="text-xl font-bold bg-gradient-to-r from-quiz-blue to-quiz-purple bg-clip-text text-transparent">
-              {profileName}
-            </h2>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Zap className="h-5 w-5 text-quiz-purple" />
-              <h3 className="font-semibold text-quiz-foreground">Pontos Fortes</h3>
-            </div>
-            <ul className="space-y-2">
-              {strengths.map((strength, index) => (
-                <li key={index} className="flex items-center gap-2 text-quiz-muted">
-                  <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                  <span>{strength}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Lightbulb className="h-5 w-5 text-quiz-purple" />
-              <h3 className="font-semibold text-quiz-foreground">Principal Desafio</h3>
-            </div>
-            <p className="text-quiz-muted bg-quiz-muted/30 rounded-lg p-3">{mainChallenge}</p>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <FileText className="h-5 w-5 text-quiz-purple" />
-              <h3 className="font-semibold text-quiz-foreground">O que você precisa agora</h3>
-            </div>
-            <p className="text-quiz-foreground font-medium">{recommendation}</p>
-          </div>
-        </div>
-
         <div className="bg-gradient-to-br from-quiz-blue/10 to-quiz-purple/10 rounded-2xl p-6 border border-quiz-purple/20 space-y-4">
           <p className="text-quiz-foreground leading-relaxed">
-            Criamos um plano sob medida para você criar vídeos com mais{" "}
-            <strong>clareza, confiança e consistência</strong> usando roteiros inteligentes e teleprompter com IA.
+            Criamos um aplicativo com um plano sob medida para você criar vídeos com mais clareza, confiança e consistência usando roteiros inteligentes e teleprompter com IA.
           </p>
 
           <div className="flex items-center justify-center gap-2 text-quiz-purple font-semibold">
