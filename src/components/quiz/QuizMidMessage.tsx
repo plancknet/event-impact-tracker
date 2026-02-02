@@ -13,9 +13,10 @@ const QuizMidMessage = ({ currentIndex, totalQuestions, onContinue }: QuizMidMes
   const highlightClass = "text-quiz-blue font-semibold";
 
   return (
-    <div className="min-h-screen flex flex-col px-4 pt-2 pb-6 sm:px-6 animate-fade-in">
-      <div className="w-full max-w-lg mx-auto mb-2 md:hidden">
-        <div className="h-2 bg-quiz-card rounded-full overflow-hidden">
+    <div className="min-h-screen flex flex-col px-4 pt-2 pb-6 sm:px-6">
+      {/* Progress Bar - Mobile */}
+      <div className="w-full max-w-lg mx-auto mb-4 md:hidden">
+        <div className="h-1.5 bg-quiz-border/30 rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-quiz-blue to-quiz-purple transition-all duration-500 ease-out rounded-full"
             style={{ width: `${progress}%` }}
@@ -23,9 +24,9 @@ const QuizMidMessage = ({ currentIndex, totalQuestions, onContinue }: QuizMidMes
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-start w-full max-w-lg mx-auto text-center space-y-5 pt-6">
+      <div className="flex-1 flex flex-col items-center justify-start w-full max-w-lg mx-auto text-center space-y-6 pt-8 animate-slide-in-right">
         <p
-          className="text-quiz-foreground font-medium"
+          className="text-quiz-foreground font-medium animate-stagger-fade"
           style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
         >
           Falta bem pouco para ter um{" "}
@@ -36,8 +37,8 @@ const QuizMidMessage = ({ currentIndex, totalQuestions, onContinue }: QuizMidMes
         <Button
           onClick={onContinue}
           size="lg"
-          className="w-full max-w-xs h-12 text-base font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple hover:opacity-90 transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.01]"
-          style={{ fontFamily: quizFontFamily }}
+          className="w-full max-w-xs h-12 text-base font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple hover:opacity-90 transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.01] animate-stagger-fade"
+          style={{ fontFamily: quizFontFamily, animationDelay: "150ms" }}
         >
           Continuar
         </Button>

@@ -41,15 +41,15 @@ const QuizEmailCapture = ({ onSubmit }: QuizEmailCaptureProps) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 animate-fade-in">
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 animate-slide-in-right">
       <div className="w-full max-w-md flex flex-col items-center text-center space-y-8">
         {/* Icon */}
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-quiz-blue/20 to-quiz-purple/20 flex items-center justify-center">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-quiz-blue/20 to-quiz-purple/20 flex items-center justify-center animate-scale-up-card">
           <Mail className="h-10 w-10 text-quiz-purple" />
         </div>
 
         {/* Header */}
-        <div className="space-y-3">
+        <div className="space-y-3 animate-stagger-fade" style={{ animationDelay: "100ms" }}>
           <h2 className="text-2xl font-semibold text-quiz-foreground">
             Quase lá! 🎉
           </h2>
@@ -59,7 +59,7 @@ const QuizEmailCapture = ({ onSubmit }: QuizEmailCaptureProps) => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="w-full space-y-4">
+        <form onSubmit={handleSubmit} className="w-full space-y-4 animate-stagger-fade" style={{ animationDelay: "200ms" }}>
           <div className="space-y-2">
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-quiz-muted" />
@@ -82,7 +82,7 @@ const QuizEmailCapture = ({ onSubmit }: QuizEmailCaptureProps) => {
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple hover:opacity-90 transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl"
+            className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple hover:opacity-90 transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.01]"
           >
             {isLoading ? (
               "Processando..."
@@ -96,7 +96,7 @@ const QuizEmailCapture = ({ onSubmit }: QuizEmailCaptureProps) => {
         </form>
 
         {/* Privacy Note */}
-        <div className="flex items-center gap-2 text-sm text-quiz-muted">
+        <div className="flex items-center gap-2 text-sm text-quiz-muted animate-stagger-fade" style={{ animationDelay: "300ms" }}>
           <Shield className="h-4 w-4" />
           <span>Seus dados estão seguros. Sem spam.</span>
         </div>

@@ -133,26 +133,29 @@ const QuizCoupon = ({ onReveal }: QuizCouponProps) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 animate-fade-in">
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 animate-slide-in-right">
       <div className="w-full max-w-md flex flex-col items-center text-center space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 animate-stagger-fade">
           <Gift className="h-8 w-8 text-quiz-purple" />
           <h2 className="text-2xl font-semibold text-quiz-foreground">
             Você ganhou um presente!
           </h2>
         </div>
 
-        <p className="text-quiz-foreground font-medium">
+        <p className="text-quiz-foreground font-medium animate-stagger-fade" style={{ animationDelay: "80ms" }}>
           Seu perfil tem alto potencial com o uso do ThinkAndTalk.
         </p>
 
-        <p className="text-quiz-muted">
+        <p className="text-quiz-muted animate-stagger-fade" style={{ animationDelay: "160ms" }}>
           Raspe o cupom abaixo para descobrir seu desconto especial
         </p>
 
         {/* Scratch Card Container */}
-        <div className="relative w-full aspect-[2/1] rounded-2xl overflow-hidden shadow-xl">
+        <div 
+          className="relative w-full aspect-[2/1] rounded-2xl overflow-hidden shadow-xl animate-scale-up-card"
+          style={{ animationDelay: "240ms" }}
+        >
           {/* Hidden Content (Discount) */}
           <div className="absolute inset-0 bg-gradient-to-br from-quiz-purple/10 to-quiz-blue/10 flex flex-col items-center justify-center p-6 border-4 border-dashed border-quiz-purple/30 rounded-2xl">
             <Sparkles className="h-10 w-10 text-quiz-purple mb-2" />
@@ -184,7 +187,7 @@ const QuizCoupon = ({ onReveal }: QuizCouponProps) => {
 
         {/* Revealed Message */}
         {isRevealed && (
-          <div className="animate-scale-in bg-quiz-card rounded-xl p-4 border border-quiz-border">
+          <div className="animate-scale-up-card bg-quiz-card rounded-xl p-4 border border-quiz-border">
             <p className="text-quiz-foreground font-medium">
               🎉 Parabéns! Seu cupom será aplicado automaticamente.
             </p>
