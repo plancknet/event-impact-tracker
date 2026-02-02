@@ -168,7 +168,7 @@ const QuizResults = ({ answers, quizResponseId }: QuizResultsProps) => {
             onClick={handleActivatePlan}
             size="lg"
             disabled={isLoading}
-            className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple hover:opacity-90 transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02]"
+            className="w-full h-14 px-4 text-base sm:text-lg font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple hover:opacity-90 transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02]"
           >
             {isLoading ? (
               <>
@@ -176,10 +176,10 @@ const QuizResults = ({ answers, quizResponseId }: QuizResultsProps) => {
                 Processando...
               </>
             ) : (
-              <>
+              <span className="flex items-center justify-center gap-2 whitespace-normal text-center leading-snug">
                 Ativar meu aplicativo personalizado
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </>
+                <ArrowRight className="h-5 w-5 flex-shrink-0" />
+              </span>
             )}
           </Button>
         </div>
