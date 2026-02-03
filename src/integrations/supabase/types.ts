@@ -185,6 +185,50 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_sessions: {
+        Row: {
+          answer_timestamps: Json | null
+          completed_at: string | null
+          created_at: string
+          device_info: Json | null
+          id: string
+          quiz_response_id: string | null
+          reached_results: boolean | null
+          session_started_at: string
+          updated_at: string
+        }
+        Insert: {
+          answer_timestamps?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          device_info?: Json | null
+          id?: string
+          quiz_response_id?: string | null
+          reached_results?: boolean | null
+          session_started_at?: string
+          updated_at?: string
+        }
+        Update: {
+          answer_timestamps?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          device_info?: Json | null
+          id?: string
+          quiz_response_id?: string | null
+          reached_results?: boolean | null
+          session_started_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_sessions_quiz_response_id_fkey"
+            columns: ["quiz_response_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_responses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teleprompter_scripts: {
         Row: {
           created_at: string
