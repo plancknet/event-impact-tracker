@@ -58,18 +58,46 @@ export default function QuizAnalytics() {
 
   const fetchSessions = async () => {
     try {
+      // Fetch from quiz_sessions table (new tracking table)
       const { data, error } = await supabase
-        .from("quiz_responses")
-        .select("id, session_started_at, answer_timestamps, reached_results, email, completed_at, device_info")
+        .from("quiz_sessions")
+        .select(`
+          id, 
+          session_started_at, 
+          answer_timestamps, 
+          reached_results, 
+          completed_at, 
+          device_info,
+          quiz_response_id
+        `)
         .not("session_started_at", "is", null)
         .order("session_started_at", { ascending: false })
         .limit(500);
 
       if (error) throw error;
 
+      // Also fetch emails from quiz_responses to match
+      const quizResponseIds = (data || []).map(d => d.quiz_response_id).filter(Boolean);
+      let emailMap: Record<string, string | null> = {};
+      
+      if (quizResponseIds.length > 0) {
+        const { data: responseData } = await supabase
+          .from("quiz_responses")
+          .select("id, email")
+          .in("id", quizResponseIds);
+        
+        if (responseData) {
+          emailMap = Object.fromEntries(responseData.map(r => [r.id, r.email]));
+        }
+      }
+
       const typedData = (data || []).map((item) => ({
-        ...item,
+        id: item.id,
+        session_started_at: item.session_started_at,
         answer_timestamps: item.answer_timestamps as unknown as AnswerTimestamp[] | null,
+        reached_results: item.reached_results,
+        email: item.quiz_response_id ? emailMap[item.quiz_response_id] || null : null,
+        completed_at: item.completed_at,
         device_info: item.device_info as unknown as DeviceInfo | null,
       }));
 

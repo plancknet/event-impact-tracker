@@ -89,6 +89,7 @@ const Quiz = () => {
   const [answers, setAnswers] = useState<QuizAnswers>({});
   const [email, setEmail] = useState("");
   const [quizId, setQuizId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [slideDirection, setSlideDirection] = useState<"left" | "right">("left");
   const { user, session, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -123,31 +124,52 @@ const Quiz = () => {
     return answerTimestampsRef.current;
   };
 
-  // Create quiz response on start with session tracking
+  // Create quiz response and session on start
   const handleStart = async () => {
     const newQuizId = crypto.randomUUID();
+    const newSessionId = crypto.randomUUID();
     const startTime = getSaoPauloTimestamp();
+    const deviceInfo = getDeviceInfo();
     sessionStartedRef.current = startTime;
     
-    const { error } = await supabase
+    // Create quiz response first
+    const { error: quizError } = await supabase
       .from("quiz_responses")
       .insert({ 
         id: newQuizId,
         session_started_at: startTime,
-        device_info: getDeviceInfo(),
+        device_info: deviceInfo,
         answer_timestamps: [],
       });
 
-    if (error) {
-      console.error("Failed to create quiz response:", error);
+    if (quizError) {
+      console.error("Failed to create quiz response:", quizError);
       toast({
         title: "Erro ao iniciar o quiz",
         description: "Tente novamente em instantes.",
         variant: "destructive",
       });
       setQuizId(null);
+      setSessionId(null);
     } else {
       setQuizId(newQuizId);
+      
+      // Create separate tracking session
+      const { error: sessionError } = await supabase
+        .from("quiz_sessions")
+        .insert({
+          id: newSessionId,
+          quiz_response_id: newQuizId,
+          session_started_at: startTime,
+          device_info: deviceInfo,
+          answer_timestamps: [],
+        });
+      
+      if (sessionError) {
+        console.error("Failed to create tracking session:", sessionError);
+      } else {
+        setSessionId(newSessionId);
+      }
     }
     setStep("questions");
   };
@@ -181,9 +203,10 @@ const Quiz = () => {
     // Track timestamp for this answer
     const updatedTimestamps = trackAnswerTimestamp(questionKey, value);
 
-    // Save to database with timestamp
+    // Save to database with timestamp (both tables in parallel)
     if (quizId && questionKey !== "gender") {
-      const { error } = await supabase
+      // Update quiz responses
+      const quizUpdate = supabase
         .from("quiz_responses")
         .update({ 
           [questionKey]: value,
@@ -191,8 +214,24 @@ const Quiz = () => {
         })
         .eq("id", quizId);
       
-      if (error) {
-        console.error("Failed to update quiz response:", error);
+      // Update tracking session separately
+      const sessionUpdate = sessionId 
+        ? supabase
+            .from("quiz_sessions")
+            .update({ answer_timestamps: updatedTimestamps })
+            .eq("id", sessionId)
+        : null;
+      
+      const [quizResult, sessionResult] = await Promise.all([
+        quizUpdate,
+        sessionUpdate,
+      ]);
+      
+      if (quizResult.error) {
+        console.error("Failed to update quiz response:", quizResult.error);
+      }
+      if (sessionResult?.error) {
+        console.error("Failed to update session:", sessionResult.error);
       }
     }
 
@@ -241,15 +280,24 @@ const Quiz = () => {
     // Track coupon reveal
     const updatedTimestamps = trackAnswerTimestamp("coupon_revealed", "revealed");
     
-    if (quizId) {
-      await supabase
-        .from("quiz_responses")
-        .update({ 
-          coupon_revealed: true,
-          answer_timestamps: updatedTimestamps,
-        })
-        .eq("id", quizId);
-    }
+    const quizUpdate = quizId
+      ? supabase
+          .from("quiz_responses")
+          .update({ 
+            coupon_revealed: true,
+            answer_timestamps: updatedTimestamps,
+          })
+          .eq("id", quizId)
+      : null;
+    
+    const sessionUpdate = sessionId
+      ? supabase
+          .from("quiz_sessions")
+          .update({ answer_timestamps: updatedTimestamps })
+          .eq("id", sessionId)
+      : null;
+    
+    await Promise.all([quizUpdate, sessionUpdate]);
     setStep("email");
   };
 
@@ -258,18 +306,32 @@ const Quiz = () => {
     
     // Track email submission
     const updatedTimestamps = trackAnswerTimestamp("email_submitted", submittedEmail);
+    const completedAt = getSaoPauloTimestamp();
     
-    if (quizId) {
-      await supabase
-        .from("quiz_responses")
-        .update({ 
-          email: submittedEmail,
-          completed_at: getSaoPauloTimestamp(),
-          reached_results: true,
-          answer_timestamps: updatedTimestamps,
-        })
-        .eq("id", quizId);
-    }
+    const quizUpdate = quizId
+      ? supabase
+          .from("quiz_responses")
+          .update({ 
+            email: submittedEmail,
+            completed_at: completedAt,
+            reached_results: true,
+            answer_timestamps: updatedTimestamps,
+          })
+          .eq("id", quizId)
+      : null;
+    
+    const sessionUpdate = sessionId
+      ? supabase
+          .from("quiz_sessions")
+          .update({ 
+            reached_results: true,
+            completed_at: completedAt,
+            answer_timestamps: updatedTimestamps,
+          })
+          .eq("id", sessionId)
+      : null;
+    
+    await Promise.all([quizUpdate, sessionUpdate]);
     setStep("results");
   };
 
