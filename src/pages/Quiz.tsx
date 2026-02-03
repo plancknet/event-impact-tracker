@@ -50,10 +50,10 @@ export interface QuizAnswers {
 }
 
 interface AnswerTimestamp {
-  question_key: string;
-  answered_at: string;
-  step: string;
-  [key: string]: string; // Index signature for Json compatibility
+  questionKey: string;
+  answeredAt: string;
+  selectedValue: string | string[];
+  [key: string]: string | string[]; // Index signature for Json compatibility
 }
 
 // Get São Paulo timezone timestamp (UTC-3)
@@ -113,11 +113,11 @@ const Quiz = () => {
   };
 
   // Track answer timestamp
-  const trackAnswerTimestamp = (questionKey: string, currentStep: string) => {
+  const trackAnswerTimestamp = (questionKey: string, selectedValue: string | string[]) => {
     const timestamp: AnswerTimestamp = {
-      question_key: questionKey,
-      answered_at: getSaoPauloTimestamp(),
-      step: currentStep,
+      questionKey: questionKey,
+      answeredAt: getSaoPauloTimestamp(),
+      selectedValue: selectedValue,
     };
     answerTimestampsRef.current = [...answerTimestampsRef.current, timestamp];
     return answerTimestampsRef.current;
@@ -179,17 +179,21 @@ const Quiz = () => {
     setAnswers(newAnswers);
     
     // Track timestamp for this answer
-    const updatedTimestamps = trackAnswerTimestamp(questionKey, step);
+    const updatedTimestamps = trackAnswerTimestamp(questionKey, value);
 
     // Save to database with timestamp
     if (quizId && questionKey !== "gender") {
-      await supabase
+      const { error } = await supabase
         .from("quiz_responses")
         .update({ 
           [questionKey]: value,
           answer_timestamps: updatedTimestamps,
         })
         .eq("id", quizId);
+      
+      if (error) {
+        console.error("Failed to update quiz response:", error);
+      }
     }
 
     // Auto-advance with animation
@@ -229,13 +233,13 @@ const Quiz = () => {
 
   const handleTransitionComplete = () => {
     // Track transition complete
-    trackAnswerTimestamp("transition_complete", "transition");
+    trackAnswerTimestamp("transition_complete", "completed");
     setStep("coupon");
   };
 
   const handleCouponRevealed = async () => {
     // Track coupon reveal
-    const updatedTimestamps = trackAnswerTimestamp("coupon_revealed", "coupon");
+    const updatedTimestamps = trackAnswerTimestamp("coupon_revealed", "revealed");
     
     if (quizId) {
       await supabase
@@ -253,7 +257,7 @@ const Quiz = () => {
     setEmail(submittedEmail);
     
     // Track email submission
-    const updatedTimestamps = trackAnswerTimestamp("email_submitted", "email");
+    const updatedTimestamps = trackAnswerTimestamp("email_submitted", submittedEmail);
     
     if (quizId) {
       await supabase
