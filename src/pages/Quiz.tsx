@@ -8,6 +8,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { QuizQuestionData } from "@/components/quiz/quizTypes";
 
+const CHECKOUT_URL = "https://lastlink.com/p/C7229FE68/checkout-payment/";
+
 const QuizTransition = lazy(() => import("@/components/quiz/QuizTransition"));
 const QuizCoupon = lazy(() => import("@/components/quiz/QuizCoupon"));
 const QuizEmailCapture = lazy(() => import("@/components/quiz/QuizEmailCapture"));
@@ -91,7 +93,7 @@ const Quiz = () => {
   const [quizId, setQuizId] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [slideDirection, setSlideDirection] = useState<"left" | "right">("left");
-  const { user, session, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
   
@@ -352,28 +354,7 @@ const Quiz = () => {
     const startCheckout = async () => {
       setIsCheckoutLoading(true);
       try {
-        const accessToken =
-          session?.access_token ||
-          (await supabase.auth.getSession()).data.session?.access_token;
-
-        if (!accessToken) {
-          throw new Error("Sessão inválida. Faça login novamente.");
-        }
-        const response = await supabase.functions.invoke("create-subscription-checkout", {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-
-        if (response.error) {
-          throw new Error(response.error.message || "Erro ao criar sessão de pagamento");
-        }
-
-        if (response.data?.url) {
-          window.location.href = response.data.url;
-        } else {
-          throw new Error("URL de checkout não retornada");
-        }
+        window.location.href = CHECKOUT_URL;
       } catch (error: unknown) {
         console.error("Subscription error:", error);
         toast({
@@ -570,7 +551,6 @@ const Quiz = () => {
         <Suspense fallback={<div className="min-h-screen" />}>
           <QuizResults 
             answers={answers} 
-            quizResponseId={quizId || undefined}
           />
         </Suspense>
       )}

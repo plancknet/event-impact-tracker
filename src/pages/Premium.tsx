@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, ArrowLeft, Loader2, Sparkles } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n";
 import { LanguageSelector } from "@/components/LanguageSelector";
+
+const CHECKOUT_URL = "https://lastlink.com/p/C7229FE68/checkout-payment/";
 
 const featureKeys = [
   "Scripts ilimitados por mês",
@@ -33,23 +34,7 @@ export default function Premium() {
 
     setIsLoading(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-
-      const response = await supabase.functions.invoke("create-subscription-checkout", {
-        headers: {
-          Authorization: `Bearer ${sessionData.session?.access_token}`,
-        },
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message || t("Erro ao iniciar assinatura"));
-      }
-
-      if (response.data?.url) {
-        window.location.href = response.data.url;
-      } else {
-        throw new Error(t("URL de checkout não retornada"));
-      }
+      window.location.href = CHECKOUT_URL;
     } catch (error: unknown) {
       console.error("Subscription error:", error);
       toast({
@@ -160,7 +145,7 @@ export default function Premium() {
 
       <footer className="border-t py-8">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>{t("Pagamento seguro processado por Stripe")}</p>
+          <p>{t("Pagamento seguro processado por Lastlink")}</p>
         </div>
       </footer>
     </div>

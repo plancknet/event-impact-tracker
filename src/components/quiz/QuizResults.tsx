@@ -7,12 +7,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { QuizAnswers } from "@/pages/Quiz";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+const CHECKOUT_URL = "https://lastlink.com/p/C7229FE68/checkout-payment/";
 
 interface QuizResultsProps {
   answers: QuizAnswers;
-  quizResponseId?: string;
 }
 
 const getProfileAnalysis = (answers: QuizAnswers) => {
@@ -96,7 +96,7 @@ const getProfileAnalysis = (answers: QuizAnswers) => {
   return { profileName, strengths, mainChallenge, recommendation };
 };
 
-const QuizResults = ({ answers, quizResponseId }: QuizResultsProps) => {
+const QuizResults = ({ answers }: QuizResultsProps) => {
   const { profileName, strengths, mainChallenge, recommendation } = getProfileAnalysis(answers);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -104,25 +104,7 @@ const QuizResults = ({ answers, quizResponseId }: QuizResultsProps) => {
   const handleActivatePlan = async () => {
     setIsLoading(true);
     try {
-      // Get session if user is logged in, but don't require it
-      const { data: sessionData } = await supabase.auth.getSession();
-
-      const response = await supabase.functions.invoke("create-subscription-checkout", {
-        headers: sessionData.session?.access_token
-          ? { Authorization: `Bearer ${sessionData.session.access_token}` }
-          : {},
-        body: { quizResponseId },
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message || "Erro ao iniciar assinatura");
-      }
-
-      if (response.data?.url) {
-        window.location.href = response.data.url;
-      } else {
-        throw new Error("URL de checkout não retornada");
-      }
+      window.location.href = CHECKOUT_URL;
     } catch (error: unknown) {
       console.error("Subscription error:", error);
       toast({
