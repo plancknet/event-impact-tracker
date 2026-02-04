@@ -143,7 +143,7 @@ const QuizCoupon = ({ onReveal }: QuizCouponProps) => {
           </h2>
         </div>
 
-        <p className="text-quiz-foreground font-medium animate-stagger-fade" style={{ animationDelay: "80ms" }}>
+        <p className="text-quiz-foreground font-semibold text-lg animate-stagger-fade" style={{ animationDelay: "80ms" }}>
           Seu perfil tem alto potencial com o uso do ThinkAndTalk.
         </p>
 

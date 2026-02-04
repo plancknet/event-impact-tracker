@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AgeOption {
@@ -57,7 +57,7 @@ const QuizAgeCards = ({ onSelect, selectedValue }: QuizAgeCardsProps) => {
       </div>
 
       {/* Age Cards Grid */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+      <div className="w-full grid gap-3 md:grid-cols-2">
         {ageOptions.map((option, index) => {
           const isSelected = selectedValue === option.value;
 
@@ -66,34 +66,35 @@ const QuizAgeCards = ({ onSelect, selectedValue }: QuizAgeCardsProps) => {
               key={option.value}
               onClick={() => onSelect(option.value)}
               className={cn(
-                "relative aspect-[3/4] rounded-2xl overflow-hidden group transition-all duration-300",
-                "hover:scale-[1.02] hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-quiz-purple focus:ring-offset-2",
-                "bg-quiz-card border border-quiz-border",
-                "animate-scale-up-card",
-                isSelected && "ring-2 ring-quiz-purple ring-offset-2"
+                "w-full p-4 rounded-xl border-2 transition-all duration-200 flex items-center gap-4 text-left",
+                "hover:border-quiz-purple/40 hover:bg-quiz-selected/30 hover:scale-[1.01]",
+                "animate-stagger-fade",
+                isSelected
+                  ? "border-quiz-purple bg-quiz-selected/50 shadow-sm"
+                  : "border-quiz-border/40 bg-quiz-card"
               )}
               style={{
                 animationDelay: `${index * 80}ms`,
               }}
             >
-              {/* Label Pill */}
-              <div className="absolute inset-0 flex items-end justify-center p-3">
-                <div
-                  className={cn(
-                    "flex items-center justify-between px-4 py-2.5 rounded-full backdrop-blur-sm transition-all duration-300",
-                    "bg-white/90 text-quiz-foreground",
-                    "group-hover:bg-gradient-to-r group-hover:from-quiz-blue group-hover:to-quiz-purple group-hover:text-white",
-                    isSelected && "bg-gradient-to-r from-quiz-blue to-quiz-purple text-white"
-                  )}
-                >
-                  <span
-                    className="font-semibold text-sm sm:text-base"
-                    style={{ fontFamily: quizFontFamily }}
-                  >
-                    {option.label}
-                  </span>
-                  <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
-                </div>
+              <span
+                className={cn(
+                  "flex-1 font-medium transition-colors duration-200",
+                  isSelected ? "text-quiz-purple" : "text-quiz-foreground"
+                )}
+                style={{ fontFamily: quizFontFamily }}
+              >
+                {option.label}
+              </span>
+              <div
+                className={cn(
+                  "w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300",
+                  isSelected
+                    ? "bg-quiz-purple scale-100 opacity-100"
+                    : "bg-quiz-border/30 scale-75 opacity-0"
+                )}
+              >
+                <Check className="h-4 w-4 text-white" />
               </div>
             </button>
           );
