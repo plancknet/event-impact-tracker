@@ -10,6 +10,7 @@ import PremiumSuccess from "@/pages/PremiumSuccess";
 import Quiz from "@/pages/Quiz";
 import QuizAnalytics from "@/pages/QuizAnalytics";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AdminRoute } from "@/components/AdminRoute";
 
 const queryClient = new QueryClient();
 
@@ -21,7 +22,11 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/quiz" element={<Quiz />} />
-          <Route path="/quiz/analytics" element={<QuizAnalytics />} />
+          <Route path="/quiz/analytics" element={
+            <AdminRoute>
+              <QuizAnalytics />
+            </AdminRoute>
+          } />
           <Route path="/auth" element={<Auth />} />
           <Route path="/premium" element={<Premium />} />
           <Route path="/premium/success" element={<PremiumSuccess />} />
