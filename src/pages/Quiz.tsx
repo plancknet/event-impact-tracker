@@ -207,33 +207,42 @@ const Quiz = () => {
 
     // Save to database with timestamp (both tables in parallel)
     if (quizId && questionKey !== "gender") {
-      // Update quiz responses
-      const quizUpdate = supabase
-        .from("quiz_responses")
-        .update({ 
-          [questionKey]: value,
-          answer_timestamps: updatedTimestamps,
-        })
-        .eq("id", quizId);
-      
-      // Update tracking session separately
-      const sessionUpdate = sessionId 
-        ? supabase
-            .from("quiz_sessions")
-            .update({ answer_timestamps: updatedTimestamps })
-            .eq("id", sessionId)
-        : null;
-      
-      const [quizResult, sessionResult] = await Promise.all([
-        quizUpdate,
-        sessionUpdate,
-      ]);
-      
-      if (quizResult.error) {
-        console.error("Failed to update quiz response:", quizResult.error);
-      }
-      if (sessionResult?.error) {
-        console.error("Failed to update session:", sessionResult.error);
+      try {
+        // Build update promises - must call .select() or similar to execute
+        const promises: PromiseLike<unknown>[] = [];
+        
+        // Update quiz responses
+        promises.push(
+          supabase
+            .from("quiz_responses")
+            .update({ 
+              [questionKey]: value,
+              answer_timestamps: updatedTimestamps,
+            })
+            .eq("id", quizId)
+            .select()
+            .then(({ error }) => {
+              if (error) console.error("Failed to update quiz response:", error);
+            })
+        );
+        
+        // Update tracking session separately
+        if (sessionId) {
+          promises.push(
+            supabase
+              .from("quiz_sessions")
+              .update({ answer_timestamps: updatedTimestamps })
+              .eq("id", sessionId)
+              .select()
+              .then(({ error }) => {
+                if (error) console.error("Failed to update session:", error);
+              })
+          );
+        }
+        
+        await Promise.all(promises);
+      } catch (err) {
+        console.error("Database update error:", err);
       }
     }
 
@@ -282,24 +291,36 @@ const Quiz = () => {
     // Track coupon reveal
     const updatedTimestamps = trackAnswerTimestamp("coupon_revealed", "revealed");
     
-    const quizUpdate = quizId
-      ? supabase
-          .from("quiz_responses")
-          .update({ 
-            coupon_revealed: true,
-            answer_timestamps: updatedTimestamps,
-          })
-          .eq("id", quizId)
-      : null;
-    
-    const sessionUpdate = sessionId
-      ? supabase
-          .from("quiz_sessions")
-          .update({ answer_timestamps: updatedTimestamps })
-          .eq("id", sessionId)
-      : null;
-    
-    await Promise.all([quizUpdate, sessionUpdate]);
+    try {
+      const promises: PromiseLike<unknown>[] = [];
+      
+      if (quizId) {
+        promises.push(
+          supabase
+            .from("quiz_responses")
+            .update({ 
+              coupon_revealed: true,
+              answer_timestamps: updatedTimestamps,
+            })
+            .eq("id", quizId)
+            .select()
+        );
+      }
+      
+      if (sessionId) {
+        promises.push(
+          supabase
+            .from("quiz_sessions")
+            .update({ answer_timestamps: updatedTimestamps })
+            .eq("id", sessionId)
+            .select()
+        );
+      }
+      
+      await Promise.all(promises);
+    } catch (err) {
+      console.error("Coupon reveal update error:", err);
+    }
     setStep("email");
   };
 
@@ -310,30 +331,42 @@ const Quiz = () => {
     const updatedTimestamps = trackAnswerTimestamp("email_submitted", submittedEmail);
     const completedAt = getSaoPauloTimestamp();
     
-    const quizUpdate = quizId
-      ? supabase
-          .from("quiz_responses")
-          .update({ 
-            email: submittedEmail,
-            completed_at: completedAt,
-            reached_results: true,
-            answer_timestamps: updatedTimestamps,
-          })
-          .eq("id", quizId)
-      : null;
-    
-    const sessionUpdate = sessionId
-      ? supabase
-          .from("quiz_sessions")
-          .update({ 
-            reached_results: true,
-            completed_at: completedAt,
-            answer_timestamps: updatedTimestamps,
-          })
-          .eq("id", sessionId)
-      : null;
-    
-    await Promise.all([quizUpdate, sessionUpdate]);
+    try {
+      const promises: PromiseLike<unknown>[] = [];
+      
+      if (quizId) {
+        promises.push(
+          supabase
+            .from("quiz_responses")
+            .update({ 
+              email: submittedEmail,
+              completed_at: completedAt,
+              reached_results: true,
+              answer_timestamps: updatedTimestamps,
+            })
+            .eq("id", quizId)
+            .select()
+        );
+      }
+      
+      if (sessionId) {
+        promises.push(
+          supabase
+            .from("quiz_sessions")
+            .update({ 
+              reached_results: true,
+              completed_at: completedAt,
+              answer_timestamps: updatedTimestamps,
+            })
+            .eq("id", sessionId)
+            .select()
+        );
+      }
+      
+      await Promise.all(promises);
+    } catch (err) {
+      console.error("Email submit update error:", err);
+    }
     setStep("results");
   };
 
