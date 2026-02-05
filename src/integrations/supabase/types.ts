@@ -111,6 +111,8 @@ export type Database = {
           email: string | null
           energy_level: string | null
           energy_level_at: string | null
+          gender: string | null
+          gender_at: string | null
           id: string
           main_goal: string | null
           main_goal_at: string | null
@@ -120,11 +122,7 @@ export type Database = {
           planning_style_at: string | null
           platforms: string[] | null
           platforms_at: string | null
-          publish_frequency: string | null
-          publish_frequency_at: string | null
           reached_results: boolean | null
-          result_goal: string | null
-          result_goal_at: string | null
           session_started_at: string | null
           speaking_tone: string | null
           speaking_tone_at: string | null
@@ -163,6 +161,8 @@ export type Database = {
           email?: string | null
           energy_level?: string | null
           energy_level_at?: string | null
+          gender?: string | null
+          gender_at?: string | null
           id?: string
           main_goal?: string | null
           main_goal_at?: string | null
@@ -172,11 +172,7 @@ export type Database = {
           planning_style_at?: string | null
           platforms?: string[] | null
           platforms_at?: string | null
-          publish_frequency?: string | null
-          publish_frequency_at?: string | null
           reached_results?: boolean | null
-          result_goal?: string | null
-          result_goal_at?: string | null
           session_started_at?: string | null
           speaking_tone?: string | null
           speaking_tone_at?: string | null
@@ -215,6 +211,8 @@ export type Database = {
           email?: string | null
           energy_level?: string | null
           energy_level_at?: string | null
+          gender?: string | null
+          gender_at?: string | null
           id?: string
           main_goal?: string | null
           main_goal_at?: string | null
@@ -224,11 +222,7 @@ export type Database = {
           planning_style_at?: string | null
           platforms?: string[] | null
           platforms_at?: string | null
-          publish_frequency?: string | null
-          publish_frequency_at?: string | null
           reached_results?: boolean | null
-          result_goal?: string | null
-          result_goal_at?: string | null
           session_started_at?: string | null
           speaking_tone?: string | null
           speaking_tone_at?: string | null
@@ -241,50 +235,6 @@ export type Database = {
           video_format_at?: string | null
         }
         Relationships: []
-      }
-      quiz_sessions: {
-        Row: {
-          answer_timestamps: Json | null
-          completed_at: string | null
-          created_at: string
-          device_info: Json | null
-          id: string
-          quiz_response_id: string | null
-          reached_results: boolean | null
-          session_started_at: string
-          updated_at: string
-        }
-        Insert: {
-          answer_timestamps?: Json | null
-          completed_at?: string | null
-          created_at?: string
-          device_info?: Json | null
-          id?: string
-          quiz_response_id?: string | null
-          reached_results?: boolean | null
-          session_started_at?: string
-          updated_at?: string
-        }
-        Update: {
-          answer_timestamps?: Json | null
-          completed_at?: string | null
-          created_at?: string
-          device_info?: Json | null
-          id?: string
-          quiz_response_id?: string | null
-          reached_results?: boolean | null
-          session_started_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quiz_sessions_quiz_response_id_fkey"
-            columns: ["quiz_response_id"]
-            isOneToOne: false
-            referencedRelation: "quiz_responses"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       teleprompter_scripts: {
         Row: {

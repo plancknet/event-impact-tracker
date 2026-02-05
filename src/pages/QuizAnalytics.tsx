@@ -3,34 +3,55 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QUIZ_QUESTIONS } from "@/components/quiz/quizData";
-import { CompletionRateCard } from "@/components/analytics/CompletionRateCard";
 import { AbandonmentFunnel } from "@/components/analytics/AbandonmentFunnel";
 import { TimePerQuestion } from "@/components/analytics/TimePerQuestion";
 import { RecentSessions } from "@/components/analytics/RecentSessions";
 import { Loader2, BarChart3, Clock, Users, TrendingDown } from "lucide-react";
 
-interface QuizSession {
+interface QuizResponse {
   id: string;
   session_started_at: string | null;
-  answer_timestamps: AnswerTimestamp[] | null;
   reached_results: boolean | null;
   email: string | null;
   completed_at: string | null;
-  device_info: DeviceInfo | null;
-}
-
-interface AnswerTimestamp {
-  questionKey: string;
-  answeredAt: string;
-  selectedValue: string | string[];
-}
-
-interface DeviceInfo {
-  userAgent?: string;
-  screenWidth?: number;
-  screenHeight?: number;
-  language?: string;
-  platform?: string;
+  // Question answers
+  age_range: string | null;
+  gender: string | null;
+  main_goal: string | null;
+  comfort_recording: string | null;
+  biggest_challenge: string | null;
+  planning_style: string | null;
+  editing_time: string | null;
+  niche: string | null;
+  creator_level: string | null;
+  audience_type: string | null;
+  audience_age: string | null;
+  audience_gender: string | null;
+  video_format: string | null;
+  video_duration: string | null;
+  platforms: string[] | null;
+  speaking_tone: string | null;
+  energy_level: string | null;
+  content_goal: string | null;
+  // Timestamps for each question
+  age_range_at: string | null;
+  gender_at: string | null;
+  main_goal_at: string | null;
+  comfort_recording_at: string | null;
+  biggest_challenge_at: string | null;
+  planning_style_at: string | null;
+  editing_time_at: string | null;
+  niche_at: string | null;
+  creator_level_at: string | null;
+  audience_type_at: string | null;
+  audience_age_at: string | null;
+  audience_gender_at: string | null;
+  video_format_at: string | null;
+  video_duration_at: string | null;
+  platforms_at: string | null;
+  speaking_tone_at: string | null;
+  energy_level_at: string | null;
+  content_goal_at: string | null;
 }
 
 interface FunnelStep {
@@ -47,61 +68,49 @@ interface QuestionTime {
   totalResponses: number;
 }
 
+// Map question keys to their timestamp column names
+const QUESTION_TIMESTAMP_MAP: Record<string, string> = {
+  age_range: "age_range_at",
+  gender: "gender_at",
+  main_goal: "main_goal_at",
+  comfort_recording: "comfort_recording_at",
+  biggest_challenge: "biggest_challenge_at",
+  planning_style: "planning_style_at",
+  editing_time: "editing_time_at",
+  niche: "niche_at",
+  creator_level: "creator_level_at",
+  audience_type: "audience_type_at",
+  audience_age: "audience_age_at",
+  audience_gender: "audience_gender_at",
+  video_format: "video_format_at",
+  video_duration: "video_duration_at",
+  platforms: "platforms_at",
+  speaking_tone: "speaking_tone_at",
+  energy_level: "energy_level_at",
+  content_goal: "content_goal_at",
+};
+
 export default function QuizAnalytics() {
-  const [sessions, setSessions] = useState<QuizSession[]>([]);
+  const [responses, setResponses] = useState<QuizResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSessions();
+    fetchResponses();
   }, []);
 
-  const fetchSessions = async () => {
+  const fetchResponses = async () => {
     try {
-      // Fetch from quiz_sessions table (new tracking table)
       const { data, error } = await supabase
-        .from("quiz_sessions")
-        .select(`
-          id, 
-          session_started_at, 
-          answer_timestamps, 
-          reached_results, 
-          completed_at, 
-          device_info,
-          quiz_response_id
-        `)
+        .from("quiz_responses")
+        .select("*")
         .not("session_started_at", "is", null)
         .order("session_started_at", { ascending: false })
         .limit(500);
 
       if (error) throw error;
 
-      // Also fetch emails from quiz_responses to match
-      const quizResponseIds = (data || []).map(d => d.quiz_response_id).filter(Boolean);
-      let emailMap: Record<string, string | null> = {};
-      
-      if (quizResponseIds.length > 0) {
-        const { data: responseData } = await supabase
-          .from("quiz_responses")
-          .select("id, email")
-          .in("id", quizResponseIds);
-        
-        if (responseData) {
-          emailMap = Object.fromEntries(responseData.map(r => [r.id, r.email]));
-        }
-      }
-
-      const typedData = (data || []).map((item) => ({
-        id: item.id,
-        session_started_at: item.session_started_at,
-        answer_timestamps: item.answer_timestamps as unknown as AnswerTimestamp[] | null,
-        reached_results: item.reached_results,
-        email: item.quiz_response_id ? emailMap[item.quiz_response_id] || null : null,
-        completed_at: item.completed_at,
-        device_info: item.device_info as unknown as DeviceInfo | null,
-      }));
-
-      setSessions(typedData);
+      setResponses((data || []) as QuizResponse[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar dados");
     } finally {
@@ -110,14 +119,14 @@ export default function QuizAnalytics() {
   };
 
   const calculateCompletionRate = (): { completed: number; total: number; rate: number } => {
-    const total = sessions.length;
-    const completed = sessions.filter((s) => s.reached_results).length;
+    const total = responses.length;
+    const completed = responses.filter((r) => r.reached_results).length;
     const rate = total > 0 ? (completed / total) * 100 : 0;
     return { completed, total, rate };
   };
 
   const calculateFunnelSteps = (): FunnelStep[] => {
-    const total = sessions.length;
+    const total = responses.length;
     if (total === 0) return [];
 
     const steps: FunnelStep[] = [
@@ -125,9 +134,10 @@ export default function QuizAnalytics() {
     ];
 
     QUIZ_QUESTIONS.forEach((q, index) => {
-      const answeredCount = sessions.filter((s) => {
-        const timestamps = s.answer_timestamps || [];
-        return timestamps.some((t) => t.questionKey === q.key);
+      const timestampKey = QUESTION_TIMESTAMP_MAP[q.key];
+      const answeredCount = responses.filter((r) => {
+        const timestamp = r[timestampKey as keyof QuizResponse];
+        return timestamp !== null;
       }).length;
 
       steps.push({
@@ -138,7 +148,7 @@ export default function QuizAnalytics() {
       });
     });
 
-    const reachedResults = sessions.filter((s) => s.reached_results).length;
+    const reachedResults = responses.filter((r) => r.reached_results).length;
     steps.push({
       step: "results",
       label: "Página de Resultados",
@@ -146,7 +156,7 @@ export default function QuizAnalytics() {
       percentage: (reachedResults / total) * 100,
     });
 
-    const withEmail = sessions.filter((s) => s.email).length;
+    const withEmail = responses.filter((r) => r.email).length;
     steps.push({
       step: "email",
       label: "Email Capturado",
@@ -160,32 +170,48 @@ export default function QuizAnalytics() {
   const calculateTimePerQuestion = (): QuestionTime[] => {
     const questionTimes: Record<string, { totalMs: number; count: number }> = {};
 
-    sessions.forEach((session) => {
-      const timestamps = session.answer_timestamps || [];
-      const startTime = session.session_started_at
-        ? new Date(session.session_started_at).getTime()
+    responses.forEach((response) => {
+      const startTime = response.session_started_at
+        ? new Date(response.session_started_at).getTime()
         : null;
 
-      timestamps.forEach((t, index) => {
-        const currentTime = new Date(t.answeredAt).getTime();
-        let prevTime: number;
+      if (!startTime) return;
 
-        if (index === 0 && startTime) {
+      // Build ordered list of answered questions with timestamps
+      const answeredQuestions: { key: string; timestamp: number }[] = [];
+      
+      QUIZ_QUESTIONS.forEach((q) => {
+        const timestampKey = QUESTION_TIMESTAMP_MAP[q.key];
+        const timestamp = response[timestampKey as keyof QuizResponse] as string | null;
+        if (timestamp) {
+          answeredQuestions.push({
+            key: q.key,
+            timestamp: new Date(timestamp).getTime(),
+          });
+        }
+      });
+
+      // Sort by timestamp
+      answeredQuestions.sort((a, b) => a.timestamp - b.timestamp);
+
+      // Calculate time spent on each question
+      answeredQuestions.forEach((q, index) => {
+        let prevTime: number;
+        if (index === 0) {
           prevTime = startTime;
-        } else if (index > 0) {
-          prevTime = new Date(timestamps[index - 1].answeredAt).getTime();
         } else {
-          return;
+          prevTime = answeredQuestions[index - 1].timestamp;
         }
 
-        const timeSpent = currentTime - prevTime;
+        const timeSpent = q.timestamp - prevTime;
+        
+        // Ignore times > 5min (likely abandonment) or negative times
         if (timeSpent > 0 && timeSpent < 300000) {
-          // Ignora tempos > 5min (provavelmente abandono)
-          if (!questionTimes[t.questionKey]) {
-            questionTimes[t.questionKey] = { totalMs: 0, count: 0 };
+          if (!questionTimes[q.key]) {
+            questionTimes[q.key] = { totalMs: 0, count: 0 };
           }
-          questionTimes[t.questionKey].totalMs += timeSpent;
-          questionTimes[t.questionKey].count += 1;
+          questionTimes[q.key].totalMs += timeSpent;
+          questionTimes[q.key].count += 1;
         }
       });
     });
@@ -199,6 +225,38 @@ export default function QuizAnalytics() {
         totalResponses: data?.count || 0,
       };
     }).filter((q) => q.totalResponses > 0);
+  };
+
+  // Convert responses to session format for RecentSessions component
+  const getSessionsForDisplay = () => {
+    return responses.slice(0, 50).map((r) => {
+      // Count answered questions
+      const answeredCount = QUIZ_QUESTIONS.filter((q) => {
+        const timestampKey = QUESTION_TIMESTAMP_MAP[q.key];
+        return r[timestampKey as keyof QuizResponse] !== null;
+      }).length;
+
+      // Find last answered timestamp for duration calculation
+      let lastAnswerTime: string | null = null;
+      QUIZ_QUESTIONS.forEach((q) => {
+        const timestampKey = QUESTION_TIMESTAMP_MAP[q.key];
+        const ts = r[timestampKey as keyof QuizResponse] as string | null;
+        if (ts && (!lastAnswerTime || ts > lastAnswerTime)) {
+          lastAnswerTime = ts;
+        }
+      });
+
+      return {
+        id: r.id,
+        session_started_at: r.session_started_at,
+        answer_timestamps: null, // Not used anymore
+        reached_results: r.reached_results,
+        email: r.email,
+        completed_at: r.completed_at,
+        answered_count: answeredCount,
+        last_answer_at: lastAnswerTime,
+      };
+    });
   };
 
   if (loading) {
@@ -222,6 +280,7 @@ export default function QuizAnalytics() {
   const completionData = calculateCompletionRate();
   const funnelSteps = calculateFunnelSteps();
   const questionTimes = calculateTimePerQuestion();
+  const sessionsForDisplay = getSessionsForDisplay();
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -269,7 +328,7 @@ export default function QuizAnalytics() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {sessions.filter((s) => s.email).length}
+                {responses.filter((r) => r.email).length}
               </div>
             </CardContent>
           </Card>
@@ -311,7 +370,7 @@ export default function QuizAnalytics() {
           </TabsContent>
 
           <TabsContent value="sessions">
-            <RecentSessions sessions={sessions.slice(0, 50)} />
+            <RecentSessions sessions={sessionsForDisplay} />
           </TabsContent>
         </Tabs>
       </div>
