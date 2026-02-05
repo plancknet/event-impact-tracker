@@ -10,27 +10,25 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { QUIZ_QUESTIONS } from "@/components/quiz/quizData";
 
-interface AnswerTimestamp {
-  questionKey: string;
-  answeredAt: string;
-  selectedValue: string | string[];
-}
-
-interface QuizSession {
+interface SessionDisplay {
   id: string;
   session_started_at: string | null;
-  answer_timestamps: AnswerTimestamp[] | null;
   reached_results: boolean | null;
   email: string | null;
   completed_at: string | null;
+  answered_count: number;
+  last_answer_at: string | null;
 }
 
 interface RecentSessionsProps {
-  sessions: QuizSession[];
+  sessions: SessionDisplay[];
 }
 
 export function RecentSessions({ sessions }: RecentSessionsProps) {
+  const totalQuestions = QUIZ_QUESTIONS.length;
+
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "-";
     try {
@@ -40,14 +38,11 @@ export function RecentSessions({ sessions }: RecentSessionsProps) {
     }
   };
 
-  const calculateDuration = (session: QuizSession): string => {
-    if (!session.session_started_at) return "-";
-    
-    const timestamps = session.answer_timestamps || [];
-    if (timestamps.length === 0) return "-";
+  const calculateDuration = (session: SessionDisplay): string => {
+    if (!session.session_started_at || !session.last_answer_at) return "-";
     
     const start = new Date(session.session_started_at).getTime();
-    const lastAnswer = new Date(timestamps[timestamps.length - 1].answeredAt).getTime();
+    const lastAnswer = new Date(session.last_answer_at).getTime();
     const durationMs = lastAnswer - start;
     
     if (durationMs < 0) return "-";
@@ -85,7 +80,7 @@ export function RecentSessions({ sessions }: RecentSessionsProps) {
                   {formatDate(session.session_started_at)}
                 </TableCell>
                 <TableCell>
-                  {session.answer_timestamps?.length || 0} / 18
+                  {session.answered_count} / {totalQuestions}
                 </TableCell>
                 <TableCell className="font-mono text-xs">
                   {calculateDuration(session)}
