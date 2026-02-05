@@ -142,24 +142,28 @@ const Quiz = () => {
     const timestampKey = `${questionKey}_at`;
 
     // Save to database with dedicated timestamp column
-    if (quizId && questionKey !== "gender") {
-      try {
-        const { error } = await supabase
-          .from("quiz_responses")
-          .update({ 
-            [questionKey]: value,
-            [timestampKey]: timestamp,
-          })
-          .eq("id", quizId)
-          .select();
-        
-        if (error) console.error("Failed to update quiz response:", error);
-      } catch (err) {
-        console.error("Database update error:", err);
+    if (quizId) {
+      // Build update object with explicit keys
+      const updateData: Record<string, unknown> = {};
+      updateData[questionKey] = value;
+      updateData[timestampKey] = timestamp;
+      
+      console.log("Updating quiz response:", { quizId, questionKey, value, timestamp });
+      
+      const { data, error } = await supabase
+        .from("quiz_responses")
+        .update(updateData)
+        .eq("id", quizId)
+        .select();
+      
+      if (error) {
+        console.error("Failed to update quiz response:", error);
+      } else {
+        console.log("Quiz response updated successfully:", data);
       }
     }
 
-    // Auto-advance with animation
+    // Auto-advance with animation (wait for DB update to complete first)
     setSlideDirection("left");
     
     setTimeout(() => {
