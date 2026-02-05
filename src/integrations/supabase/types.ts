@@ -86,102 +86,159 @@ export type Database = {
       quiz_responses: {
         Row: {
           age_range: string | null
-          answer_timestamps: Json | null
+          age_range_at: string | null
           audience_age: string | null
+          audience_age_at: string | null
           audience_gender: string | null
+          audience_gender_at: string | null
           audience_type: string | null
+          audience_type_at: string | null
           biggest_challenge: string | null
+          biggest_challenge_at: string | null
           comfort_recording: string | null
+          comfort_recording_at: string | null
           completed_at: string | null
           content_goal: string | null
+          content_goal_at: string | null
           coupon_code: string | null
           coupon_revealed: boolean | null
+          coupon_revealed_at: string | null
           created_at: string
           creator_level: string | null
-          device_info: Json | null
+          creator_level_at: string | null
           editing_time: string | null
+          editing_time_at: string | null
           email: string | null
           energy_level: string | null
+          energy_level_at: string | null
           id: string
           main_goal: string | null
+          main_goal_at: string | null
           niche: string | null
+          niche_at: string | null
           planning_style: string | null
+          planning_style_at: string | null
           platforms: string[] | null
+          platforms_at: string | null
           publish_frequency: string | null
+          publish_frequency_at: string | null
           reached_results: boolean | null
           result_goal: string | null
+          result_goal_at: string | null
           session_started_at: string | null
           speaking_tone: string | null
+          speaking_tone_at: string | null
+          transition_complete_at: string | null
           updated_at: string
           user_id: string | null
           video_duration: string | null
+          video_duration_at: string | null
           video_format: string | null
+          video_format_at: string | null
         }
         Insert: {
           age_range?: string | null
-          answer_timestamps?: Json | null
+          age_range_at?: string | null
           audience_age?: string | null
+          audience_age_at?: string | null
           audience_gender?: string | null
+          audience_gender_at?: string | null
           audience_type?: string | null
+          audience_type_at?: string | null
           biggest_challenge?: string | null
+          biggest_challenge_at?: string | null
           comfort_recording?: string | null
+          comfort_recording_at?: string | null
           completed_at?: string | null
           content_goal?: string | null
+          content_goal_at?: string | null
           coupon_code?: string | null
           coupon_revealed?: boolean | null
+          coupon_revealed_at?: string | null
           created_at?: string
           creator_level?: string | null
-          device_info?: Json | null
+          creator_level_at?: string | null
           editing_time?: string | null
+          editing_time_at?: string | null
           email?: string | null
           energy_level?: string | null
+          energy_level_at?: string | null
           id?: string
           main_goal?: string | null
+          main_goal_at?: string | null
           niche?: string | null
+          niche_at?: string | null
           planning_style?: string | null
+          planning_style_at?: string | null
           platforms?: string[] | null
+          platforms_at?: string | null
           publish_frequency?: string | null
+          publish_frequency_at?: string | null
           reached_results?: boolean | null
           result_goal?: string | null
+          result_goal_at?: string | null
           session_started_at?: string | null
           speaking_tone?: string | null
+          speaking_tone_at?: string | null
+          transition_complete_at?: string | null
           updated_at?: string
           user_id?: string | null
           video_duration?: string | null
+          video_duration_at?: string | null
           video_format?: string | null
+          video_format_at?: string | null
         }
         Update: {
           age_range?: string | null
-          answer_timestamps?: Json | null
+          age_range_at?: string | null
           audience_age?: string | null
+          audience_age_at?: string | null
           audience_gender?: string | null
+          audience_gender_at?: string | null
           audience_type?: string | null
+          audience_type_at?: string | null
           biggest_challenge?: string | null
+          biggest_challenge_at?: string | null
           comfort_recording?: string | null
+          comfort_recording_at?: string | null
           completed_at?: string | null
           content_goal?: string | null
+          content_goal_at?: string | null
           coupon_code?: string | null
           coupon_revealed?: boolean | null
+          coupon_revealed_at?: string | null
           created_at?: string
           creator_level?: string | null
-          device_info?: Json | null
+          creator_level_at?: string | null
           editing_time?: string | null
+          editing_time_at?: string | null
           email?: string | null
           energy_level?: string | null
+          energy_level_at?: string | null
           id?: string
           main_goal?: string | null
+          main_goal_at?: string | null
           niche?: string | null
+          niche_at?: string | null
           planning_style?: string | null
+          planning_style_at?: string | null
           platforms?: string[] | null
+          platforms_at?: string | null
           publish_frequency?: string | null
+          publish_frequency_at?: string | null
           reached_results?: boolean | null
           result_goal?: string | null
+          result_goal_at?: string | null
           session_started_at?: string | null
           speaking_tone?: string | null
+          speaking_tone_at?: string | null
+          transition_complete_at?: string | null
           updated_at?: string
           user_id?: string | null
           video_duration?: string | null
+          video_duration_at?: string | null
           video_format?: string | null
+          video_format_at?: string | null
         }
         Relationships: []
       }
