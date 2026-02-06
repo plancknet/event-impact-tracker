@@ -1,10 +1,11 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, ArrowRight, PartyPopper } from "lucide-react";
+import { CheckCircle2, ArrowRight, PartyPopper, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/i18n";
-
+import { supabase } from "@/integrations/supabase/client";
 export default function PremiumSuccess() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();

@@ -47,38 +47,52 @@ serve(async (req) => {
     }
 
     const buyerEmail = payload?.Data?.Buyer?.Email ?? null;
-    const paymentId = payload?.Data?.Purchase?.PaymentId ?? null;
-    const isTest = Boolean(payload?.IsTest);
 
+    // Save event to lastlink_events table
     await supabaseAdmin
       .from("lastlink_events")
       .upsert({
-        event_id: eventId,
+        lastlink_event_id: eventId,
         event_type: eventType,
-        buyer_email: buyerEmail,
-        payment_id: paymentId,
-        is_test: isTest,
+        buyer_email: buyerEmail ?? "",
         payload,
-      }, { onConflict: "event_id" });
+        processed: false,
+      }, { onConflict: "lastlink_event_id" });
 
     if (buyerEmail) {
       let userId: string | null = null;
-      const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserByEmail(buyerEmail);
 
-      if (!userError && userData?.user) {
-        userId = userData.user.id;
-      } else {
-        const { data: createdUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-          email: buyerEmail,
-          password: DEFAULT_PASSWORD,
-          email_confirm: true,
-          user_metadata: {
-            must_change_password: true,
-          },
-        });
-        if (!createError && createdUser?.user) {
-          userId = createdUser.user.id;
+      // Try to create user first - if exists, handle the error
+      const { data: createdUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: buyerEmail,
+        password: DEFAULT_PASSWORD,
+        email_confirm: true,
+        user_metadata: {
+          must_change_password: true,
+        },
+      });
+
+      if (createError) {
+        // User likely exists - try to find via quiz_responses
+        const { data: quizData } = await supabaseAdmin
+          .from("quiz_responses")
+          .select("user_id")
+          .eq("email", buyerEmail)
+          .limit(1)
+          .maybeSingle();
+
+        if (quizData?.user_id) {
+          userId = quizData.user_id;
+        } else {
+          // Try listUsers as fallback
+          const { data: listData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+          const existingUser = listData?.users?.find(u => u.email === buyerEmail);
+          if (existingUser) {
+            userId = existingUser.id;
+          }
         }
+      } else if (createdUser?.user) {
+        userId = createdUser.user.id;
       }
 
       if (userId) {
@@ -91,6 +105,12 @@ serve(async (req) => {
             },
             { onConflict: "user_id" },
           );
+
+        // Mark event as processed
+        await supabaseAdmin
+          .from("lastlink_events")
+          .update({ processed: true })
+          .eq("lastlink_event_id", eventId);
       }
     }
 
@@ -105,4 +125,5 @@ serve(async (req) => {
       status: 500,
     });
   }
+});
 });
