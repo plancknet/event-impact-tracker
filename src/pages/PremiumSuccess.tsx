@@ -77,7 +77,9 @@ export default function PremiumSuccess() {
           </CardHeader>
           <CardContent className="space-y-6">
             <p className="text-muted-foreground">
-              {t("Use o email que você cadastrou no quiz e a senha padrão: 12345678")}
+              <span className="font-semibold text-primary">
+                {t("Use o email que você cadastrou no quiz e a senha padrão: 12345678")}
+              </span>
             </p>
             <Button
               size="lg"
