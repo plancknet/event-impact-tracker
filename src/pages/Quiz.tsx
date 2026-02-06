@@ -1,5 +1,5 @@
 import { useState, useEffect, Suspense, lazy } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import QuizQuestion from "@/components/quiz/QuizQuestion";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -7,6 +7,7 @@ import { ArrowLeft, Baby, GraduationCap, Briefcase, Users, UserCheck } from "luc
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { QuizQuestionData } from "@/components/quiz/quizTypes";
+import { DEFAULT_CREATOR_PROFILE } from "@/types/creatorProfile";
 
 const CHECKOUT_URL = "https://lastlink.com/p/C7229FE68/checkout-payment/";
 
@@ -56,9 +57,192 @@ const getSaoPauloTimestamp = () => {
   return new Date().toISOString();
 };
 
+const QUIZ_DEFAULT_PASSWORD = "12345678";
+
+const mapQuizExpertiseLevel = (level?: string) => {
+  switch (level) {
+    case "beginner":
+      return "iniciante";
+    case "basic":
+      return "intermediario";
+    case "intermediate":
+      return "avancado";
+    case "advanced":
+      return "especialista";
+    default:
+      return DEFAULT_CREATOR_PROFILE.expertise_level;
+  }
+};
+
+const mapQuizAudienceType = (audience?: string) => {
+  switch (audience) {
+    case "b2c":
+      return "publico_geral";
+    case "entrepreneurs":
+      return "empreendedores";
+    case "creators":
+      return "criadores";
+    case "b2b":
+      return "profissionais";
+    case "general":
+      return "publico_geral";
+    default:
+      return DEFAULT_CREATOR_PROFILE.audience_type;
+  }
+};
+
+const mapQuizMainTopic = (niche?: string) => {
+  switch (niche) {
+    case "education":
+      return "Educação";
+    case "business":
+      return "Negócios";
+    case "lifestyle":
+      return "Lifestyle";
+    case "health":
+      return "Saúde";
+    case "entertainment":
+      return "Entretenimento";
+    case "other":
+      return "Geral";
+    default:
+      return DEFAULT_CREATOR_PROFILE.main_topic;
+  }
+};
+
+const mapQuizPlatform = (platforms?: string[]) => {
+  if (!platforms || platforms.length === 0) {
+    return DEFAULT_CREATOR_PROFILE.platform;
+  }
+  if (platforms.includes("youtube_long") || platforms.includes("youtube_shorts")) {
+    return "YouTube";
+  }
+  if (platforms.includes("instagram")) {
+    return "Instagram";
+  }
+  if (platforms.includes("tiktok")) {
+    return "TikTok";
+  }
+  if (platforms.includes("lives")) {
+    return "YouTube";
+  }
+  return "YouTube";
+};
+
+const mapQuizSpeakingTone = (tone?: string) => {
+  switch (tone) {
+    case "professional":
+      return "profissional";
+    case "friendly":
+      return "conversacional";
+    case "motivational":
+      return "inspirador";
+    case "fun":
+      return "humoristico";
+    case "direct":
+      return "jornalistico";
+    default:
+      return DEFAULT_CREATOR_PROFILE.speaking_tone;
+  }
+};
+
+const mapQuizEnergyLevel = (energy?: string) => {
+  switch (energy) {
+    case "low":
+      return "baixo";
+    case "medium":
+      return "medio";
+    case "high":
+      return "alto";
+    default:
+      return DEFAULT_CREATOR_PROFILE.energy_level;
+  }
+};
+
+const mapQuizContentGoal = (goal?: string) => {
+  switch (goal) {
+    case "inform":
+      return "informar";
+    case "educate":
+      return "educar";
+    case "entertain":
+      return "entreter";
+    case "inspire":
+      return "inspirar";
+    case "sell":
+      return "vender";
+    case "engage":
+      return "engajar";
+    default:
+      return DEFAULT_CREATOR_PROFILE.content_goal;
+  }
+};
+
+const mapQuizDuration = (duration?: string) => {
+  switch (duration) {
+    case "1min":
+      return { target_duration: "1", video_type: "video_curto" };
+    case "2min":
+      return { target_duration: "2", video_type: "video_curto" };
+    case "3min":
+      return { target_duration: "3", video_type: "video_curto" };
+    case "5min":
+      return { target_duration: "5", video_type: "video_medio" };
+    case "10min_plus":
+      return { target_duration: "10", video_type: "video_longo" };
+    default:
+      return { target_duration: DEFAULT_CREATOR_PROFILE.target_duration, video_type: DEFAULT_CREATOR_PROFILE.video_type };
+  }
+};
+
+const mapQuizVideoTypeFromFormat = (format?: string) => {
+  switch (format) {
+    case "educational":
+    case "storytelling":
+    case "opinion":
+      return "video_medio";
+    case "behind_scenes":
+    case "sales":
+      return "video_curto";
+    case "mixed":
+      return "video_medio";
+    default:
+      return DEFAULT_CREATOR_PROFILE.video_type;
+  }
+};
+
+const buildCreatorProfileFromQuiz = (answers: QuizAnswers) => {
+  const duration = mapQuizDuration(answers.video_duration);
+  const videoType =
+    duration.video_type !== DEFAULT_CREATOR_PROFILE.video_type
+      ? duration.video_type
+      : mapQuizVideoTypeFromFormat(answers.video_format);
+
+  return {
+    display_name: null,
+    main_topic: mapQuizMainTopic(answers.niche),
+    expertise_level: mapQuizExpertiseLevel(answers.creator_level),
+    audience_type: mapQuizAudienceType(answers.audience_type),
+    audience_pain_points: [],
+    video_type: videoType,
+    target_duration: duration.target_duration,
+    duration_unit: DEFAULT_CREATOR_PROFILE.duration_unit,
+    platform: mapQuizPlatform(answers.platforms),
+    speaking_tone: mapQuizSpeakingTone(answers.speaking_tone),
+    energy_level: mapQuizEnergyLevel(answers.energy_level),
+    content_goal: mapQuizContentGoal(answers.content_goal),
+    script_language: DEFAULT_CREATOR_PROFILE.script_language,
+    news_language: DEFAULT_CREATOR_PROFILE.news_language,
+    include_cta: DEFAULT_CREATOR_PROFILE.include_cta,
+    cta_template: null,
+  };
+};
+
 const Quiz = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState<QuizStep>("questions");
+  const [searchParams] = useSearchParams();
+  const initialStep = searchParams.get("step") === "results" ? "results" : "questions";
+  const [step, setStep] = useState<QuizStep>(initialStep);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [questions, setQuestions] = useState<QuizQuestionData[]>([
     {
@@ -109,7 +293,7 @@ const Quiz = () => {
     } else {
       setQuizId(newQuizId);
     }
-    setStep("questions");
+    setStep(initialStep);
   };
 
   useEffect(() => {
@@ -248,6 +432,82 @@ const Quiz = () => {
           .select();
       } catch (err) {
         console.error("Email submit update error:", err);
+      }
+    }
+
+    const creatorProfilePayload = buildCreatorProfileFromQuiz(answers);
+    if (user) {
+      try {
+        const { error: profileError } = await supabase
+          .from("creator_profiles")
+          .upsert(
+            {
+              user_id: user.id,
+              ...creatorProfilePayload,
+            },
+            { onConflict: "user_id" },
+          );
+        if (profileError) {
+          console.error("Failed to upsert creator profile from quiz:", profileError);
+        }
+      } catch (err) {
+        console.error("Creator profile upsert error:", err);
+      }
+    } else {
+      try {
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: submittedEmail,
+          password: QUIZ_DEFAULT_PASSWORD,
+          options: {
+            data: { must_change_password: true },
+            emailRedirectTo: `${window.location.origin}/`,
+          },
+        });
+
+        if (signUpError) {
+          console.error("Failed to sign up user from quiz:", signUpError);
+          sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
+        } else {
+          if (!data.session) {
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+              email: submittedEmail,
+              password: QUIZ_DEFAULT_PASSWORD,
+            });
+            if (signInError) {
+              console.error("Failed to sign in user after quiz signup:", signInError);
+            }
+          }
+
+          const { data: sessionData } = await supabase.auth.getSession();
+          const signedInUser = sessionData.session?.user ?? data.user;
+
+          if (signedInUser) {
+            const { error: profileError } = await supabase
+              .from("creator_profiles")
+              .upsert(
+                {
+                  user_id: signedInUser.id,
+                  ...creatorProfilePayload,
+                },
+                { onConflict: "user_id" },
+              );
+            if (profileError) {
+              console.error("Failed to upsert creator profile after quiz signup:", profileError);
+            }
+
+            if (quizId) {
+              await supabase
+                .from("quiz_responses")
+                .update({ user_id: signedInUser.id })
+                .eq("id", quizId);
+            }
+          } else {
+            sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
+          }
+        }
+      } catch (err) {
+        console.error("Quiz signup flow error:", err);
+        sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
       }
     }
     setStep("results");

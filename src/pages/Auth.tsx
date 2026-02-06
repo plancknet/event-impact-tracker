@@ -14,6 +14,8 @@ import { Loader2 } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
+const DEFAULT_FIRST_ACCESS_PASSWORD = "12345678";
+
 const createAuthSchema = (t: (key: string) => string) =>
   z
     .object({
@@ -49,6 +51,11 @@ export default function Auth() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [forcePassword, setForcePassword] = useState("");
+  const [forceConfirm, setForceConfirm] = useState("");
+  const [forceError, setForceError] = useState<string | null>(null);
+  const [forceSuccess, setForceSuccess] = useState<string | null>(null);
+  const [forceSubmitting, setForceSubmitting] = useState(false);
   const { user, loading, signIn, signUp } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -58,6 +65,7 @@ export default function Auth() {
   const redirectTo = params.get("redirect") || "/";
   const mode = params.get("mode");
   const isTrialSignup = mode === "signup" && redirectTo.includes("resume=1");
+  const isForceChange = mode === "force-change";
 
   const signInWithGoogle = async () => {
     setError(null);
@@ -101,10 +109,51 @@ export default function Auth() {
   }, [isLogin, form]);
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && !isForceChange) {
       navigate(redirectTo, { replace: true });
     }
-  }, [user, loading, navigate, redirectTo]);
+  }, [user, loading, navigate, redirectTo, isForceChange]);
+
+  useEffect(() => {
+    if (!loading && !user && isForceChange) {
+      navigate(`/auth?mode=login&redirect=${encodeURIComponent(redirectTo)}`, { replace: true });
+    }
+  }, [user, loading, navigate, redirectTo, isForceChange]);
+
+  const handleForcePasswordSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setForceError(null);
+    setForceSuccess(null);
+
+    if (forcePassword.length < 6) {
+      setForceError(t("A senha deve ter pelo menos 6 caracteres"));
+      return;
+    }
+    if (forcePassword !== forceConfirm) {
+      setForceError(t("As senhas não conferem."));
+      return;
+    }
+    if (forcePassword === DEFAULT_FIRST_ACCESS_PASSWORD) {
+      setForceError(t("A nova senha deve ser diferente da senha inicial."));
+      return;
+    }
+
+    setForceSubmitting(true);
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: forcePassword,
+        data: { must_change_password: false },
+      });
+      if (updateError) {
+        setForceError(updateError.message);
+        return;
+      }
+      setForceSuccess(t("Senha atualizada com sucesso!"));
+      navigate(redirectTo, { replace: true });
+    } finally {
+      setForceSubmitting(false);
+    }
+  };
 
   const onSubmit = async (data: AuthFormData) => {
     setError(null);
@@ -155,6 +204,63 @@ export default function Auth() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isForceChange) {
+    if (!user) {
+      return null;
+    }
+
+    return (
+      <div className="min-h-screen bg-[#f7f9fc] flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md space-y-6">
+          <h1 className="text-center text-2xl font-semibold text-slate-900 md:text-3xl">
+            {t("Atualize sua senha para continuar")}
+          </h1>
+          <Card className="w-full border border-slate-100 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.4)]">
+            <CardContent className="pt-6">
+              <form onSubmit={handleForcePasswordSubmit} className="space-y-4">
+                <FormItem>
+                  <FormLabel>{t("Nova senha")}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="******"
+                      value={forcePassword}
+                      onChange={(event) => setForcePassword(event.target.value)}
+                    />
+                  </FormControl>
+                </FormItem>
+
+                <FormItem>
+                  <FormLabel>{t("Confirmar nova senha")}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="******"
+                      value={forceConfirm}
+                      onChange={(event) => setForceConfirm(event.target.value)}
+                    />
+                  </FormControl>
+                </FormItem>
+
+                {forceError && <p className="text-sm text-destructive text-center">{forceError}</p>}
+                {forceSuccess && <p className="text-sm text-primary text-center">{forceSuccess}</p>}
+
+                <Button
+                  type="submit"
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  disabled={forceSubmitting}
+                >
+                  {forceSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {t("Salvar nova senha")}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }

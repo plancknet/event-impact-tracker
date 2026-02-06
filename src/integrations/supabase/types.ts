@@ -25,6 +25,7 @@ export type Database = {
           duration_unit: string
           energy_level: string
           expertise_level: string
+          has_license: boolean
           id: string
           include_cta: boolean
           main_topic: string
@@ -47,6 +48,7 @@ export type Database = {
           duration_unit?: string
           energy_level?: string
           expertise_level?: string
+          has_license?: boolean
           id?: string
           include_cta?: boolean
           main_topic?: string
@@ -69,6 +71,7 @@ export type Database = {
           duration_unit?: string
           energy_level?: string
           expertise_level?: string
+          has_license?: boolean
           id?: string
           include_cta?: boolean
           main_topic?: string

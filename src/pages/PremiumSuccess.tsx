@@ -35,6 +35,15 @@ export default function PremiumSuccess() {
         });
 
         if (response.data?.success) {
+          await supabase
+            .from("creator_profiles")
+            .upsert(
+              {
+                user_id: user.id,
+                has_license: true,
+              },
+              { onConflict: "user_id" },
+            );
           setVerified(true);
         }
       } catch (error) {

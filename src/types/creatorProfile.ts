@@ -4,6 +4,7 @@ export interface CreatorProfile {
   id?: string;
   user_id?: string;
   display_name?: string | null;
+  has_license?: boolean;
   main_topic: string;
   expertise_level: string;
   audience_type: string;
@@ -27,6 +28,7 @@ export interface CreatorProfile {
 }
 
 export const DEFAULT_CREATOR_PROFILE: CreatorProfile = {
+  has_license: false,
   main_topic: "Tecnologia",
   expertise_level: "intermediario",
   audience_type: "publico_geral",
