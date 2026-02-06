@@ -1,9 +1,7 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, Loader2, ArrowRight, PartyPopper } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { CheckCircle2, ArrowRight, PartyPopper } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/i18n";
 
@@ -68,7 +66,7 @@ export default function PremiumSuccess() {
   }
 
   // User not logged in - need to login first
-  if (!user) {
+  if (!authLoading && !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md text-center">
@@ -82,19 +80,19 @@ export default function PremiumSuccess() {
               {t("Pagamento confirmado!")}
             </CardTitle>
             <CardDescription className="text-base">
-              {t("Faça login para ativar sua licença.")}
+              {t("Faça login para acessar sua conta.")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <p className="text-muted-foreground">
-              <span className="font-semibold text-xl text-emerald-600">
+              <span className="font-semibold text-xl text-primary">
                 {t("Use o email que você cadastrou no quiz e a senha padrão: 12345678")}
               </span>
             </p>
             <Button
               size="lg"
               className="w-full gap-2"
-              onClick={() => navigate("/auth?redirect=/premium/success")}
+              onClick={() => navigate("/auth?redirect=/studio")}
             >
               {t("Fazer login")}
               <ArrowRight className="h-4 w-4" />
@@ -128,30 +126,22 @@ export default function PremiumSuccess() {
             <PartyPopper className="h-6 w-6 text-warning absolute -top-1 -right-1" />
           </div>
           <CardTitle className="text-2xl font-bold">
-            {activated ? t("Parabéns!") : error ? t("Ops!") : t("Obrigado!")}
+            {t("Parabéns!")}
           </CardTitle>
           <CardDescription className="text-base">
-            {activated
-              ? t("Sua licença foi ativada com sucesso!")
-              : error
-              ? error
-              : t("Processando sua licença...")}
+            {t("Sua licença foi ativada com sucesso!")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <p className="text-muted-foreground">
-            {activated
-              ? t("Você agora tem acesso a todos os recursos do ThinkAndTalk Pro. Comece a criar conteúdo incrível!")
-              : error
-              ? t("Entre em contato com o suporte se o problema persistir.")
-              : t("Em alguns instantes você terá acesso a todos os recursos premium.")}
+            {t("Você agora tem acesso a todos os recursos do ThinkAndTalk Pro. Comece a criar conteúdo incrível!")}
           </p>
           <Button
             size="lg"
             className="w-full gap-2"
             onClick={() => navigate(activated ? "/" : "/premium/success")}
           >
-            {activated ? t("Começar a criar") : t("Tentar novamente")}
+            {t("Começar a criar")}
             <ArrowRight className="h-4 w-4" />
           </Button>
         </CardContent>
