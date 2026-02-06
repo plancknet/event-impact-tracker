@@ -1,198 +1,200 @@
 
-
-# Plano: Visual e Transicoes Estilo BetterMe
+# Plano: Integração com Lastlink via Webhook
 
 ## Visao Geral
 
-Este plano transforma o quiz do ThinkAndTalk para ter o visual limpo e as transicoes fluidas do BetterMe, mantendo a identidade visual existente com cores roxo/azul.
+Este plano implementa uma integracaoo segura com a Lastlink via webhook para ativar licencas de usuarios automaticamente apos a confirmacao de pagamento. A Lastlink enviara um evento `Purchase_Order_Confirmed` para a aplicacao, que identificara o usuario pelo email e ativara `has_license = true` na tabela `creator_profiles`.
 
----
-
-## Principais Mudancas de Design
-
-### 1. Primeira Tela - Selecao de Idade com Cards de Imagem
-
-Inspirado diretamente no BetterMe, a primeira pergunta (idade) sera apresentada como cards visuais com:
-- Grid de cards com imagens de personas (ja existentes em `/public/imgs/`)
-- Overlay com label de idade na parte inferior do card (estilo pill rosa do BetterMe)
-- Hover suave com escala e sombra
-- Transicao de entrada escalonada (staggered animation)
+## Fluxo Atual vs. Novo Fluxo
 
 ```text
-+------------------+  +------------------+
-|                  |  |                  |
-|    [Persona]     |  |    [Persona]     |
-|                  |  |                  |
-+--[ 18-24     > ]-+  +--[ 25-34     > ]-+
+FLUXO ATUAL (problematico):
+Quiz -> Email -> Cria usuario/profile -> /premium/success?token=xxx -> Ativa has_license
+        (inseguro: qualquer pessoa pode acessar a URL com token inventado)
 
-+------------------+  +------------------+
-|                  |  |                  |
-|    [Persona]     |  |    [Persona]     |
-|                  |  |                  |
-+--[ 35-44     > ]-+  +--[ 45+       > ]-+
+NOVO FLUXO (seguro):
+Quiz -> Email -> Cria usuario/profile (has_license=false)
+                      |
+                      v
+              Checkout Lastlink
+                      |
+                      v
+              Pagamento confirmado
+                      |
+                      v
+         Lastlink envia webhook ->  Edge Function  -> Ativa has_license=true
+                      |
+                      v
+              /premium/success (apenas confirmacao visual)
 ```
 
-### 2. Transicoes Entre Perguntas
+## Componentes a Implementar
 
-Atualmente usa `animate-fade-in`. Sera aprimorado para:
+### 1. Nova Edge Function: `lastlink-webhook`
 
-- **Slide horizontal**: Proxima pergunta desliza da direita, anterior sai pela esquerda
-- **Timing**: 350ms com curva `cubic-bezier(0.4, 0, 0.2, 1)`
-- **Fade combinado**: Opacidade muda junto com o slide para efeito mais suave
-- **Direcao dinamica**: Ao voltar, animacao inverte (direita para esquerda)
+Cria uma nova funcao serverless para receber webhooks da Lastlink.
 
-### 3. Opcoes de Resposta - Design BetterMe
+**Arquivo**: `supabase/functions/lastlink-webhook/index.ts`
 
-Cards de opcao mais limpos:
-- Fundo branco puro com borda sutil
-- Icone a esquerda em circulo colorido
-- Texto centralizado verticalmente
-- Ao selecionar: borda roxa, fundo levemente tintado
-- Checkmark animado aparece suavemente
+**Funcionalidades**:
+- Validar token de autenticacao no header
+- Processar evento `Purchase_Order_Confirmed`
+- Encontrar usuario pelo email (Buyer.Email)
+- Atualizar `has_license = true` na tabela `creator_profiles`
+- Registrar eventos em nova tabela para auditoria
 
-### 4. Layout e Espacamento
+**Estrutura do payload Lastlink (Purchase_Order_Confirmed)**:
+```json
+{
+  "Id": "uuid-do-evento",
+  "IsTest": false,
+  "Event": "Purchase_Order_Confirmed",
+  "CreatedAt": "2025-10-15T22:10:57",
+  "Data": {
+    "Buyer": {
+      "Email": "email-do-comprador@example.com",
+      "Name": "Nome do Comprador"
+    },
+    "Purchase": {
+      "PaymentId": "uuid-do-pagamento"
+    }
+  }
+}
+```
 
-- Header mais compacto e fixo
-- Barra de progresso mais fina e elegante
-- Mais espaco vertical entre elementos
-- Tipografia com hierarquia mais clara
+### 2. Nova Tabela: `lastlink_events`
 
----
+Tabela para registrar todos os eventos recebidos da Lastlink para auditoria e debug.
+
+**Colunas**:
+- `id` (uuid, PK)
+- `lastlink_event_id` (text) - ID unico do evento Lastlink
+- `event_type` (text) - Tipo do evento (ex: Purchase_Order_Confirmed)
+- `buyer_email` (text) - Email do comprador
+- `payload` (jsonb) - Payload completo do webhook
+- `processed` (boolean) - Se foi processado com sucesso
+- `error_message` (text, nullable) - Mensagem de erro se falhou
+- `created_at` (timestamptz)
+
+### 3. Configuracao do Secret
+
+Armazenar o token de autenticacao da Lastlink como secret:
+- Nome: `LASTLINK_WEBHOOK_TOKEN`
+- Valor: `cbbc80567b974493a7e7ef288954020e`
+
+### 4. Alteracoes na PremiumSuccess Page
+
+Remover a logica de ativacao de licenca do frontend. A pagina passa a ser apenas informativa:
+- Mostra mensagem de sucesso do pagamento
+- Orienta usuario a fazer login
+- Nao modifica mais a tabela `creator_profiles`
 
 ## Detalhes Tecnicos
 
-### Novas Animacoes CSS (tailwind.config.ts e index.css)
+### Edge Function: Validacao e Processamento
 
-```css
-/* Slide horizontal */
-@keyframes slide-in-from-right {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+```typescript
+// Pseudocodigo da logica principal
+
+// 1. Validar token no header
+const token = req.headers.get("Authorization") || req.headers.get("x-webhook-token");
+if (token !== expectedToken) {
+  return 401 Unauthorized;
 }
 
-@keyframes slide-out-to-left {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(-100%); opacity: 0; }
+// 2. Parsear payload
+const payload = await req.json();
+
+// 3. Verificar tipo de evento
+if (payload.Event !== "Purchase_Order_Confirmed") {
+  return 200 OK; // Ignorar outros eventos
 }
 
-@keyframes slide-in-from-left {
-  from { transform: translateX(-100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
+// 4. Extrair email do comprador
+const buyerEmail = payload.Data?.Buyer?.Email;
 
-@keyframes slide-out-to-right {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(100%); opacity: 0; }
-}
+// 5. Buscar usuario por email na auth.users (via admin API)
+const { data: users } = await supabase.auth.admin.listUsers();
+const user = users.users.find(u => u.email === buyerEmail);
 
-/* Staggered fade para opcoes */
-@keyframes stagger-fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+// 6. Atualizar creator_profiles
+await supabase
+  .from("creator_profiles")
+  .update({ has_license: true })
+  .eq("user_id", user.id);
+
+// 7. Registrar evento
+await supabase
+  .from("lastlink_events")
+  .insert({ ... });
 ```
 
-### Componentes a Modificar
+### Busca de Usuario por Email
 
-| Componente | Mudancas |
-|------------|----------|
-| `QuizQuestion.tsx` | Novo layout de cards, animacoes staggered nas opcoes, transicao de slide |
-| `Quiz.tsx` | Controle de direcao da animacao, estado de transicao |
-| `QuizAgeHighlight.tsx` | Transicao suave de entrada/saida |
-| `QuizMidMessage.tsx` | Animacao de entrada mais elaborada |
-| `QuizProcessing.tsx` | Manter estilo atual (ja esta bom) |
-| `QuizTransition.tsx` | Manter estilo atual |
-| `QuizCoupon.tsx` | Transicao de entrada mais suave |
-| `QuizEmailCapture.tsx` | Animacao de entrada mais fluida |
-| `QuizResults.tsx` | Entrance animation mais elaborada |
+Como o email do comprador vem da Lastlink, precisamos encontrar o usuario correspondente:
 
-### Novo Componente: QuizAgeCards.tsx
+1. **Opcao A**: Usar `supabase.auth.admin.listUsers()` com filtro por email (requer service role key)
+2. **Opcao B**: Buscar na tabela `quiz_responses` que ja armazena o email
 
-Card visual especifico para a pergunta de idade, com:
-- Imagem da persona ocupando todo o card
-- Overlay gradient na parte inferior
-- Label com faixa etaria e seta
-- Efeito hover com scale e shadow
+Usaremos a **Opcao B** como fallback, pois:
+- A tabela `quiz_responses` ja tem a coluna `email` e `user_id`
+- E mais eficiente do que listar todos usuarios
+- Fallback para admin API se nao encontrar
 
-### Atualizacoes de Estilo
+### Configuracao no Painel Lastlink
 
-**Cores (manter as existentes, ajustar tons)**
-- Background: `#f8f9fc` (mais neutro)
-- Cards: `#ffffff` com sombra sutil
-- Borda selecionada: gradiente azul-roxo
-- Texto: contraste mais forte
+URL do webhook a ser configurada:
+```
+https://bficxnetrsuyzygutztn.supabase.co/functions/v1/lastlink-webhook
+```
 
-**Tipografia**
-- Titulos: 600 weight, 1.75rem mobile / 2rem desktop
-- Subtitulos: 400 weight, cor muted
-- Opcoes: 500 weight
+**Configuracoes**:
+- Eventos: `Purchase_Order_Confirmed`
+- Token: Adicionar no header de autenticacao
 
----
+## Tarefas de Implementacao
 
-## Implementacao por Etapa
+1. **Criar secret LASTLINK_WEBHOOK_TOKEN**
+   - Armazenar token fornecido pelo usuario
 
-### Etapa 1: Animacoes Base
-1. Adicionar keyframes de slide no `index.css`
-2. Configurar classes de animacao no `tailwind.config.ts`
-3. Criar utility classes para transicoes
+2. **Criar migracao de banco de dados**
+   - Tabela `lastlink_events` para auditoria
+   - RLS: apenas service role pode inserir/ler
 
-### Etapa 2: Componente de Cards de Idade
-1. Criar `QuizAgeCards.tsx` com grid de imagens
-2. Usar imagens existentes de personas
-3. Overlay com label estilo BetterMe
-4. Integrar com primeira pergunta do quiz
+3. **Criar edge function `lastlink-webhook`**
+   - Validacao de token
+   - Processamento do evento
+   - Atualizacao de licenca
+   - Registro de eventos
 
-### Etapa 3: Transicoes de Perguntas
-1. Modificar `Quiz.tsx` para controlar estado de transicao
-2. Implementar slide direction baseado em navegacao
-3. Aplicar animacao de exit/enter em `QuizQuestion.tsx`
+4. **Atualizar supabase/config.toml**
+   - Adicionar configuracao da nova funcao
 
-### Etapa 4: Opcoes de Resposta
-1. Redesenhar cards de opcao com visual mais limpo
-2. Animacao staggered para opcoes aparecerem sequencialmente
-3. Feedback visual aprimorado ao selecionar
+5. **Simplificar PremiumSuccess**
+   - Remover logica de ativacao automatica
+   - Manter apenas como pagina informativa
 
-### Etapa 5: Telas Intermediarias
-1. Aplicar transicoes suaves em `QuizAgeHighlight`
-2. Animar entrada de `QuizMidMessage`
-3. Melhorar fluidez entre todas as etapas
+6. **Testes**
+   - Testar webhook via Postman/curl
+   - Verificar ativacao de licenca
+   - Testar casos de erro (email nao encontrado, token invalido)
 
-### Etapa 6: Polimento Final
-1. Ajustar timing de todas as animacoes
-2. Testar em mobile e desktop
-3. Verificar performance das animacoes
-4. Garantir acessibilidade (prefers-reduced-motion)
+## Seguranca
 
----
+- Token de webhook validado em todas as requisicoes
+- Uso de service role key apenas no backend
+- Registro de todos os eventos para auditoria
+- Nenhuma ativacao de licenca possivel pelo frontend
+- RLS na tabela de eventos previne acesso nao autorizado
 
-## Arquivos Afetados
+## Configuracao na Lastlink
 
-- `src/index.css` - Novas keyframes e utility classes
-- `tailwind.config.ts` - Configuracao de animacoes
-- `src/components/quiz/QuizQuestion.tsx` - Layout e animacoes
-- `src/components/quiz/QuizAgeCards.tsx` - Novo componente
-- `src/pages/Quiz.tsx` - Controle de transicoes
-- `src/components/quiz/QuizAgeHighlight.tsx` - Transicoes
-- `src/components/quiz/QuizMidMessage.tsx` - Transicoes
-- `src/components/quiz/QuizCoupon.tsx` - Transicoes
-- `src/components/quiz/QuizEmailCapture.tsx` - Transicoes
-- `src/components/quiz/QuizResults.tsx` - Transicoes
+Apos a implementacao, o usuario devera:
 
----
-
-## Consideracoes de Performance
-
-- Usar `transform` e `opacity` para animacoes (GPU-accelerated)
-- Evitar animacoes em propriedades que causam reflow
-- Implementar `will-change` seletivamente
-- Respeitar `prefers-reduced-motion` para acessibilidade
-
-## Resultado Esperado
-
-Quiz com visual premium estilo BetterMe:
-- Primeira tela impactante com cards visuais
-- Transicoes horizontais fluidas entre perguntas
-- Opcoes com animacao staggered
-- Feedback visual refinado em todas as interacoes
-- Experiencia mobile-first otimizada
-
+1. Acessar Produtos > Selecionar Produto > Integracoes > Webhook
+2. Criar novo webhook com:
+   - Nome: "ThinkAndTalk License"
+   - URL: `https://bficxnetrsuyzygutztn.supabase.co/functions/v1/lastlink-webhook`
+   - Header de autenticacao: `x-webhook-token: cbbc80567b974493a7e7ef288954020e`
+3. Selecionar evento: "Compra Completa" (Purchase_Order_Confirmed)
+4. Salvar e testar
