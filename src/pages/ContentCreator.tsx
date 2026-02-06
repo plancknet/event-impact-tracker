@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -137,7 +138,8 @@ const DEFAULT_PROFILE: WritingProfile = {
 const PAUSE_LONG_INSTRUCTION = "A cada mudanca de assunto, inclua uma unica tag <pause-long>.";
 
 export default function ContentCreator() {
-  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { user, signOut, loading } = useAuth();
   const [step, setStep] = useState<StepId>(1);
   const [profile, setProfile] = useState<WritingProfile>(DEFAULT_PROFILE);
   const [searchTerms, setSearchTerms] = useState<NewsSearchTerm[]>([]);
@@ -174,6 +176,12 @@ export default function ContentCreator() {
   const [isScriptsCollapsed, setIsScriptsCollapsed] = useState(true);
   const [isEditorCollapsed, setIsEditorCollapsed] = useState(false);
   const [teleprompterSettings, setTeleprompterSettings] = useState<TeleprompterSettings>(DEFAULT_TELEPROMPTER_SETTINGS);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [loading, user, navigate]);
 
   const scriptLanguageOptions = [
     { label: "Inglês", value: "English" },
@@ -484,20 +492,7 @@ export default function ContentCreator() {
   };
 
   const handleContinueToNews = async () => {
-    setNewsError(null);
-    setNewsLoading(true);
-    setSelectedNewsIds([]);
-    setSearchTerms([]);
-    setNewsItems([]);
-    try {
-      await syncNewsForTopic(profile.mainSubject, profile.newsLanguage, { sinceHours: 72 });
-    } catch (error) {
-      console.error("Failed to load news context:", error);
-      setNewsError("Não foi possível carregar o contexto de notícias. Tente novamente.");
-    } finally {
-      setNewsLoading(false);
-      setStep(2);
-    }
+    navigate("/auth");
   };
 
   const resetSelectionToDefaults = () => {
@@ -1132,15 +1127,8 @@ export default function ContentCreator() {
             </div>
 
             <div className="flex justify-end">
-              <Button onClick={handleContinueToNews} disabled={!canContinueFromProfile || newsLoading}>
-                {newsLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Carregando notícias...
-                  </>
-                ) : (
-                  "Começar e criar"
-                )}
+              <Button onClick={handleContinueToNews}>
+                Começar e criar
               </Button>
             </div>
           </CardContent>
