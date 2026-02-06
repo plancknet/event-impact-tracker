@@ -86,6 +86,39 @@ export type Database = {
         }
         Relationships: []
       }
+      lastlink_events: {
+        Row: {
+          buyer_email: string
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          lastlink_event_id: string
+          payload: Json
+          processed: boolean
+        }
+        Insert: {
+          buyer_email: string
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          lastlink_event_id: string
+          payload: Json
+          processed?: boolean
+        }
+        Update: {
+          buyer_email?: string
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          lastlink_event_id?: string
+          payload?: Json
+          processed?: boolean
+        }
+        Relationships: []
+      }
       quiz_responses: {
         Row: {
           age_range: string | null
