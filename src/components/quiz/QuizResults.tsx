@@ -141,9 +141,10 @@ const QuizResults = ({ answers }: QuizResultsProps) => {
           </p>
 
           <div className="flex items-center justify-center gap-2 text-quiz-purple font-semibold">
-            <span className="line-through text-quiz-muted text-sm">R$ 49,90/mês</span>
-            <span className="text-xl">R$ 29,90/mês</span>
+            <span className="line-through text-quiz-muted text-sm">R$ 78,90</span>
+            <span className="text-xl">R$ 47</span>
             <span className="bg-quiz-purple text-white text-xs px-2 py-1 rounded-full">-40%</span>
+            <span className="text-xs text-quiz-muted font-medium">pagamento único</span>
           </div>
 
           <Button

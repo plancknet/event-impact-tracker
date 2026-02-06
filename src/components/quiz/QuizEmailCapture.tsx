@@ -54,7 +54,7 @@ const QuizEmailCapture = ({ onSubmit }: QuizEmailCaptureProps) => {
             Quase lá! 🎉
           </h2>
           <p className="text-quiz-muted">
-            Insira seu email para receber seu plano personalizado e garantir o desconto de 40%
+            Garanta seu DESCONTO de 40% informando seu EMAIL. Ele será seu LOGIN no aplicativo.
           </p>
         </div>
 
@@ -88,7 +88,7 @@ const QuizEmailCapture = ({ onSubmit }: QuizEmailCaptureProps) => {
               "Processando..."
             ) : (
               <>
-                Ver meu resultado
+                Vamos lá!
                 <ArrowRight className="ml-2 h-5 w-5" />
               </>
             )}
