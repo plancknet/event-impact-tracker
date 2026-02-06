@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { QuizQuestionData } from "@/components/quiz/quizTypes";
 import { DEFAULT_CREATOR_PROFILE } from "@/types/creatorProfile";
 
-const CHECKOUT_URL = "https://lastlink.com/p/C7229FE68/checkout-payment/";
+const CHECKOUT_URL = "https://lastlink.com/p/CD24C75DE/checkout-payment/";
 
 const QuizTransition = lazy(() => import("@/components/quiz/QuizTransition"));
 const QuizCoupon = lazy(() => import("@/components/quiz/QuizCoupon"));
