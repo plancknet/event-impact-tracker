@@ -436,25 +436,39 @@ const Quiz = () => {
     }
 
     const creatorProfilePayload = buildCreatorProfileFromQuiz(answers);
-    if (user) {
+    
+    // Helper to upsert profile and link quiz
+    const upsertProfileAndLinkQuiz = async (userId: string) => {
       try {
         const { error: profileError } = await supabase
           .from("creator_profiles")
           .upsert(
             {
-              user_id: user.id,
+              user_id: userId,
               ...creatorProfilePayload,
             },
             { onConflict: "user_id" },
           );
         if (profileError) {
-          console.error("Failed to upsert creator profile from quiz:", profileError);
+          console.error("Failed to upsert creator profile:", profileError);
         }
       } catch (err) {
         console.error("Creator profile upsert error:", err);
       }
+
+      if (quizId) {
+        await supabase
+          .from("quiz_responses")
+          .update({ user_id: userId })
+          .eq("id", quizId);
+      }
+    };
+
+    if (user) {
+      await upsertProfileAndLinkQuiz(user.id);
     } else {
       try {
+        // Try to sign up new user
         const { data, error: signUpError } = await supabase.auth.signUp({
           email: submittedEmail,
           password: QUIZ_DEFAULT_PASSWORD,
@@ -465,9 +479,32 @@ const Quiz = () => {
         });
 
         if (signUpError) {
-          console.error("Failed to sign up user from quiz:", signUpError);
-          sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
+          // If user already exists, try to sign in
+          if (signUpError.message?.includes("already") || signUpError.message?.includes("exists")) {
+            console.log("User already exists, attempting sign in...");
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+              email: submittedEmail,
+              password: QUIZ_DEFAULT_PASSWORD,
+            });
+            
+            if (signInError) {
+              // User exists but password is different - they need to log in manually
+              console.error("Failed to sign in existing user:", signInError);
+              toast({
+                title: "Conta já existe",
+                description: "Você já tem uma conta. Faça login após o pagamento.",
+              });
+              sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
+              sessionStorage.setItem("pendingQuizEmail", submittedEmail);
+            } else if (signInData.user) {
+              await upsertProfileAndLinkQuiz(signInData.user.id);
+            }
+          } else {
+            console.error("Failed to sign up user from quiz:", signUpError);
+            sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
+          }
         } else {
+          // New user created successfully
           if (!data.session) {
             const { error: signInError } = await supabase.auth.signInWithPassword({
               email: submittedEmail,
@@ -482,25 +519,7 @@ const Quiz = () => {
           const signedInUser = sessionData.session?.user ?? data.user;
 
           if (signedInUser) {
-            const { error: profileError } = await supabase
-              .from("creator_profiles")
-              .upsert(
-                {
-                  user_id: signedInUser.id,
-                  ...creatorProfilePayload,
-                },
-                { onConflict: "user_id" },
-              );
-            if (profileError) {
-              console.error("Failed to upsert creator profile after quiz signup:", profileError);
-            }
-
-            if (quizId) {
-              await supabase
-                .from("quiz_responses")
-                .update({ user_id: signedInUser.id })
-                .eq("id", quizId);
-            }
+            await upsertProfileAndLinkQuiz(signedInUser.id);
           } else {
             sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
           }
