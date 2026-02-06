@@ -495,6 +495,23 @@ export default function ContentCreator() {
     navigate("/auth");
   };
 
+  const handleSearchNews = async () => {
+    if (!profile.mainSubject.trim()) return;
+    setNewsError(null);
+    setNewsLoading(true);
+    setSelectedNewsIds([]);
+    setSearchTerms([]);
+    setNewsItems([]);
+    try {
+      await syncNewsForTopic(profile.mainSubject, profile.newsLanguage, { sinceHours: 72 });
+    } catch (error) {
+      console.error("Failed to load news context:", error);
+      setNewsError("Não foi possível carregar o contexto de notícias. Tente novamente.");
+    } finally {
+      setNewsLoading(false);
+    }
+  };
+
   const resetSelectionToDefaults = () => {
     setProfile(DEFAULT_PROFILE);
     setComplementaryPrompt("");
@@ -1160,6 +1177,38 @@ export default function ContentCreator() {
                 </div>
               </div>
             )}
+
+            <div className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+              <div className="space-y-2">
+                <label
+                  htmlFor="news_topic"
+                  className="text-base font-medium text-emerald-800"
+                >
+                  Sobre o que vamos falar hoje?
+                </label>
+                <Input
+                  id="news_topic"
+                  value={profile.mainSubject}
+                  onChange={(event) => setProfile((prev) => ({ ...prev, mainSubject: event.target.value }))}
+                  placeholder="Ex: Bitcoin, Finanças, Marketing Digital, Culinária..."
+                  className="h-12 text-base bg-white/80 border-emerald-200 focus-visible:ring-emerald-400"
+                />
+                <p className="text-sm text-muted-foreground">Separe múltiplos temas por vírgula</p>
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={handleSearchNews} disabled={!profile.mainSubject.trim() || newsLoading}>
+                  {newsLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Buscando notícias...
+                    </>
+                  ) : (
+                    "Buscar notícias"
+                  )}
+                </Button>
+              </div>
+            </div>
 
             <div className="rounded-lg border p-4 text-sm text-muted-foreground">
               {newsItems.length === 0

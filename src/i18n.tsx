@@ -117,6 +117,7 @@ const translations: Record<Language, TranslationMap> = {
     "Nenhum roteiro salvo ainda": "No scripts saved yet",
     "Nenhum roteiro encontrado": "No scripts found",
     "Roteiro": "Script",
+    "Roteiro 2": "Script 2",
     "Tema": "Topic",
     "Data": "Date",
     "Deseja excluir este roteiro?": "Do you want to delete this script?",

@@ -44,9 +44,9 @@ export default function Studio() {
   }, [profile, user]);
 
   const handleStepChange = (step: number) => {
-    if (step === 6) {
+    if (step >= 6) {
       setShowOnboarding(false);
-      setOnboardingStep(6);
+      setOnboardingStep(step);
       return;
     }
     setShowOnboarding(true);
@@ -289,14 +289,15 @@ export default function Studio() {
           <div className="py-3">
             <OnboardingProgress
               currentStep={onboardingStep}
-              totalSteps={6}
+              totalSteps={7}
               stepLabels={[
                 t("Você"),
                 t("Público"),
                 t("Formato"),
                 t("Estilo"),
                 t("Objetivo"),
-                t("Roteiros"),
+                t("Roteiro"),
+                t("Roteiro 2"),
               ]}
               onStepChange={handleStepChange}
               orientation="horizontal"
@@ -308,14 +309,15 @@ export default function Studio() {
           <aside className="md:pt-4 hidden md:block">
             <OnboardingProgress
               currentStep={onboardingStep}
-              totalSteps={6}
+              totalSteps={7}
               stepLabels={[
                 t("Você"),
                 t("Público"),
                 t("Formato"),
                 t("Estilo"),
                 t("Objetivo"),
-                t("Roteiros"),
+                t("Roteiro"),
+                t("Roteiro 2"),
               ]}
               onStepChange={handleStepChange}
               orientation="vertical"
