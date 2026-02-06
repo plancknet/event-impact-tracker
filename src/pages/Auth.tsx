@@ -222,29 +222,25 @@ export default function Auth() {
           <Card className="w-full border border-slate-100 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.4)]">
             <CardContent className="pt-6">
               <form onSubmit={handleForcePasswordSubmit} className="space-y-4">
-                <FormItem>
-                  <FormLabel>{t("Nova senha")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="******"
-                      value={forcePassword}
-                      onChange={(event) => setForcePassword(event.target.value)}
-                    />
-                  </FormControl>
-                </FormItem>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none">{t("Nova senha")}</label>
+                  <Input
+                    type="password"
+                    placeholder="******"
+                    value={forcePassword}
+                    onChange={(event) => setForcePassword(event.target.value)}
+                  />
+                </div>
 
-                <FormItem>
-                  <FormLabel>{t("Confirmar nova senha")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="******"
-                      value={forceConfirm}
-                      onChange={(event) => setForceConfirm(event.target.value)}
-                    />
-                  </FormControl>
-                </FormItem>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none">{t("Confirmar nova senha")}</label>
+                  <Input
+                    type="password"
+                    placeholder="******"
+                    value={forceConfirm}
+                    onChange={(event) => setForceConfirm(event.target.value)}
+                  />
+                </div>
 
                 {forceError && <p className="text-sm text-destructive text-center">{forceError}</p>}
                 {forceSuccess && <p className="text-sm text-primary text-center">{forceSuccess}</p>}
