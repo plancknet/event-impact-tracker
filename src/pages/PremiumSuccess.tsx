@@ -95,9 +95,9 @@ export default function PremiumSuccess() {
           <Button
             size="lg"
             className="w-full gap-2"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/auth")}
           >
-            {t("Começar a usar")}
+            {t("Fazer login")}
             <ArrowRight className="h-4 w-4" />
           </Button>
         </CardContent>
