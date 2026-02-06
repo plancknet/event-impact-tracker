@@ -11,39 +11,49 @@ export default function PremiumSuccess() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
-  const [activating, setActivating] = useState(false);
+  const [verifying, setVerifying] = useState(true);
   const [activated, setActivated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const activateLicense = async () => {
-      if (!user || activating || activated) return;
+    const verifyLicense = async () => {
+      if (!user || authLoading) {
+        setVerifying(false);
+        return;
+      }
 
-      setActivating(true);
+      setVerifying(true);
       try {
-        const { error: updateError } = await supabase
-          .from("creator_profiles")
-          .update({ has_license: true })
-          .eq("user_id", user.id);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const response = await supabase.functions.invoke("lastlink-verify", {
+          headers: {
+            Authorization: `Bearer ${sessionData.session?.access_token}`,
+          },
+        });
 
-        if (updateError) {
-          console.error("Error activating license:", updateError);
-          setError("Erro ao ativar licença. Tente novamente.");
-        } else {
+        if (response.error) {
+          console.error("Lastlink verify error:", response.error);
+          setError("Erro ao verificar pagamento. Tente novamente.");
+          setActivated(false);
+          return;
+        }
+
+        if (response.data?.activated) {
           setActivated(true);
+          setError(null);
+        } else {
+          setActivated(false);
         }
       } catch (err) {
-        console.error("License activation error:", err);
-        setError("Erro ao ativar licença. Tente novamente.");
+        console.error("License verification error:", err);
+        setError("Erro ao verificar pagamento. Tente novamente.");
       } finally {
-        setActivating(false);
+        setVerifying(false);
       }
     };
 
-    if (!authLoading && user) {
-      activateLicense();
-    }
-  }, [user, authLoading, activating, activated]);
+    void verifyLicense();
+  }, [user, authLoading]);
 
   // Still loading auth
   if (authLoading) {
@@ -96,12 +106,12 @@ export default function PremiumSuccess() {
   }
 
   // Activating license
-  if (activating) {
+  if (verifying) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">{t("Ativando sua licença...")}</p>
+          <p className="text-muted-foreground">{t("Verificando pagamento...")}</p>
         </div>
       </div>
     );
@@ -139,7 +149,7 @@ export default function PremiumSuccess() {
           <Button
             size="lg"
             className="w-full gap-2"
-            onClick={() => navigate(activated ? "/studio" : "/premium/success")}
+            onClick={() => navigate(activated ? "/" : "/premium/success")}
           >
             {activated ? t("Começar a criar") : t("Tentar novamente")}
             <ArrowRight className="h-4 w-4" />
