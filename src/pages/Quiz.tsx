@@ -57,10 +57,6 @@ const getSaoPauloTimestamp = () => {
   return new Date().toISOString();
 };
 
-// Generate a secure random password that user can't guess
-const generateSecurePassword = () => {
-  return crypto.randomUUID() + crypto.randomUUID();
-};
 
 const mapQuizExpertiseLevel = (level?: string) => {
   switch (level) {
@@ -422,6 +418,7 @@ const Quiz = () => {
     setEmail(submittedEmail);
     const completedAt = getSaoPauloTimestamp();
     
+    // Save email to quiz_responses - user creation happens only after payment via webhook
     if (quizId) {
       try {
         await supabase
@@ -438,87 +435,11 @@ const Quiz = () => {
       }
     }
 
+    // Store draft profile for use after login (post-payment)
     const creatorProfilePayload = buildCreatorProfileFromQuiz(answers);
+    sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
+    sessionStorage.setItem("pendingQuizEmail", submittedEmail);
     
-    // Helper to upsert profile and link quiz
-    const upsertProfileAndLinkQuiz = async (userId: string) => {
-      try {
-        const { error: profileError } = await supabase
-          .from("creator_profiles")
-          .upsert(
-            {
-              user_id: userId,
-              ...creatorProfilePayload,
-            },
-            { onConflict: "user_id" },
-          );
-        if (profileError) {
-          console.error("Failed to upsert creator profile:", profileError);
-        }
-      } catch (err) {
-        console.error("Creator profile upsert error:", err);
-      }
-
-      if (quizId) {
-        await supabase
-          .from("quiz_responses")
-          .update({ user_id: userId })
-          .eq("id", quizId);
-      }
-    };
-
-    if (user) {
-      await upsertProfileAndLinkQuiz(user.id);
-    } else {
-      try {
-        // Generate a unique secure password for each new user
-        const securePassword = generateSecurePassword();
-        
-        // Try to sign up new user with secure random password
-        const { data, error: signUpError } = await supabase.auth.signUp({
-          email: submittedEmail,
-          password: securePassword,
-          options: {
-            data: { must_change_password: true },
-            emailRedirectTo: `${window.location.origin}/auth?mode=force-change`,
-          },
-        });
-
-        if (signUpError) {
-          // If user already exists, save draft and let them log in manually
-          if (signUpError.message?.includes("already") || signUpError.message?.includes("exists")) {
-            console.log("User already exists, they need to log in manually");
-            toast({
-              title: "Conta já existe",
-              description: "Você já tem uma conta. Faça login após o pagamento.",
-            });
-            sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
-            sessionStorage.setItem("pendingQuizEmail", submittedEmail);
-          } else {
-            console.error("Failed to sign up user from quiz:", signUpError);
-            sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
-          }
-        } else {
-          // New user created successfully - trigger password reset email
-          const signedInUser = data.user;
-
-          if (signedInUser) {
-            await upsertProfileAndLinkQuiz(signedInUser.id);
-          }
-
-          // Send password reset email so user can set their own password
-          await supabase.auth.resetPasswordForEmail(submittedEmail, {
-            redirectTo: `${window.location.origin}/auth?mode=force-change`,
-          });
-
-          // Store draft in case session doesn't persist
-          sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
-        }
-      } catch (err) {
-        console.error("Quiz signup flow error:", err);
-        sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
-      }
-    }
     setStep("results");
   };
 

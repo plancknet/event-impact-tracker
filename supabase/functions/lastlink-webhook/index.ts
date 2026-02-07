@@ -8,10 +8,8 @@ const corsHeaders = {
 
 const WEBHOOK_TOKEN = Deno.env.get("LASTLINK_WEBHOOK_TOKEN") ?? "";
 
-// Generate a secure random password that user can't guess
-const generateSecurePassword = () => {
-  return crypto.randomUUID() + crypto.randomUUID();
-};
+// Default password for new users - they must change on first login
+const DEFAULT_PASSWORD = "12345678";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -67,11 +65,10 @@ serve(async (req) => {
       let userId: string | null = null;
 
       // Try to create user first - if exists, handle the error
-      // Use a secure random password for each new user
-      const securePassword = generateSecurePassword();
+      // Use default password - user must change on first login
       const { data: createdUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: buyerEmail,
-        password: securePassword,
+        password: DEFAULT_PASSWORD,
         email_confirm: true,
         user_metadata: {
           must_change_password: true,
