@@ -2,7 +2,8 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, Sparkles } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowRight, Loader2, Sparkles } from "lucide-react";
 import { CreatorProfile } from "@/types/creatorProfile";
 import { ContextSummary } from "./ContextSummary";
 import { ScriptOutput } from "./ScriptOutput";
@@ -413,6 +414,43 @@ export function ScriptGenerator({
       />
 
       <ContextSummary profile={profile} onEditProfile={onEditProfile} />
+
+      <div className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex-1 space-y-2">
+            <Label htmlFor="news-topic" className="text-base font-medium text-emerald-800">
+              {t("Sobre o que vamos falar hoje?")}
+            </Label>
+            <Input
+              id="news-topic"
+              value={profile.main_topic}
+              onChange={(event) => onApplyProfile({ main_topic: event.target.value })}
+              placeholder={t("Ex: Bitcoin, Finanças, Marketing Digital, Culinária...")}
+              className="h-12 text-base bg-white/80 border-emerald-200 focus-visible:ring-emerald-400"
+            />
+            <p className="text-sm text-muted-foreground">
+              {t("Separe múltiplos temas por vírgula")}
+            </p>
+          </div>
+          <Button
+            onClick={hasStarted ? handleRefreshNews : handleStartCreating}
+            disabled={!profile.main_topic.trim() || isLoadingNews}
+            className="h-11 gap-2"
+          >
+            {isLoadingNews ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {t("Buscando notícias...")}
+              </>
+            ) : (
+              <>
+                {t("Buscar notícias")}
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
 
       <NewsGrid
         newsItems={newsItems}

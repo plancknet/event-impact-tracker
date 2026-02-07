@@ -35,9 +35,15 @@ export function ContextSummary({ profile, onEditProfile }: ContextSummaryProps) 
     const tones: Record<string, string> = {
       calmo: t("Calmo"),
       conversacional: t("Conversacional"),
+      didatico: t("Didático"),
       energetico: t("Energético"),
+      entusiasmado: t("Entusiasmado"),
       educativo: t("Educativo"),
+      humoristico: t("Humorístico"),
+      inspirador: t("Inspirador"),
+      jornalistico: t("Jornalístico"),
       persuasivo: t("Persuasivo"),
+      profissional: t("Profissional"),
     };
     return tones[profile.speaking_tone] || profile.speaking_tone;
   };
