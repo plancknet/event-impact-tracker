@@ -96,6 +96,7 @@ export function ScriptGenerator({
   const { user } = useAuth();
   const { t } = useLanguage();
   const [complementaryPrompt, setComplementaryPrompt] = useState("");
+  const [topicDraft, setTopicDraft] = useState(profile.main_topic);
   const [currentTone, setCurrentTone] = useState(profile.speaking_tone);
   const [currentDuration, setCurrentDuration] = useState(profile.target_duration);
   const [currentFormat, setCurrentFormat] = useState(profile.video_type);
@@ -136,6 +137,7 @@ export function ScriptGenerator({
     setSelectedNewsIds([]);
     setCurrentScriptId(null);
     setHasStarted(false);
+    setTopicDraft(profile.main_topic);
     setCurrentTone(profile.speaking_tone);
     setCurrentDuration(profile.target_duration);
     setCurrentFormat(profile.video_type);
@@ -151,6 +153,10 @@ export function ScriptGenerator({
     setHasStarted(true);
     fetchAndSaveNews(profile.main_topic, profile.news_language);
   }, [autoFetchTrigger, fetchAndSaveNews, profile.main_topic, profile.news_language]);
+
+  useEffect(() => {
+    setTopicDraft(profile.main_topic);
+  }, [profile.main_topic]);
 
   useEffect(() => {
     if (scrollTrigger <= 0) return;
@@ -216,15 +222,17 @@ export function ScriptGenerator({
   ]);
 
   const handleStartCreating = async () => {
-    if (!profile.main_topic.trim()) return;
+    if (!topicDraft.trim()) return;
 
+    onApplyProfile({ main_topic: topicDraft });
     setHasStarted(true);
-    await fetchAndSaveNews(profile.main_topic, profile.news_language);
+    await fetchAndSaveNews(topicDraft, profile.news_language);
   };
 
   const handleRefreshNews = async () => {
-    if (!profile.main_topic.trim()) return;
-    await fetchAndSaveNews(profile.main_topic, profile.news_language);
+    if (!topicDraft.trim()) return;
+    onApplyProfile({ main_topic: topicDraft });
+    await fetchAndSaveNews(topicDraft, profile.news_language);
   };
 
   const handleGenerate = async () => {
@@ -416,15 +424,15 @@ export function ScriptGenerator({
       <ContextSummary profile={profile} onEditProfile={onEditProfile} />
 
       <div className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex-1 space-y-2">
             <Label htmlFor="news-topic" className="text-base font-medium text-emerald-800">
               {t("Sobre o que vamos falar hoje?")}
             </Label>
             <Input
               id="news-topic"
-              value={profile.main_topic}
-              onChange={(event) => onApplyProfile({ main_topic: event.target.value })}
+              value={topicDraft}
+              onChange={(event) => setTopicDraft(event.target.value)}
               placeholder={t("Ex: Bitcoin, Finanças, Marketing Digital, Culinária...")}
               className="h-12 text-base bg-white/80 border-emerald-200 focus-visible:ring-emerald-400"
             />
@@ -434,8 +442,8 @@ export function ScriptGenerator({
           </div>
           <Button
             onClick={hasStarted ? handleRefreshNews : handleStartCreating}
-            disabled={!profile.main_topic.trim() || isLoadingNews}
-            className="h-11 gap-2"
+            disabled={!topicDraft.trim() || isLoadingNews}
+            className="h-12 gap-2"
           >
             {isLoadingNews ? (
               <>
