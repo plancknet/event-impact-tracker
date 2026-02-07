@@ -57,7 +57,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   if (!user) {
-    return <Navigate to="/quiz?step=results" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   if (!licenseChecked) {

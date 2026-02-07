@@ -22,14 +22,33 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/quiz" element={<Quiz />} />
-          <Route path="/quiz/analytics" element={
-            <AdminRoute>
-              <QuizAnalytics />
-            </AdminRoute>
-          } />
+          <Route
+            path="/quiz/analytics"
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <QuizAnalytics />
+                </AdminRoute>
+              </ProtectedRoute>
+            }
+          />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/premium" element={<Premium />} />
-          <Route path="/premium/success" element={<PremiumSuccess />} />
+          <Route
+            path="/premium"
+            element={
+              <ProtectedRoute>
+                <Premium />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/premium/success"
+            element={
+              <ProtectedRoute>
+                <PremiumSuccess />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/"
             element={
