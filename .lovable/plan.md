@@ -1,200 +1,118 @@
 
-# Plano: Integração com Lastlink via Webhook
 
-## Visao Geral
+# Plano: Senha Padrao e Criacao de Usuario Apenas Apos Pagamento
 
-Este plano implementa uma integracaoo segura com a Lastlink via webhook para ativar licencas de usuarios automaticamente apos a confirmacao de pagamento. A Lastlink enviara um evento `Purchase_Order_Confirmed` para a aplicacao, que identificara o usuario pelo email e ativara `has_license = true` na tabela `creator_profiles`.
+## Resumo
 
-## Fluxo Atual vs. Novo Fluxo
+Este plano reverte a senha para "12345678" e garante que usuarios so sejam criados apos o recebimento do pagamento via webhook Lastlink.
 
-```text
-FLUXO ATUAL (problematico):
-Quiz -> Email -> Cria usuario/profile -> /premium/success?token=xxx -> Ativa has_license
-        (inseguro: qualquer pessoa pode acessar a URL com token inventado)
+## Alteracoes Necessarias
 
-NOVO FLUXO (seguro):
-Quiz -> Email -> Cria usuario/profile (has_license=false)
-                      |
-                      v
-              Checkout Lastlink
-                      |
-                      v
-              Pagamento confirmado
-                      |
-                      v
-         Lastlink envia webhook ->  Edge Function  -> Ativa has_license=true
-                      |
-                      v
-              /premium/success (apenas confirmacao visual)
-```
-
-## Componentes a Implementar
-
-### 1. Nova Edge Function: `lastlink-webhook`
-
-Cria uma nova funcao serverless para receber webhooks da Lastlink.
+### 1. Edge Function `lastlink-webhook`
 
 **Arquivo**: `supabase/functions/lastlink-webhook/index.ts`
 
-**Funcionalidades**:
-- Validar token de autenticacao no header
-- Processar evento `Purchase_Order_Confirmed`
-- Encontrar usuario pelo email (Buyer.Email)
-- Atualizar `has_license = true` na tabela `creator_profiles`
-- Registrar eventos em nova tabela para auditoria
+**Mudanca**: Substituir a geracao de senha aleatoria pela senha padrao "12345678".
 
-**Estrutura do payload Lastlink (Purchase_Order_Confirmed)**:
-```json
-{
-  "Id": "uuid-do-evento",
-  "IsTest": false,
-  "Event": "Purchase_Order_Confirmed",
-  "CreatedAt": "2025-10-15T22:10:57",
-  "Data": {
-    "Buyer": {
-      "Email": "email-do-comprador@example.com",
-      "Name": "Nome do Comprador"
-    },
-    "Purchase": {
-      "PaymentId": "uuid-do-pagamento"
-    }
-  }
-}
+**Antes (linha 11-14)**:
+```typescript
+const generateSecurePassword = () => {
+  return crypto.randomUUID() + crypto.randomUUID();
+};
 ```
 
-### 2. Nova Tabela: `lastlink_events`
+**Depois**:
+```typescript
+const DEFAULT_PASSWORD = "12345678";
+```
 
-Tabela para registrar todos os eventos recebidos da Lastlink para auditoria e debug.
+**Na linha 74**: Trocar `password: securePassword` por `password: DEFAULT_PASSWORD`.
 
-**Colunas**:
-- `id` (uuid, PK)
-- `lastlink_event_id` (text) - ID unico do evento Lastlink
-- `event_type` (text) - Tipo do evento (ex: Purchase_Order_Confirmed)
-- `buyer_email` (text) - Email do comprador
-- `payload` (jsonb) - Payload completo do webhook
-- `processed` (boolean) - Se foi processado com sucesso
-- `error_message` (text, nullable) - Mensagem de erro se falhou
-- `created_at` (timestamptz)
+### 2. Pagina Quiz - Remover Criacao de Usuario
 
-### 3. Configuracao do Secret
+**Arquivo**: `src/pages/Quiz.tsx`
 
-Armazenar o token de autenticacao da Lastlink como secret:
-- Nome: `LASTLINK_WEBHOOK_TOKEN`
-- Valor: `cbbc80567b974493a7e7ef288954020e`
+**Mudanca**: Remover a logica de `signUp` no `handleEmailSubmit`. O quiz deve apenas:
+- Salvar o email na tabela `quiz_responses`
+- Armazenar o perfil em `sessionStorage` para uso posterior
+- Nao criar usuario
 
-### 4. Alteracoes na PremiumSuccess Page
+**O que sera removido (linhas 473-509)**:
+- Geracao de senha aleatoria
+- Chamada `supabase.auth.signUp`
+- Tratamento de erro de usuario existente
+- Toda a logica de criacao de conta
 
-Remover a logica de ativacao de licenca do frontend. A pagina passa a ser apenas informativa:
-- Mostra mensagem de sucesso do pagamento
-- Orienta usuario a fazer login
-- Nao modifica mais a tabela `creator_profiles`
+**O que permanece**:
+- Salvar email na `quiz_responses` (ja existe)
+- Guardar `draftCreatorProfile` em `sessionStorage` (ja existe)
+- Redirecionar para checkout
+
+### 3. Fluxo Resultante
+
+```text
+FLUXO APOS ALTERACOES:
+
+1. Usuario faz quiz
+2. Informa email -> Salvo em quiz_responses (sem criar conta)
+3. Clica no botao de checkout -> Vai para Lastlink
+4. Completa pagamento
+5. Lastlink envia webhook -> Edge Function:
+   - Se usuario NAO existe: cria com senha "12345678"
+   - Se usuario JA existe: apenas ativa licenca
+6. creator_profiles.has_license = true
+7. Usuario acessa /auth e faz login com senha "12345678"
+8. Sistema detecta must_change_password e solicita troca
+```
 
 ## Detalhes Tecnicos
 
-### Edge Function: Validacao e Processamento
+### Quiz.tsx - handleEmailSubmit simplificado
+
+A funcao `handleEmailSubmit` sera simplificada para:
 
 ```typescript
-// Pseudocodigo da logica principal
+const handleEmailSubmit = async (submittedEmail: string) => {
+  setEmail(submittedEmail);
+  
+  // Salvar email no quiz
+  if (quizId) {
+    await supabase
+      .from("quiz_responses")
+      .update({ 
+        email: submittedEmail,
+        completed_at: getSaoPauloTimestamp(),
+        reached_results: true,
+      })
+      .eq("id", quizId);
+  }
 
-// 1. Validar token no header
-const token = req.headers.get("Authorization") || req.headers.get("x-webhook-token");
-if (token !== expectedToken) {
-  return 401 Unauthorized;
-}
-
-// 2. Parsear payload
-const payload = await req.json();
-
-// 3. Verificar tipo de evento
-if (payload.Event !== "Purchase_Order_Confirmed") {
-  return 200 OK; // Ignorar outros eventos
-}
-
-// 4. Extrair email do comprador
-const buyerEmail = payload.Data?.Buyer?.Email;
-
-// 5. Buscar usuario por email na auth.users (via admin API)
-const { data: users } = await supabase.auth.admin.listUsers();
-const user = users.users.find(u => u.email === buyerEmail);
-
-// 6. Atualizar creator_profiles
-await supabase
-  .from("creator_profiles")
-  .update({ has_license: true })
-  .eq("user_id", user.id);
-
-// 7. Registrar evento
-await supabase
-  .from("lastlink_events")
-  .insert({ ... });
+  // Guardar perfil para uso apos login
+  const creatorProfilePayload = buildCreatorProfileFromQuiz(answers);
+  sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
+  sessionStorage.setItem("pendingQuizEmail", submittedEmail);
+  
+  setStep("results");
+};
 ```
 
-### Busca de Usuario por Email
+### Remocao de codigo desnecessario
 
-Como o email do comprador vem da Lastlink, precisamos encontrar o usuario correspondente:
+- Funcao `generateSecurePassword` no Quiz.tsx (linha 60-63)
+- Toda logica de `signUp` e tratamento de erros (linhas 473-530+)
+- Funcao `upsertProfileAndLinkQuiz` pode ser simplificada ou removida
 
-1. **Opcao A**: Usar `supabase.auth.admin.listUsers()` com filtro por email (requer service role key)
-2. **Opcao B**: Buscar na tabela `quiz_responses` que ja armazena o email
+## Arquivos a Modificar
 
-Usaremos a **Opcao B** como fallback, pois:
-- A tabela `quiz_responses` ja tem a coluna `email` e `user_id`
-- E mais eficiente do que listar todos usuarios
-- Fallback para admin API se nao encontrar
+| Arquivo | Acao |
+|---------|------|
+| `supabase/functions/lastlink-webhook/index.ts` | Trocar senha aleatoria por "12345678" |
+| `src/pages/Quiz.tsx` | Remover criacao de usuario, manter apenas captura de email |
 
-### Configuracao no Painel Lastlink
+## Consideracoes de Seguranca
 
-URL do webhook a ser configurada:
-```
-https://bficxnetrsuyzygutztn.supabase.co/functions/v1/lastlink-webhook
-```
+Usar senha padrao "12345678" significa que:
+- Usuarios devem ser orientados a trocar a senha no primeiro login
+- A flag `must_change_password: true` continuara sendo definida
+- A pagina `/auth` deve continuar verificando essa flag
 
-**Configuracoes**:
-- Eventos: `Purchase_Order_Confirmed`
-- Token: Adicionar no header de autenticacao
-
-## Tarefas de Implementacao
-
-1. **Criar secret LASTLINK_WEBHOOK_TOKEN**
-   - Armazenar token fornecido pelo usuario
-
-2. **Criar migracao de banco de dados**
-   - Tabela `lastlink_events` para auditoria
-   - RLS: apenas service role pode inserir/ler
-
-3. **Criar edge function `lastlink-webhook`**
-   - Validacao de token
-   - Processamento do evento
-   - Atualizacao de licenca
-   - Registro de eventos
-
-4. **Atualizar supabase/config.toml**
-   - Adicionar configuracao da nova funcao
-
-5. **Simplificar PremiumSuccess**
-   - Remover logica de ativacao automatica
-   - Manter apenas como pagina informativa
-
-6. **Testes**
-   - Testar webhook via Postman/curl
-   - Verificar ativacao de licenca
-   - Testar casos de erro (email nao encontrado, token invalido)
-
-## Seguranca
-
-- Token de webhook validado em todas as requisicoes
-- Uso de service role key apenas no backend
-- Registro de todos os eventos para auditoria
-- Nenhuma ativacao de licenca possivel pelo frontend
-- RLS na tabela de eventos previne acesso nao autorizado
-
-## Configuracao na Lastlink
-
-Apos a implementacao, o usuario devera:
-
-1. Acessar Produtos > Selecionar Produto > Integracoes > Webhook
-2. Criar novo webhook com:
-   - Nome: "ThinkAndTalk License"
-   - URL: `https://bficxnetrsuyzygutztn.supabase.co/functions/v1/lastlink-webhook`
-   - Header de autenticacao: `x-webhook-token: cbbc80567b974493a7e7ef288954020e`
-3. Selecionar evento: "Compra Completa" (Purchase_Order_Confirmed)
-4. Salvar e testar
