@@ -57,7 +57,10 @@ const getSaoPauloTimestamp = () => {
   return new Date().toISOString();
 };
 
-const QUIZ_DEFAULT_PASSWORD = "12345678";
+// Generate a secure random password that user can't guess
+const generateSecurePassword = () => {
+  return crypto.randomUUID() + crypto.randomUUID();
+};
 
 const mapQuizExpertiseLevel = (level?: string) => {
   switch (level) {
@@ -468,61 +471,48 @@ const Quiz = () => {
       await upsertProfileAndLinkQuiz(user.id);
     } else {
       try {
-        // Try to sign up new user
+        // Generate a unique secure password for each new user
+        const securePassword = generateSecurePassword();
+        
+        // Try to sign up new user with secure random password
         const { data, error: signUpError } = await supabase.auth.signUp({
           email: submittedEmail,
-          password: QUIZ_DEFAULT_PASSWORD,
+          password: securePassword,
           options: {
             data: { must_change_password: true },
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: `${window.location.origin}/auth?mode=force-change`,
           },
         });
 
         if (signUpError) {
-          // If user already exists, try to sign in
+          // If user already exists, save draft and let them log in manually
           if (signUpError.message?.includes("already") || signUpError.message?.includes("exists")) {
-            console.log("User already exists, attempting sign in...");
-            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-              email: submittedEmail,
-              password: QUIZ_DEFAULT_PASSWORD,
+            console.log("User already exists, they need to log in manually");
+            toast({
+              title: "Conta já existe",
+              description: "Você já tem uma conta. Faça login após o pagamento.",
             });
-            
-            if (signInError) {
-              // User exists but password is different - they need to log in manually
-              console.error("Failed to sign in existing user:", signInError);
-              toast({
-                title: "Conta já existe",
-                description: "Você já tem uma conta. Faça login após o pagamento.",
-              });
-              sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
-              sessionStorage.setItem("pendingQuizEmail", submittedEmail);
-            } else if (signInData.user) {
-              await upsertProfileAndLinkQuiz(signInData.user.id);
-            }
+            sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
+            sessionStorage.setItem("pendingQuizEmail", submittedEmail);
           } else {
             console.error("Failed to sign up user from quiz:", signUpError);
             sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
           }
         } else {
-          // New user created successfully
-          if (!data.session) {
-            const { error: signInError } = await supabase.auth.signInWithPassword({
-              email: submittedEmail,
-              password: QUIZ_DEFAULT_PASSWORD,
-            });
-            if (signInError) {
-              console.error("Failed to sign in user after quiz signup:", signInError);
-            }
-          }
-
-          const { data: sessionData } = await supabase.auth.getSession();
-          const signedInUser = sessionData.session?.user ?? data.user;
+          // New user created successfully - trigger password reset email
+          const signedInUser = data.user;
 
           if (signedInUser) {
             await upsertProfileAndLinkQuiz(signedInUser.id);
-          } else {
-            sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
           }
+
+          // Send password reset email so user can set their own password
+          await supabase.auth.resetPasswordForEmail(submittedEmail, {
+            redirectTo: `${window.location.origin}/auth?mode=force-change`,
+          });
+
+          // Store draft in case session doesn't persist
+          sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
         }
       } catch (err) {
         console.error("Quiz signup flow error:", err);

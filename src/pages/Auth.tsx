@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -11,8 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { LanguageSelector } from "@/components/LanguageSelector";
-
-const DEFAULT_FIRST_ACCESS_PASSWORD = "12345678";
+import { supabase } from "@/integrations/supabase/client";
 
 const createAuthSchema = (t: (key: string) => string) =>
   z.object({
@@ -73,10 +72,6 @@ export default function Auth() {
     }
     if (forcePassword !== forceConfirm) {
       setForceError(t("As senhas não conferem."));
-      return;
-    }
-    if (forcePassword === DEFAULT_FIRST_ACCESS_PASSWORD) {
-      setForceError(t("A nova senha deve ser diferente da senha inicial."));
       return;
     }
 
