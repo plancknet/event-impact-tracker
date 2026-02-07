@@ -43,6 +43,13 @@ export default function Studio() {
     }
   }, [profile, user]);
 
+  useEffect(() => {
+    if (user) {
+      setShowOnboarding(false);
+      setOnboardingStep(6);
+    }
+  }, [user]);
+
   const handleStepChange = (step: number) => {
     if (step >= 6) {
       setShowOnboarding(false);
@@ -51,6 +58,23 @@ export default function Studio() {
     }
     setShowOnboarding(true);
     setOnboardingStep(step);
+  };
+
+  const stepOrder = [6, 1, 2, 3, 4, 5];
+  const orderedStepLabels = [
+    t("Roteiro"),
+    t("Você"),
+    t("Público"),
+    t("Formato"),
+    t("Estilo"),
+    t("Objetivo"),
+  ];
+  const orderedCurrentStep = Math.max(1, stepOrder.indexOf(onboardingStep) + 1);
+  const handleOrderedStepChange = (orderedStep: number) => {
+    const actualStep = stepOrder[orderedStep - 1];
+    if (actualStep) {
+      handleStepChange(actualStep);
+    }
   };
 
   const handleViewScripts = () => {
@@ -288,18 +312,10 @@ export default function Studio() {
         <div className="md:hidden sticky top-[72px] z-30 bg-background/95 backdrop-blur border-b mb-6">
           <div className="py-3">
             <OnboardingProgress
-              currentStep={onboardingStep}
-              totalSteps={7}
-              stepLabels={[
-                t("Você"),
-                t("Público"),
-                t("Formato"),
-                t("Estilo"),
-                t("Objetivo"),
-                t("Roteiro"),
-                t("Roteiro 2"),
-              ]}
-              onStepChange={handleStepChange}
+              currentStep={orderedCurrentStep}
+              totalSteps={6}
+              stepLabels={orderedStepLabels}
+              onStepChange={handleOrderedStepChange}
               orientation="horizontal"
             />
           </div>
@@ -308,18 +324,10 @@ export default function Studio() {
         <div className="grid gap-8 md:grid-cols-[220px_1fr]">
           <aside className="md:pt-4 hidden md:block">
             <OnboardingProgress
-              currentStep={onboardingStep}
-              totalSteps={7}
-              stepLabels={[
-                t("Você"),
-                t("Público"),
-                t("Formato"),
-                t("Estilo"),
-                t("Objetivo"),
-                t("Roteiro"),
-                t("Roteiro 2"),
-              ]}
-              onStepChange={handleStepChange}
+              currentStep={orderedCurrentStep}
+              totalSteps={6}
+              stepLabels={orderedStepLabels}
+              onStepChange={handleOrderedStepChange}
               orientation="vertical"
             />
           </aside>
