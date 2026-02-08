@@ -420,26 +420,26 @@ export function ScriptGenerator({
       </div>
 
       {showHelp && (
-        <div className="rounded-xl border bg-card p-5 space-y-4">
-          <div className="text-sm text-muted-foreground">
+        <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-emerald-50 p-6 space-y-4 shadow-sm">
+          <div className="text-base font-semibold text-amber-900">
             Criar um roterio para vídeo é muito simples. Veja o passo a passo:
           </div>
-          <ol className="list-decimal pl-5 space-y-2 text-sm">
+          <ol className="list-decimal pl-5 space-y-2 text-sm text-slate-700">
             <li>Digite o tema sobre o qual você quer falar e clique em buscar notícias.</li>
             <li>Selecione 2 ou 3 notícias que você achar interessante.</li>
             <li>Preencha o "Prompt complementar", como por exemplo "Finalize o roteiro com uma mensgem positiva".</li>
             <li>Clique em "Gerar Roteiro" e aguarde menos de 30 segundos.</li>
           </ol>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-slate-700">
             Prontinho... você tem um roteiro que poderá ser rodado no teleprompter e gravar seu vídeo.
             Se quiser, você pode editar o texto e dar o seu toque final.
           </div>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-slate-700">
             Dica extra: Rode o texto no teleprompter e ajuste a velocidade de exibição e tamanho da fonte
             para sua necessidade. Faça algumas leituras no teleprompter e rapidamente você estará apto a
             gravar um vídeo com total segurança e com a sua personalidade.
           </div>
-          <div className="text-sm font-medium">Vamos lá!</div>
+          <div className="text-base font-semibold text-emerald-800">Vamos lá!</div>
         </div>
       )}
 
