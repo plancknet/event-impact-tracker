@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, HelpCircle, Loader2, Sparkles } from "lucide-react";
 import { CreatorProfile } from "@/types/creatorProfile";
 import { ContextSummary } from "./ContextSummary";
 import { ScriptOutput } from "./ScriptOutput";
@@ -414,15 +414,30 @@ export function ScriptGenerator({
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
-        <Button variant="outline" size="sm" onClick={() => setShowHelp((prev) => !prev)}>
+        <Button
+          size="sm"
+          onClick={() => setShowHelp((prev) => !prev)}
+          className="gap-2 shadow-sm bg-amber-500 hover:bg-amber-600 text-white"
+        >
+          <HelpCircle className="h-4 w-4" />
           {showHelp ? "Fechar ajuda" : "Ajuda"}
         </Button>
       </div>
 
       {showHelp && (
         <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-emerald-50 p-6 space-y-4 shadow-sm">
-          <div className="text-base font-semibold text-amber-900">
-            Criar um roterio para vídeo é muito simples. Veja o passo a passo:
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+              <HelpCircle className="h-5 w-5" />
+            </div>
+            <div className="space-y-1">
+              <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
+                Passo a passo
+              </span>
+              <div className="text-base font-semibold text-amber-900">
+                Criar um roterio para vídeo é muito simples. Veja o passo a passo:
+              </div>
+            </div>
           </div>
           <ol className="list-decimal pl-5 space-y-2 text-sm text-slate-700">
             <li>Digite o tema sobre o qual você quer falar e clique em buscar notícias.</li>
