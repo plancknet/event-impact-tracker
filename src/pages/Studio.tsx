@@ -86,7 +86,8 @@ export default function Studio() {
     updateProfile({ main_topic: "" });
     setGeneratedScript("");
     setResetTrigger((prev) => prev + 1);
-    handleStepChange(1);
+    setShowOnboarding(false);
+    setOnboardingStep(6);
   };
 
   const handleCompleteOnboarding = async () => {

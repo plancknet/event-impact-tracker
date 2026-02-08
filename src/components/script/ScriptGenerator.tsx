@@ -97,6 +97,7 @@ export function ScriptGenerator({
   const { t } = useLanguage();
   const [complementaryPrompt, setComplementaryPrompt] = useState("");
   const [topicDraft, setTopicDraft] = useState(profile.main_topic);
+  const [showHelp, setShowHelp] = useState(false);
   const [currentTone, setCurrentTone] = useState(profile.speaking_tone);
   const [currentDuration, setCurrentDuration] = useState(profile.target_duration);
   const [currentFormat, setCurrentFormat] = useState(profile.video_type);
@@ -412,6 +413,36 @@ export function ScriptGenerator({
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={() => setShowHelp((prev) => !prev)}>
+          {showHelp ? "Fechar ajuda" : "Ajuda"}
+        </Button>
+      </div>
+
+      {showHelp && (
+        <div className="rounded-xl border bg-card p-5 space-y-4">
+          <div className="text-sm text-muted-foreground">
+            Criar um roterio para vídeo é muito simples. Veja o passo a passo:
+          </div>
+          <ol className="list-decimal pl-5 space-y-2 text-sm">
+            <li>Digite o tema sobre o qual você quer falar e clique em buscar notícias.</li>
+            <li>Selecione 2 ou 3 notícias que você achar interessante.</li>
+            <li>Preencha o "Prompt complementar", como por exemplo "Finalize o roteiro com uma mensgem positiva".</li>
+            <li>Clique em "Gerar Roteiro" e aguarde menos de 30 segundos.</li>
+          </ol>
+          <div className="text-sm text-muted-foreground">
+            Prontinho... você tem um roteiro que poderá ser rodado no teleprompter e gravar seu vídeo.
+            Se quiser, você pode editar o texto e dar o seu toque final.
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Dica extra: Rode o texto no teleprompter e ajuste a velocidade de exibição e tamanho da fonte
+            para sua necessidade. Faça algumas leituras no teleprompter e rapidamente você estará apto a
+            gravar um vídeo com total segurança e com a sua personalidade.
+          </div>
+          <div className="text-sm font-medium">Vamos lá!</div>
+        </div>
+      )}
+
       <ScriptHistory
         currentScriptId={currentScriptId}
         onSelectScript={handleSelectScript}
