@@ -124,34 +124,58 @@ function validateUrl(url: string): { valid: boolean; error?: string } {
       return { valid: false, error: 'Invalid URL protocol. Only http and https are allowed' };
     }
     
-    // Block internal/private IP ranges (basic SSRF protection)
+    // Block internal/private IP ranges (comprehensive SSRF protection)
     const hostname = parsedUrl.hostname.toLowerCase();
+    
+    // CRITICAL: Block cloud metadata endpoint (AWS/GCP/Azure credential theft)
+    if (hostname === '169.254.169.254') {
+      return { valid: false, error: 'Metadata endpoint blocked' };
+    }
+    
+    // Block full link-local range 169.254.0.0/16
+    if (hostname.startsWith('169.254.')) {
+      return { valid: false, error: 'Link-local addresses blocked' };
+    }
+    
+    // Block localhost variants (IPv4 and IPv6)
     if (
       hostname === 'localhost' ||
+      hostname === 'localhost.' ||
       hostname === '127.0.0.1' ||
+      hostname === '0.0.0.0' ||
+      hostname === '::1' ||
+      hostname === '[::1]' ||
+      hostname.startsWith('0x7f') ||  // hex format
+      hostname.startsWith('0177')     // octal format
+    ) {
+      return { valid: false, error: 'Localhost blocked' };
+    }
+    
+    // Block private IPv4 ranges
+    if (
       hostname.startsWith('192.168.') ||
       hostname.startsWith('10.') ||
-      hostname.startsWith('172.16.') ||
-      hostname.startsWith('172.17.') ||
-      hostname.startsWith('172.18.') ||
-      hostname.startsWith('172.19.') ||
-      hostname.startsWith('172.20.') ||
-      hostname.startsWith('172.21.') ||
-      hostname.startsWith('172.22.') ||
-      hostname.startsWith('172.23.') ||
-      hostname.startsWith('172.24.') ||
-      hostname.startsWith('172.25.') ||
-      hostname.startsWith('172.26.') ||
-      hostname.startsWith('172.27.') ||
-      hostname.startsWith('172.28.') ||
-      hostname.startsWith('172.29.') ||
-      hostname.startsWith('172.30.') ||
-      hostname.startsWith('172.31.') ||
-      hostname === '0.0.0.0' ||
-      hostname.endsWith('.local') ||
-      hostname.endsWith('.internal')
+      /^172\.(1[6-9]|2[0-9]|3[01])\./.test(hostname)
     ) {
-      return { valid: false, error: 'Access to internal URLs is not allowed' };
+      return { valid: false, error: 'Private IPs blocked' };
+    }
+    
+    // Block IPv6 private/link-local ranges
+    if (
+      hostname.startsWith('fc') || hostname.startsWith('fd') ||       // ULA fc00::/7
+      hostname.startsWith('fe80:') || hostname.startsWith('[fe80:') || // Link-local
+      hostname.includes('::ffff:127') ||                               // IPv4-mapped localhost
+      hostname.includes('::ffff:10.') ||                               // IPv4-mapped 10.x
+      hostname.includes('::ffff:192.168') ||                           // IPv4-mapped 192.168.x
+      hostname.includes('::ffff:172.') ||                              // IPv4-mapped 172.x
+      hostname.includes('::ffff:169.254')                              // IPv4-mapped link-local
+    ) {
+      return { valid: false, error: 'Private IPv6 blocked' };
+    }
+    
+    // Block internal domains
+    if (hostname.endsWith('.local') || hostname.endsWith('.internal')) {
+      return { valid: false, error: 'Internal domains blocked' };
     }
     
     return { valid: true };

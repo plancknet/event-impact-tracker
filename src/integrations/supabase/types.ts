@@ -272,6 +272,30 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_subscription_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          payload: Json
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       teleprompter_scripts: {
         Row: {
           created_at: string
