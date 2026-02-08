@@ -41,14 +41,7 @@ const App = () => (
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/premium/success"
-            element={
-              <ProtectedRoute>
-                <PremiumSuccess />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/premium/success" element={<PremiumSuccess />} />
           <Route
             path="/"
             element={

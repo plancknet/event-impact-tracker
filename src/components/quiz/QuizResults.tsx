@@ -11,6 +11,17 @@ import { useToast } from "@/hooks/use-toast";
 
 const CHECKOUT_URL = "https://lastlink.com/p/CD24C75DE/checkout-payment/";
 
+const buildCheckoutUrl = (email?: string) => {
+  const url = new URL(CHECKOUT_URL);
+  const redirectUrl = `${window.location.origin}/premium/success`;
+  url.searchParams.set("redirect_url", redirectUrl);
+  if (email) {
+    url.searchParams.set("email", email);
+    url.searchParams.set("quiz_email", email);
+  }
+  return url.toString();
+};
+
 interface QuizResultsProps {
   answers: QuizAnswers;
 }
@@ -104,7 +115,8 @@ const QuizResults = ({ answers }: QuizResultsProps) => {
   const handleActivatePlan = async () => {
     setIsLoading(true);
     try {
-      window.location.href = CHECKOUT_URL;
+      const preferredEmail = sessionStorage.getItem("pendingQuizEmail") || undefined;
+      window.location.href = buildCheckoutUrl(preferredEmail || undefined);
     } catch (error: unknown) {
       console.error("Subscription error:", error);
       toast({

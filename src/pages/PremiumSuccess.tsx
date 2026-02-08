@@ -6,6 +6,8 @@ import { CheckCircle2, ArrowRight, PartyPopper, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
+
+const DEFAULT_PASSWORD = "12345678";
 export default function PremiumSuccess() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -13,6 +15,47 @@ export default function PremiumSuccess() {
   const [verifying, setVerifying] = useState(true);
   const [activated, setActivated] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoLoginLoading, setAutoLoginLoading] = useState(false);
+
+  useEffect(() => {
+    const attemptAutoLogin = async () => {
+      if (authLoading || user) return;
+      if (autoLoginLoading) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const email =
+        params.get("quiz_email") ||
+        params.get("email") ||
+        sessionStorage.getItem("pendingQuizEmail") ||
+        "";
+
+      if (!email) return;
+
+      setAutoLoginLoading(true);
+      try {
+        const response = await supabase.functions.invoke("lastlink-auto-login", {
+          body: { email },
+        });
+        if (response.error) {
+          console.error("Auto-login function error:", response.error);
+        } else if (response.data?.ok) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password: DEFAULT_PASSWORD,
+          });
+          if (signInError) {
+            console.error("Auto-login sign-in error:", signInError);
+          }
+        }
+      } catch (err) {
+        console.error("Auto-login error:", err);
+      } finally {
+        setAutoLoginLoading(false);
+      }
+    };
+
+    void attemptAutoLogin();
+  }, [authLoading, user, autoLoginLoading]);
 
   useEffect(() => {
     const verifyLicense = async () => {
@@ -55,7 +98,7 @@ export default function PremiumSuccess() {
   }, [user, authLoading]);
 
   // Still loading auth
-  if (authLoading) {
+  if (authLoading || autoLoginLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -93,7 +136,7 @@ export default function PremiumSuccess() {
             <Button
               size="lg"
               className="w-full gap-2"
-              onClick={() => navigate("/auth?redirect=/studio")}
+              onClick={() => navigate("/auth?redirect=/premium/success")}
             >
               {t("Fazer login")}
               <ArrowRight className="h-4 w-4" />

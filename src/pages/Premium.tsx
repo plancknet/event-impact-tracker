@@ -10,6 +10,16 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 
 const CHECKOUT_URL = "https://lastlink.com/p/CD24C75DE/checkout-payment/";
 
+const buildCheckoutUrl = (email?: string) => {
+  const url = new URL(CHECKOUT_URL);
+  const redirectUrl = `${window.location.origin}/premium/success`;
+  url.searchParams.set("redirect_url", redirectUrl);
+  if (email) {
+    url.searchParams.set("email", email);
+  }
+  return url.toString();
+};
+
 const featureKeys = [
   "Scripts ilimitados por mês",
   "Teleprompter profissional",
@@ -34,7 +44,7 @@ export default function Premium() {
 
     setIsLoading(true);
     try {
-      window.location.href = CHECKOUT_URL;
+      window.location.href = buildCheckoutUrl(user?.email || undefined);
     } catch (error: unknown) {
       console.error("Subscription error:", error);
       toast({

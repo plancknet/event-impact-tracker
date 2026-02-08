@@ -49,6 +49,18 @@ serve(async (req) => {
     }
 
     const buyerEmail = payload?.Data?.Buyer?.Email ?? null;
+    const quizEmail =
+      payload?.Data?.CustomFields?.quiz_email ??
+      payload?.Data?.CustomFields?.quizEmail ??
+      payload?.Data?.CustomFields?.email ??
+      payload?.Data?.Metadata?.quiz_email ??
+      payload?.Data?.Metadata?.quizEmail ??
+      payload?.Data?.QuizEmail ??
+      null;
+    const preferredEmail =
+      (typeof quizEmail === "string" && quizEmail.trim()) ||
+      (typeof buyerEmail === "string" && buyerEmail.trim()) ||
+      null;
 
     // Save event to lastlink_events table
     await supabaseAdmin
@@ -56,18 +68,18 @@ serve(async (req) => {
       .upsert({
         lastlink_event_id: eventId,
         event_type: eventType,
-        buyer_email: buyerEmail ?? "",
+        buyer_email: preferredEmail ?? "",
         payload,
         processed: false,
       }, { onConflict: "lastlink_event_id" });
 
-    if (buyerEmail) {
+    if (preferredEmail) {
       let userId: string | null = null;
 
       // Try to create user first - if exists, handle the error
       // Use default password - user must change on first login
       const { data: createdUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: buyerEmail,
+        email: preferredEmail,
         password: DEFAULT_PASSWORD,
         email_confirm: true,
         user_metadata: {
@@ -80,7 +92,7 @@ serve(async (req) => {
         const { data: quizData } = await supabaseAdmin
           .from("quiz_responses")
           .select("user_id")
-          .eq("email", buyerEmail)
+          .eq("email", preferredEmail)
           .limit(1)
           .maybeSingle();
 
@@ -89,7 +101,7 @@ serve(async (req) => {
         } else {
           // Try listUsers as fallback
           const { data: listData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-          const existingUser = listData?.users?.find(u => u.email === buyerEmail);
+          const existingUser = listData?.users?.find(u => u.email === preferredEmail);
           if (existingUser) {
             userId = existingUser.id;
           }
@@ -108,6 +120,12 @@ serve(async (req) => {
             },
             { onConflict: "user_id" },
           );
+
+        await supabaseAdmin
+          .from("quiz_responses")
+          .update({ user_id: userId })
+          .eq("email", preferredEmail)
+          .is("user_id", null);
 
         // Mark event as processed
         await supabaseAdmin
