@@ -23,22 +23,32 @@ export default function PremiumSuccess() {
       if (autoLoginLoading) return;
 
       const params = new URLSearchParams(window.location.search);
-      const email =
+      const emailRaw =
         params.get("quiz_email") ||
         params.get("email") ||
         sessionStorage.getItem("pendingQuizEmail") ||
         "";
 
+      const email = emailRaw.trim();
       if (!email) return;
+
+      // Avoid request loops if the function returns non-2xx (e.g. payment not found)
+      const attemptKey = `lastlink:autoLoginAttempted:${email.toLowerCase()}`;
+      if (sessionStorage.getItem(attemptKey) === "1") return;
+      sessionStorage.setItem(attemptKey, "1");
 
       setAutoLoginLoading(true);
       try {
         const response = await supabase.functions.invoke("lastlink-auto-login", {
           body: { email },
         });
+
         if (response.error) {
           console.error("Auto-login function error:", response.error);
-        } else if (response.data?.ok) {
+          return;
+        }
+
+        if (response.data?.ok) {
           const { error: signInError } = await supabase.auth.signInWithPassword({
             email,
             password: DEFAULT_PASSWORD,

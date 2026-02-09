@@ -15,7 +15,8 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const email = typeof body?.email === "string" ? body.email.trim() : "";
+    const emailRaw = typeof body?.email === "string" ? body.email : "";
+    const email = emailRaw.trim().toLowerCase();
 
     if (!email) {
       return new Response(JSON.stringify({ ok: false, error: "Email invalido." }), {
@@ -32,8 +33,8 @@ serve(async (req) => {
     const { data: eventData } = await supabaseAdmin
       .from("lastlink_events")
       .select("id")
-      .eq("buyer_email", email)
       .eq("event_type", "Purchase_Order_Confirmed")
+      .ilike("buyer_email", email)
       .maybeSingle();
 
     if (!eventData) {
