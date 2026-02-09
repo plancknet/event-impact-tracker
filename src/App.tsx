@@ -8,6 +8,7 @@ import Auth from "@/pages/Auth";
 import Premium from "@/pages/Premium";
 import PremiumSuccess from "@/pages/PremiumSuccess";
 import Quiz from "@/pages/Quiz";
+import QuizSales from "@/pages/QuizSales";
 import QuizAnalytics from "@/pages/QuizAnalytics";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
@@ -22,6 +23,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/quiz" element={<Quiz />} />
+          <Route path="/quiz/sales" element={<QuizSales />} />
           <Route
             path="/quiz/analytics"
             element={

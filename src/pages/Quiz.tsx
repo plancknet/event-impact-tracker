@@ -1,32 +1,17 @@
 import { useState, useEffect, Suspense, lazy } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import QuizQuestion from "@/components/quiz/QuizQuestion";
 import QuizIntro from "@/components/quiz/QuizIntro";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { ArrowLeft, Baby, GraduationCap, Briefcase, Users, UserCheck } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { QuizQuestionData } from "@/components/quiz/quizTypes";
 import { DEFAULT_CREATOR_PROFILE } from "@/types/creatorProfile";
 
-const CHECKOUT_URL = "https://lastlink.com/p/C7229FE68/checkout-payment/";
-
-const buildCheckoutUrl = (email?: string) => {
-  const url = new URL(CHECKOUT_URL);
-  const redirectUrl = `${window.location.origin}/premium/success`;
-  url.searchParams.set("redirect_url", redirectUrl);
-  if (email) {
-    url.searchParams.set("email", email);
-    url.searchParams.set("quiz_email", email);
-  }
-  return url.toString();
-};
-
 const QuizTransition = lazy(() => import("@/components/quiz/QuizTransition"));
 const QuizCoupon = lazy(() => import("@/components/quiz/QuizCoupon"));
 const QuizEmailCapture = lazy(() => import("@/components/quiz/QuizEmailCapture"));
-const QuizResults = lazy(() => import("@/components/quiz/QuizResults"));
 const QuizAgeHighlight = lazy(() => import("@/components/quiz/QuizAgeHighlight"));
 const QuizProcessing = lazy(() => import("@/components/quiz/QuizProcessing"));
 const QuizMidMessage = lazy(() => import("@/components/quiz/QuizMidMessage"));
@@ -39,8 +24,7 @@ export type QuizStep =
   | "processing"
   | "transition" 
   | "coupon" 
-  | "email" 
-  | "results";
+  | "email";
 
 export interface QuizAnswers {
   age_range?: string;
@@ -69,7 +53,6 @@ export interface QuizAnswers {
 const getSaoPauloTimestamp = () => {
   return new Date().toISOString();
 };
-
 
 const mapQuizExpertiseLevel = (level?: string) => {
   switch (level) {
@@ -252,8 +235,7 @@ const buildCreatorProfileFromQuiz = (answers: QuizAnswers) => {
 
 const Quiz = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const initialStep = searchParams.get("step") === "results" ? "results" : "intro";
+  const initialStep = "intro";
   const [step, setStep] = useState<QuizStep>(initialStep);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [questions, setQuestions] = useState<QuizQuestionData[]>([
@@ -275,12 +257,9 @@ const Quiz = () => {
   const [processingNextIndex, setProcessingNextIndex] = useState<number | null>(null);
   const [midMessageNextIndex, setMidMessageNextIndex] = useState<number | null>(null);
   const [answers, setAnswers] = useState<QuizAnswers>({});
-  const [email, setEmail] = useState("");
   const [quizId, setQuizId] = useState<string | null>(null);
   const [slideDirection, setSlideDirection] = useState<"left" | "right">("left");
-  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
 
   // Create quiz response on start
   const handleStart = async () => {
@@ -428,7 +407,6 @@ const Quiz = () => {
   };
 
   const handleEmailSubmit = async (submittedEmail: string) => {
-    setEmail(submittedEmail);
     const completedAt = getSaoPauloTimestamp();
     
     // Save email to quiz_responses - user creation happens only after payment via webhook
@@ -453,39 +431,8 @@ const Quiz = () => {
     sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
     sessionStorage.setItem("pendingQuizEmail", submittedEmail);
     
-    setStep("results");
+    navigate("/quiz/sales");
   };
-
-  const handleActivatePlan = () => {
-    if (authLoading) {
-      toast({
-        title: "Aguardando autenticação",
-        description: "Tente novamente em instantes.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!user) {
-      navigate("/auth?mode=signup&redirect=/premium");
-      return;
-    }
-
-    const startCheckout = async () => {
-      setIsCheckoutLoading(true);
-      try {
-        const preferredEmail = email || sessionStorage.getItem("pendingQuizEmail") || undefined;
-        window.location.href = buildCheckoutUrl(preferredEmail || undefined);
-      } catch (error: unknown) {
-        console.error("Subscription error:", error);
-        toast({
-          title: "Erro ao iniciar assinatura",
-          description: error instanceof Error ? error.message : "Tente novamente mais tarde.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsCheckoutLoading(false);
-      }
-    };
 
     void startCheckout();
   };
@@ -674,13 +621,6 @@ const Quiz = () => {
         </Suspense>
       )}
       
-      {step === "results" && (
-        <Suspense fallback={<div className="min-h-screen" />}>
-          <QuizResults 
-            answers={answers} 
-          />
-        </Suspense>
-      )}
     </div>
   );
 };
