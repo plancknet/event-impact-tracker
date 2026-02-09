@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
-const CHECKOUT_URL = "https://lastlink.com/p/CD24C75DE/checkout-payment/";
+const CHECKOUT_URL = "https://lastlink.com/p/C7229FE68/checkout-payment/";
 
 const buildCheckoutUrl = (email?: string) => {
   const url = new URL(CHECKOUT_URL);

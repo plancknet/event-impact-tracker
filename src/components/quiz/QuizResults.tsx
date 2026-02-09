@@ -9,7 +9,7 @@ import { QuizAnswers } from "@/pages/Quiz";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
-const CHECKOUT_URL = "https://lastlink.com/p/CD24C75DE/checkout-payment/";
+const CHECKOUT_URL = "https://lastlink.com/p/C7229FE68/checkout-payment/";
 
 const buildCheckoutUrl = (email?: string) => {
   const url = new URL(CHECKOUT_URL);
