@@ -105,7 +105,12 @@ const QuizResults = () => {
           </p>
         </div>
 
-        {/* Antes e Depois */}
+        
+        <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-4 text-center text-sm text-quiz-foreground shadow-sm">
+          Compra 100% segura, com criptografia de ponta a ponta.
+        </div>
+
+{/* Antes e Depois */}
         <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "150ms" }}>
           <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-5 space-y-5">
             <div className="space-y-3">
