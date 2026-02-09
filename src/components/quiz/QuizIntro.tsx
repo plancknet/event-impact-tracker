@@ -18,11 +18,6 @@ const QuizIntro = ({ onStart }: QuizIntroProps) => {
         <div className="w-full max-w-4xl">
           <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 rounded-full border border-quiz-border/70 bg-quiz-card/80 px-4 py-2 text-xs uppercase tracking-[0.3em] text-quiz-muted shadow-sm">
-                <span className="h-2 w-2 rounded-full bg-gradient-to-r from-quiz-blue to-quiz-purple" />
-                Quiz relâmpago
-              </div>
-
               <h1
                 className="text-balance text-4xl font-semibold leading-tight text-quiz-foreground sm:text-5xl lg:text-6xl"
                 style={{ fontFamily: titleFont }}
@@ -54,27 +49,15 @@ const QuizIntro = ({ onStart }: QuizIntroProps) => {
             </div>
 
             <div className="relative">
-              <div className="rounded-3xl border border-quiz-border/60 bg-quiz-card/90 p-6 shadow-[0_20px_80px_-40px_rgba(60,90,200,0.6)] backdrop-blur">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-[0.3em] text-quiz-muted">
-                      O que você recebe
-                    </span>
-                    <span className="rounded-full bg-quiz-selected px-3 py-1 text-xs font-semibold text-quiz-purple">
-                      3 minutos
-                    </span>
+              <div className="rounded-3xl border border-quiz-border/60 bg-quiz-card/90 p-8 shadow-[0_20px_80px_-40px_rgba(60,90,200,0.6)] backdrop-blur">
+                <div className="space-y-4 text-quiz-foreground" style={{ fontFamily: bodyFont }}>
+                  <div className="text-sm uppercase tracking-[0.3em] text-quiz-muted">3 minutos</div>
+                  <div className="text-2xl font-semibold text-quiz-foreground">
+                    Você está a um passo de criar com IA sob medida.
                   </div>
-                  <div className="space-y-3 text-sm text-quiz-foreground" style={{ fontFamily: bodyFont }}>
-                    <div className="rounded-2xl border border-quiz-border/60 bg-white/60 px-4 py-3">
-                      Um diagnóstico rápido do seu estilo de criação.
-                    </div>
-                    <div className="rounded-2xl border border-quiz-border/60 bg-white/60 px-4 py-3">
-                      Sugestões práticas para conteúdo e frequência.
-                    </div>
-                    <div className="rounded-2xl border border-quiz-border/60 bg-white/60 px-4 py-3">
-                      Um caminho claro para evoluir com IA personalizada.
-                    </div>
-                  </div>
+                  <p className="text-sm text-quiz-muted">
+                    Responda algumas perguntas rápidas e receba um caminho prático para crescer como criador.
+                  </p>
                 </div>
               </div>
               <div className="absolute -right-6 -top-6 hidden h-20 w-20 rounded-2xl border border-quiz-border/60 bg-white/70 shadow-lg backdrop-blur lg:block" />
