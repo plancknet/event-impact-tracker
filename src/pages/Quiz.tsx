@@ -2,6 +2,7 @@ import { useState, useEffect, Suspense, lazy } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import QuizQuestion from "@/components/quiz/QuizQuestion";
+import QuizIntro from "@/components/quiz/QuizIntro";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { ArrowLeft, Baby, GraduationCap, Briefcase, Users, UserCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,6 +32,7 @@ const QuizProcessing = lazy(() => import("@/components/quiz/QuizProcessing"));
 const QuizMidMessage = lazy(() => import("@/components/quiz/QuizMidMessage"));
 
 export type QuizStep = 
+  | "intro"
   | "questions" 
   | "age_highlight"
   | "mid_message"
@@ -251,7 +253,7 @@ const buildCreatorProfileFromQuiz = (answers: QuizAnswers) => {
 const Quiz = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const initialStep = searchParams.get("step") === "results" ? "results" : "questions";
+  const initialStep = searchParams.get("step") === "results" ? "results" : "intro";
   const [step, setStep] = useState<QuizStep>(initialStep);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [questions, setQuestions] = useState<QuizQuestionData[]>([
@@ -539,6 +541,11 @@ const Quiz = () => {
     setStep("transition");
   };
 
+  const handleIntroStart = () => {
+    setCurrentQuestion(0);
+    setStep("questions");
+  };
+
   useEffect(() => {
     if (!pendingAdvance || !isQuestionsLoaded) return;
     setPendingAdvance(false);
@@ -613,6 +620,8 @@ const Quiz = () => {
           />
         </div>
       )}
+
+      {step === "intro" && <QuizIntro onStart={handleIntroStart} />}
 
       {step === "age_highlight" && (
         <Suspense fallback={<div className="min-h-screen" />}>
