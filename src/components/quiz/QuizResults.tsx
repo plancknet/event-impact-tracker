@@ -89,7 +89,7 @@ const QuizResults = () => {
 
           <div className="flex items-center justify-center gap-2 text-quiz-purple font-semibold">
             <span className="line-through text-quiz-muted text-sm">R$ 78,90</span>
-            <span className="text-xl">R$ 47</span>
+            <span className="text-xl text-[150%]">R$ 47</span>
             <span className="bg-quiz-purple text-white text-xs px-2 py-1 rounded-full">-40%</span>
             <span className="text-xs text-quiz-muted font-medium">pagamento único</span>
           </div>
