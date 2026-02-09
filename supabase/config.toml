@@ -1,5 +1,11 @@
 project_id = "bficxnetrsuyzygutztn"
 
+[functions.lastlink-auto-login]
+verify_jwt = false
+
+[functions.lastlink-verify]
+verify_jwt = false
+
 [functions.extract-news-results]
 verify_jwt = false
 
