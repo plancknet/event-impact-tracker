@@ -105,8 +105,8 @@ const QuizResults = () => {
               />
             </picture>
           </div>
-          <div className="text-sm font-semibold text-quiz-foreground">
-            Oferta válida por {minutes}:{seconds} minutos
+          <div className="text-sm font-bold text-red-600">
+            Oferta valida por {minutes}:{seconds} minutos
           </div>
         </div>
       </header>
