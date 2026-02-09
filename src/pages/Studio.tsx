@@ -50,6 +50,15 @@ export default function Studio() {
     }
   }, [user]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("step") !== "roteiro") return;
+    setShowOnboarding(false);
+    setOnboardingStep(6);
+    params.delete("step");
+    navigate({ pathname: "/", search: params.toString() }, { replace: true });
+  }, [location.search, navigate]);
+
   const handleStepChange = (step: number) => {
     if (step >= 6) {
       setShowOnboarding(false);
