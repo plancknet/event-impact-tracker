@@ -48,11 +48,7 @@ const QuizIntro = ({ onStart }: QuizIntroProps) => {
               </button>
             </div>
 
-            <div className="relative hidden lg:block">
-              <div className="absolute -right-6 -top-6 h-20 w-20 rounded-2xl border border-quiz-border/60 bg-white/70 shadow-lg backdrop-blur" />
-              <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full border border-quiz-border/60 bg-white/70 shadow-lg backdrop-blur" />
-              <div className="h-full min-h-[260px] rounded-3xl border border-quiz-border/40 bg-quiz-card/40 backdrop-blur-sm" />
-            </div>
+            <div className="hidden lg:block" />
           </div>
         </div>
       </div>
