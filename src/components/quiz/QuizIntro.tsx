@@ -48,20 +48,10 @@ const QuizIntro = ({ onStart }: QuizIntroProps) => {
               </button>
             </div>
 
-            <div className="relative">
-              <div className="rounded-3xl border border-quiz-border/60 bg-quiz-card/90 p-8 shadow-[0_20px_80px_-40px_rgba(60,90,200,0.6)] backdrop-blur">
-                <div className="space-y-4 text-quiz-foreground" style={{ fontFamily: bodyFont }}>
-                  <div className="text-sm uppercase tracking-[0.3em] text-quiz-muted">3 minutos</div>
-                  <div className="text-2xl font-semibold text-quiz-foreground">
-                    Você está a um passo de criar com IA sob medida.
-                  </div>
-                  <p className="text-sm text-quiz-muted">
-                    Responda algumas perguntas rápidas e receba um caminho prático para crescer como criador.
-                  </p>
-                </div>
-              </div>
-              <div className="absolute -right-6 -top-6 hidden h-20 w-20 rounded-2xl border border-quiz-border/60 bg-white/70 shadow-lg backdrop-blur lg:block" />
-              <div className="absolute -bottom-6 -left-6 hidden h-24 w-24 rounded-full border border-quiz-border/60 bg-white/70 shadow-lg backdrop-blur lg:block" />
+            <div className="relative hidden lg:block">
+              <div className="absolute -right-6 -top-6 h-20 w-20 rounded-2xl border border-quiz-border/60 bg-white/70 shadow-lg backdrop-blur" />
+              <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full border border-quiz-border/60 bg-white/70 shadow-lg backdrop-blur" />
+              <div className="h-full min-h-[260px] rounded-3xl border border-quiz-border/40 bg-quiz-card/40 backdrop-blur-sm" />
             </div>
           </div>
         </div>
