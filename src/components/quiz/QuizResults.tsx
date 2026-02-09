@@ -97,6 +97,14 @@ const QuizResults = () => {
           {renderActivateButton()}
         </div>
 
+        {/* Destaque Acesso Vitalício */}
+        <div className="rounded-2xl border-2 border-quiz-purple/30 bg-gradient-to-br from-quiz-purple/10 to-quiz-blue/10 p-5 text-center space-y-2 animate-scale-up-card" style={{ animationDelay: "120ms" }}>
+          <p className="text-lg font-bold text-quiz-purple">♾️ Acesso vitalício</p>
+          <p className="text-sm text-quiz-foreground leading-relaxed">
+            Você faz um pagamento único de <span className="font-semibold">R$47</span> e tem acesso ao aplicativo com a IA personalizada para sempre!
+          </p>
+        </div>
+
         {/* Antes e Depois */}
         <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "150ms" }}>
           <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-5 space-y-5">
