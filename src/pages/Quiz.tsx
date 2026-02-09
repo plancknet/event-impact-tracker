@@ -434,8 +434,6 @@ const Quiz = () => {
     navigate("/quiz/sales");
   };
 
-    void startCheckout();
-  };
 
   const handleBackQuestion = () => {
     if (currentQuestion <= 0) return;
