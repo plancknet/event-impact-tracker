@@ -96,6 +96,41 @@ const QuizResults = () => {
           {renderActivateButton()}
         </div>
 
+        {/* Antes e Depois */}
+        <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "150ms" }}>
+          <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-5 space-y-5">
+            <div className="space-y-3">
+              <p className="text-base font-semibold text-quiz-foreground">😓 Antes do ThinkAndTalk</p>
+              <div className="space-y-2 text-sm text-quiz-foreground">
+                <p>❌ Passava horas olhando para a tela sem saber o que falar no vídeo</p>
+                <p>❌ Gravava vários takes e ainda assim não ficava satisfeito</p>
+                <p>❌ Perdida(o) sobre o que postar e quando postar</p>
+                <p>❌ Vídeos longos, confusos ou sem uma mensagem clara</p>
+                <p>❌ Dependia de inspiração (que quase nunca vinha)</p>
+                <p>❌ Falava travado(a), esquecia partes importantes ou se perdia no meio do vídeo</p>
+                <p>❌ Falta de consistência: alguns dias postava, depois sumia</p>
+                <p>❌ Sentia insegurança e vergonha ao gravar</p>
+                <p>❌ Conteúdo não convertia em seguidores, leads ou vendas</p>
+              </div>
+            </div>
+            <div className="border-t border-quiz-border/40" />
+            <div className="space-y-3">
+              <p className="text-base font-semibold text-quiz-foreground">🚀 Depois do ThinkAndTalk</p>
+              <div className="space-y-2 text-sm text-quiz-foreground">
+                <p>✅ Roteiros prontos em segundos, alinhados ao objetivo do vídeo</p>
+                <p>✅ Gravação fluida com teleprompter ajustável</p>
+                <p>✅ Clareza total sobre o que dizer, como dizer e em quanto tempo</p>
+                <p>✅ Conteúdos objetivos, envolventes e fáceis de entender</p>
+                <p>✅ Consistência real: postar virou rotina, não sofrimento</p>
+                <p>✅ Confiança ao falar, mesmo para quem é tímido ou iniciante</p>
+                <p>✅ Vídeos adaptados para Instagram, TikTok, YouTube, Reels, Shorts e Lives</p>
+                <p>✅ Mais engajamento, retenção e conexão com o público</p>
+                <p>✅ Mais autoridade, profissionalismo e resultados</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Depoimentos */}
         <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "180ms" }}>
           <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-5 space-y-4">
