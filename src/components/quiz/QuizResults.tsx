@@ -89,7 +89,7 @@ const QuizResults = () => {
 
           <div className="flex items-center justify-center gap-2 text-quiz-purple font-semibold">
             <span className="line-through text-quiz-muted text-sm">R$ 78,90</span>
-            <span className="text-xl text-[150%]">R$ 47</span>
+            <span className="text-xl text-[200%]">R$ 47</span>
             <span className="bg-quiz-purple text-white text-xs px-2 py-1 rounded-full">-40%</span>
             <span className="text-xs text-quiz-muted font-medium">pagamento único</span>
           </div>
@@ -199,27 +199,6 @@ const QuizResults = () => {
         </div>
 
         {renderActivateButton()}
-
-        {/* Compra Segura */}
-        <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "420ms" }}>
-          <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-5 space-y-4">
-            <p className="text-base font-semibold text-quiz-foreground text-center">🔒 Compra 100% segura</p>
-            <div className="flex items-center justify-center gap-4 flex-wrap">
-              {/* Card brand logos as styled badges */}
-              {["Visa", "Mastercard", "Elo", "Amex", "Hipercard"].map((brand) => (
-                <span
-                  key={brand}
-                  className="px-3 py-1.5 rounded-lg bg-quiz-background border border-quiz-border/60 text-xs font-semibold text-quiz-foreground shadow-sm"
-                >
-                  {brand}
-                </span>
-              ))}
-              <span className="px-3 py-1.5 rounded-lg bg-[hsl(172,66%,40%)] text-white text-xs font-semibold shadow-sm">
-                PIX
-              </span>
-            </div>
-          </div>
-        </div>
 
         {/* Garantia */}
         <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "480ms" }}>
