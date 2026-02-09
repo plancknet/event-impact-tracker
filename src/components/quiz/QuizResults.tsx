@@ -6,7 +6,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 const CHECKOUT_URL = "https://lastlink.com/p/C7229FE68/checkout-payment/";
@@ -24,7 +24,21 @@ const buildCheckoutUrl = (email?: string) => {
 
 const QuizResults = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState(600);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const start = Date.now();
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - start) / 1000);
+      const left = Math.max(0, 600 - elapsed);
+      setRemainingSeconds(left);
+      if (left === 0) {
+        clearInterval(interval);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleActivatePlan = async () => {
     setIsLoading(true);
@@ -64,8 +78,40 @@ const QuizResults = () => {
     </Button>
   );
 
+  const minutes = String(Math.floor(remainingSeconds / 60)).padStart(2, "0");
+  const seconds = String(remainingSeconds % 60).padStart(2, "0");
+
   return (
-    <div className="min-h-screen flex flex-col px-4 py-8 sm:px-6 animate-slide-in-right">
+    <div className="min-h-screen flex flex-col bg-quiz-background">
+      <header className="sticky top-0 z-50 border-b border-quiz-border/60 bg-quiz-card/90 backdrop-blur">
+        <div className="container max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <picture>
+              <source
+                type="image/avif"
+                srcSet="/imgs/ThinkAndTalk-64.avif 1x, /imgs/ThinkAndTalk-128.avif 2x"
+              />
+              <source
+                type="image/webp"
+                srcSet="/imgs/ThinkAndTalk-64.webp 1x, /imgs/ThinkAndTalk-128.webp 2x"
+              />
+              <img
+                src="/imgs/ThinkAndTalk.png"
+                alt="ThinkAndTalk"
+                className="h-8 w-auto"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
+              />
+            </picture>
+          </div>
+          <div className="text-sm font-semibold text-quiz-foreground">
+            Oferta válida por {minutes}:{seconds} minutos
+          </div>
+        </div>
+      </header>
+
+      <div className="flex flex-col px-4 py-8 sm:px-6 animate-slide-in-right">
       <div className="w-full max-w-lg mx-auto flex flex-col space-y-6">
         {/* Header Badge */}
         <div className="text-center space-y-2 animate-stagger-fade">
@@ -107,7 +153,7 @@ const QuizResults = () => {
 
         
         <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-4 text-center text-sm text-quiz-foreground shadow-sm">
-          Compra 100% segura, com criptografia de ponta a ponta.
+          ?? Compra 100% segura, com criptografia de ponta a ponta.
         </div>
 
 {/* Antes e Depois */}
@@ -222,6 +268,7 @@ const QuizResults = () => {
         <div className="pb-8">
           {renderActivateButton()}
         </div>
+      </div>
       </div>
     </div>
   );
