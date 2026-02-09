@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { Loader2 } from "lucide-react";
 import { QuizAnswers } from "@/pages/Quiz";
 
 interface QuizProcessingProps {
@@ -36,20 +37,31 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
 
   useEffect(() => {
     setCanContinue(false);
-    setVisibleLines(1);
+    setVisibleLines(0);
+    const first = setTimeout(() => setVisibleLines(1), 800);
     const second = setTimeout(() => setVisibleLines(2), 3000);
-    const third = setTimeout(() => setVisibleLines(3), 6000);
-    const ready = setTimeout(() => setCanContinue(true), 9000);
+    const third = setTimeout(() => {
+      setVisibleLines(3);
+      setCanContinue(true);
+    }, 5200);
     return () => {
+      clearTimeout(first);
       clearTimeout(second);
       clearTimeout(third);
-      clearTimeout(ready);
     };
   }, []);
 
   return (
     <div className="min-h-screen flex flex-col px-4 pt-2 pb-6 sm:px-6 animate-fade-in">
       <div className="flex-1 flex flex-col items-center justify-start w-full max-w-lg mx-auto text-center space-y-5">
+        <div className="flex items-center gap-3 text-quiz-muted text-sm uppercase tracking-[0.3em]">
+          <Loader2
+            className={`h-4 w-4 ${canContinue ? "opacity-0" : "animate-spin opacity-100"} transition-opacity duration-300`}
+          />
+          <span className={`${canContinue ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}>
+            Processando
+          </span>
+        </div>
         <p
           className={`text-quiz-foreground font-medium transition-opacity duration-500 ${visibleLines >= 1 ? "opacity-100" : "opacity-0"}`}
           style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
@@ -76,7 +88,6 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
           <button
             type="button"
             onClick={onComplete}
-            disabled={!canContinue}
             className="w-full max-w-xs h-12 text-base font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple text-white rounded-xl shadow-lg hover:opacity-90 transition-all duration-300 hover:scale-[1.01] animate-fade-in"
             style={{ fontFamily: quizFontFamily }}
           >
