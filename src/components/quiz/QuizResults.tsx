@@ -3,6 +3,7 @@ import {
   Target,
   ArrowRight,
   Loader2,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -56,7 +57,7 @@ const QuizResults = () => {
         </>
       ) : (
         <span className="flex items-center justify-center gap-2 whitespace-normal text-center leading-snug">
-          Ativar meu aplicativo personalizado
+          Ativar meu aplicativo personalizado por apenas R$ 47
           <ArrowRight className="h-5 w-5 flex-shrink-0" />
         </span>
       )}
@@ -174,7 +175,7 @@ const QuizResults = () => {
         {renderActivateButton()}
 
         {/* Como funciona */}
-        <div className="space-y-4 pb-8 animate-stagger-fade" style={{ animationDelay: "340ms" }}>
+        <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "340ms" }}>
           <p className="text-lg font-semibold text-quiz-foreground text-center">Como funciona?</p>
           <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-5 space-y-4">
             <div className="space-y-3 text-sm text-quiz-foreground">
@@ -187,6 +188,47 @@ const QuizResults = () => {
               ✨ Pronto — roteiro no teleprompter profissional
             </p>
           </div>
+        </div>
+
+        {renderActivateButton()}
+
+        {/* Compra Segura */}
+        <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "420ms" }}>
+          <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-5 space-y-4">
+            <p className="text-base font-semibold text-quiz-foreground text-center">🔒 Compra 100% segura</p>
+            <div className="flex items-center justify-center gap-4 flex-wrap">
+              {/* Card brand logos as styled badges */}
+              {["Visa", "Mastercard", "Elo", "Amex", "Hipercard"].map((brand) => (
+                <span
+                  key={brand}
+                  className="px-3 py-1.5 rounded-lg bg-quiz-background border border-quiz-border/60 text-xs font-semibold text-quiz-foreground shadow-sm"
+                >
+                  {brand}
+                </span>
+              ))}
+              <span className="px-3 py-1.5 rounded-lg bg-[hsl(172,66%,40%)] text-white text-xs font-semibold shadow-sm">
+                PIX
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Garantia */}
+        <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "480ms" }}>
+          <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-6 flex flex-col items-center text-center space-y-3">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center shadow-lg">
+              <ShieldCheck className="h-8 w-8 text-white" />
+            </div>
+            <p className="text-base font-semibold text-quiz-foreground">Garantia de 7 dias</p>
+            <p className="text-sm text-quiz-muted leading-relaxed">
+              Se você não ficar satisfeito, devolvemos 100% do seu dinheiro. Sem perguntas, sem burocracia.
+            </p>
+          </div>
+        </div>
+
+        {/* Botão final */}
+        <div className="pb-8">
+          {renderActivateButton()}
         </div>
       </div>
     </div>
