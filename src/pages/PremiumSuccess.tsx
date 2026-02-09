@@ -193,7 +193,7 @@ export default function PremiumSuccess() {
           <Button
             size="lg"
             className="w-full gap-2"
-            onClick={() => navigate(activated ? "/?step=roteiro" : "/premium/success")}
+            onClick={() => navigate("/?step=roteiro")}
           >
             {t("Começar a criar")}
             <ArrowRight className="h-4 w-4" />
