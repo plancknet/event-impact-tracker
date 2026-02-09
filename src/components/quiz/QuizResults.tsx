@@ -96,12 +96,10 @@ const QuizResults = () => {
           {renderActivateButton()}
         </div>
 
-        {/* Prova Social */}
+        {/* Depoimentos */}
         <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "180ms" }}>
-          <h2 className="text-lg font-semibold text-quiz-foreground">Prova social</h2>
           <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-5 space-y-4">
             <div className="space-y-2">
-              <p className="text-sm uppercase tracking-[0.2em] text-quiz-muted">Avaliacoes</p>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1">
                   {[...Array(5)].map((_, i) => (
@@ -109,69 +107,50 @@ const QuizResults = () => {
                   ))}
                 </div>
                 <span className="text-base font-semibold text-quiz-foreground">4.9/5</span>
-                <span className="text-sm text-quiz-muted">98% de Satisfacao</span>
+                <span className="text-sm text-quiz-muted">· 98% satisfação</span>
               </div>
             </div>
             <div className="space-y-3 text-sm text-quiz-foreground">
-              <p><span className="font-semibold">Maria Souza</span> - Ficou incrivel o resultado.</p>
-              <p><span className="font-semibold">Albero Dias</span> - Em menos de 5 minutos ficou pronto. Revolucionario!!!</p>
-              <p><span className="font-semibold">Ana Braga</span> - So com o celular eu consegui.</p>
-              <p><span className="font-semibold">Carlo Rocha</span> - Economizei tempo e muuuuuita grana. Sensacional!!</p>
+              <p className="italic">"Ficou incrível o resultado." — <span className="font-semibold">Maria S.</span></p>
+              <p className="italic">"Em menos de 5 minutos ficou pronto. Revolucionário!" — <span className="font-semibold">Alberto D.</span></p>
+              <p className="italic">"Só com o celular eu consegui." — <span className="font-semibold">Ana B.</span></p>
+              <p className="italic">"Economizei tempo e muita grana. Sensacional!" — <span className="font-semibold">Carlo R.</span></p>
             </div>
           </div>
         </div>
 
         {renderActivateButton()}
 
-        {/* Quebra de objecoes */}
+        {/* Diferencial */}
         <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "260ms" }}>
-          <h2 className="text-lg font-semibold text-quiz-foreground">Quebra de objecoes</h2>
           <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-5 space-y-4">
-            <p className="text-sm font-semibold text-quiz-purple uppercase tracking-[0.2em]">
-              Segredo Revelado
-            </p>
-            <p className="text-quiz-foreground">
-              A mesma tecnica que os grandes criadores de conteudo usam para criar videos.
+            <p className="text-quiz-foreground font-semibold text-base">
+              A mesma técnica que os grandes criadores usam para gravar vídeos profissionais — agora no seu celular.
             </p>
             <div className="space-y-3 text-sm text-quiz-foreground">
-              <p><span className="font-semibold">Segredo dos grandes criadores de conteudo</span> - Mesma tecnica utilizada pelos grandes influenciadores</p>
-              <p><span className="font-semibold">So precisa do celular</span> - Zero custo com edicao</p>
-              <p><span className="font-semibold">Resultado em 5 minutos</span> - Rapidez impressionante</p>
-              <p><span className="font-semibold">Sem conhecimento</span> - Qualquer pessoa consegue</p>
+              <p>✅ <span className="font-semibold">Técnica dos grandes criadores</span> — usada pelos maiores influenciadores</p>
+              <p>📱 <span className="font-semibold">Só precisa do celular</span> — zero custo com edição</p>
+              <p>⚡ <span className="font-semibold">Resultado em 5 minutos</span> — rapidez impressionante</p>
+              <p>🎯 <span className="font-semibold">Sem conhecimento técnico</span> — qualquer pessoa consegue</p>
             </div>
           </div>
         </div>
 
         {renderActivateButton()}
 
-        {/* Facilidade de Aplicacao */}
+        {/* Como funciona */}
         <div className="space-y-4 pb-8 animate-stagger-fade" style={{ animationDelay: "340ms" }}>
-          <h2 className="text-lg font-semibold text-quiz-foreground">Facilidade de Aplicacao</h2>
+          <p className="text-lg font-semibold text-quiz-foreground text-center">Como funciona?</p>
           <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-5 space-y-4">
-            <div className="space-y-2 text-sm text-quiz-foreground">
-              <p><span className="font-semibold">1</span> - Use o celular</p>
-              <p><span className="font-semibold">2</span> - Informe o tema do video</p>
-              <p><span className="font-semibold">3</span> - Selecione as noticias recentes</p>
-              <p><span className="font-semibold">4</span> - IA Processa</p>
+            <div className="space-y-3 text-sm text-quiz-foreground">
+              <p><span className="font-semibold text-quiz-purple">1.</span> Abra no celular</p>
+              <p><span className="font-semibold text-quiz-purple">2.</span> Informe o tema do vídeo</p>
+              <p><span className="font-semibold text-quiz-purple">3.</span> Selecione as notícias recentes</p>
+              <p><span className="font-semibold text-quiz-purple">4.</span> A IA cria o roteiro</p>
             </div>
-            <p className="text-quiz-foreground font-semibold">Pronto - Roteiro no teleprompter profissional</p>
-            <div className="pt-2 space-y-2 text-sm text-quiz-foreground">
-              <p className="text-sm uppercase tracking-[0.2em] text-quiz-muted">A Solucao Simples</p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <div className="rounded-xl border border-quiz-border/50 bg-white/70 px-3 py-2">
-                  <p className="text-xs text-quiz-muted">R$ 69,90 - apenas</p>
-                </div>
-                <div className="rounded-xl border border-quiz-border/50 bg-white/70 px-3 py-2">
-                  <p className="text-xs text-quiz-muted">5 minutos - rapido</p>
-                </div>
-                <div className="rounded-xl border border-quiz-border/50 bg-white/70 px-3 py-2">
-                  <p className="text-xs text-quiz-muted">Facil - Qualquer um</p>
-                </div>
-                <div className="rounded-xl border border-quiz-border/50 bg-white/70 px-3 py-2">
-                  <p className="text-xs text-quiz-muted">100% - independente</p>
-                </div>
-              </div>
-            </div>
+            <p className="text-quiz-foreground font-semibold text-center pt-2">
+              ✨ Pronto — roteiro no teleprompter profissional
+            </p>
           </div>
         </div>
       </div>
