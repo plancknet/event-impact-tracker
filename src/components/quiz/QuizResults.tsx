@@ -159,6 +159,10 @@ const QuizResults = () => {
           </span>
         </div>
 
+        <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-4 text-center text-sm text-quiz-foreground shadow-sm">
+          Tenha acesso a um grupo exclusivo no WhatsApp para networking e alavancagem para viralização de conteúdo.
+        </div>
+
 {/* Antes e Depois */}
         <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "150ms" }}>
           <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-5 space-y-5">
