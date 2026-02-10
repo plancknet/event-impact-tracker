@@ -153,7 +153,10 @@ const QuizResults = () => {
 
         
         <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-4 text-center text-sm text-quiz-foreground shadow-sm">
-          ?? Compra 100% segura, com criptografia de ponta a ponta.
+          <span className="inline-flex items-center justify-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-quiz-purple" />
+            Compra 100% segura, com criptografia de ponta a ponta.
+          </span>
         </div>
 
 {/* Antes e Depois */}
