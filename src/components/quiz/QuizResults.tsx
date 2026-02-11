@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n";
+import { supabase } from "@/integrations/supabase/client";
 
 const CHECKOUT_URL = "https://lastlink.com/p/C7229FE68/checkout-payment/";
 
@@ -28,6 +29,8 @@ const QuizResults = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState(600);
   const { toast } = useToast();
+  const quizId = sessionStorage.getItem("quizId");
+  const getSaoPauloTimestamp = () => new Date().toISOString();
 
   useEffect(() => {
     const start = Date.now();
@@ -40,10 +43,29 @@ const QuizResults = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleActivatePlan = async () => {
+  useEffect(() => {
+    if (!quizId) return;
+    supabase
+      .rpc("update_quiz_response", {
+        _quiz_id: quizId,
+        _data: { sales_page_at: getSaoPauloTimestamp() },
+      } as any)
+      .catch((error) => {
+        console.error("Failed to track sales page:", error);
+      });
+  }, [quizId]);
+
+  const handleActivatePlan = async (buttonIndex: number) => {
     setIsLoading(true);
     try {
       const preferredEmail = sessionStorage.getItem("pendingQuizEmail") || undefined;
+      if (quizId) {
+        const clickKey = `checkout_button_${buttonIndex}_at`;
+        await supabase.rpc("update_quiz_response", {
+          _quiz_id: quizId,
+          _data: { [clickKey]: getSaoPauloTimestamp() },
+        } as any);
+      }
       window.location.href = buildCheckoutUrl(preferredEmail || undefined);
     } catch (error: unknown) {
       console.error("Subscription error:", error);
@@ -57,9 +79,9 @@ const QuizResults = () => {
     }
   };
 
-  const renderActivateButton = () => (
+  const renderActivateButton = (buttonIndex: number) => (
     <Button
-      onClick={handleActivatePlan}
+      onClick={() => handleActivatePlan(buttonIndex)}
       size="lg"
       disabled={isLoading}
       className="w-full h-14 px-4 text-base sm:text-lg font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple hover:opacity-90 transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02]"
@@ -127,7 +149,7 @@ const QuizResults = () => {
             <span className="text-xs text-quiz-muted font-medium">{t("pagamento único")}</span>
           </div>
 
-          {renderActivateButton()}
+          {renderActivateButton(1)}
         </div>
 
         {/* Lifetime Access */}
@@ -214,7 +236,7 @@ const QuizResults = () => {
           </div>
         </div>
 
-        {renderActivateButton()}
+        {renderActivateButton(2)}
 
         {/* Differentials */}
         <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "260ms" }}>
@@ -231,7 +253,7 @@ const QuizResults = () => {
           </div>
         </div>
 
-        {renderActivateButton()}
+        {renderActivateButton(3)}
 
         {/* How it works */}
         <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "340ms" }}>
@@ -249,7 +271,7 @@ const QuizResults = () => {
           </div>
         </div>
 
-        {renderActivateButton()}
+        {renderActivateButton(4)}
 
         {/* Guarantee */}
         <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "480ms" }}>
@@ -266,7 +288,7 @@ const QuizResults = () => {
 
         {/* Final CTA */}
         <div className="pb-8">
-          {renderActivateButton()}
+          {renderActivateButton(5)}
         </div>
       </div>
       </div>

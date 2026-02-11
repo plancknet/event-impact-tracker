@@ -283,8 +283,10 @@ const Quiz = () => {
         variant: "destructive",
       });
       setQuizId(null);
+      sessionStorage.removeItem("quizId");
     } else {
       setQuizId(newQuizId);
+      sessionStorage.setItem("quizId", newQuizId);
     }
     setStep(initialStep);
   };

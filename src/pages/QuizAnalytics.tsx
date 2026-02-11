@@ -33,6 +33,12 @@ interface QuizResponse {
   speaking_tone: string | null;
   energy_level: string | null;
   content_goal: string | null;
+  sales_page_at: string | null;
+  checkout_button_1_at: string | null;
+  checkout_button_2_at: string | null;
+  checkout_button_3_at: string | null;
+  checkout_button_4_at: string | null;
+  checkout_button_5_at: string | null;
   // Timestamps for each question
   age_range_at: string | null;
   gender_at: string | null;
@@ -162,6 +168,32 @@ export default function QuizAnalytics() {
       label: "Email Capturado",
       count: withEmail,
       percentage: (withEmail / total) * 100,
+    });
+
+    const salesPage = responses.filter((r) => r.sales_page_at).length;
+    steps.push({
+      step: "sales_page",
+      label: "PÃ¡gina de Vendas",
+      count: salesPage,
+      percentage: (salesPage / total) * 100,
+    });
+
+    const checkoutButtons = [
+      { key: "checkout_button_1_at", label: "Clique Checkout (BotÃ£o 1)" },
+      { key: "checkout_button_2_at", label: "Clique Checkout (BotÃ£o 2)" },
+      { key: "checkout_button_3_at", label: "Clique Checkout (BotÃ£o 3)" },
+      { key: "checkout_button_4_at", label: "Clique Checkout (BotÃ£o 4)" },
+      { key: "checkout_button_5_at", label: "Clique Checkout (BotÃ£o 5)" },
+    ];
+
+    checkoutButtons.forEach((button) => {
+      const clickedCount = responses.filter((r) => r[button.key as keyof QuizResponse]).length;
+      steps.push({
+        step: button.key,
+        label: button.label,
+        count: clickedCount,
+        percentage: (clickedCount / total) * 100,
+      });
     });
 
     return steps;
