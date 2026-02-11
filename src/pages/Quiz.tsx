@@ -320,23 +320,21 @@ const Quiz = () => {
 
     // Save to database with dedicated timestamp column
     if (quizId) {
-      // Build update object with explicit keys
-      const updateData: Record<string, unknown> = {};
-      updateData[questionKey] = value;
-      updateData[timestampKey] = timestamp;
+      const rpcData: Record<string, unknown> = {};
+      rpcData[questionKey] = value;
+      rpcData[timestampKey] = timestamp;
       
-      console.log("Updating quiz response:", { quizId, questionKey, value, timestamp });
+      console.log("Updating quiz response via RPC:", { quizId, questionKey, value, timestamp });
       
-      const { data, error } = await supabase
-        .from("quiz_responses")
-        .update(updateData)
-        .eq("id", quizId)
-        .select();
+      const { error } = await supabase.rpc("update_quiz_response", {
+        _quiz_id: quizId,
+        _data: rpcData as unknown as Record<string, string>,
+      } as any);
       
       if (error) {
         console.error("Failed to update quiz response:", error);
       } else {
-        console.log("Quiz response updated successfully:", data);
+        console.log("Quiz response updated successfully");
       }
     }
 
@@ -378,11 +376,10 @@ const Quiz = () => {
   const handleTransitionComplete = async () => {
     if (quizId) {
       try {
-        await supabase
-          .from("quiz_responses")
-          .update({ transition_complete_at: getSaoPauloTimestamp() })
-          .eq("id", quizId)
-          .select();
+        await supabase.rpc("update_quiz_response", {
+          _quiz_id: quizId,
+          _data: { transition_complete_at: getSaoPauloTimestamp() },
+        } as any);
       } catch (err) {
         console.error("Transition complete update error:", err);
       }
@@ -393,14 +390,13 @@ const Quiz = () => {
   const handleCouponRevealed = async () => {
     if (quizId) {
       try {
-        await supabase
-          .from("quiz_responses")
-          .update({ 
+        await supabase.rpc("update_quiz_response", {
+          _quiz_id: quizId,
+          _data: { 
             coupon_revealed: true,
             coupon_revealed_at: getSaoPauloTimestamp(),
-          })
-          .eq("id", quizId)
-          .select();
+          },
+        } as any);
       } catch (err) {
         console.error("Coupon reveal update error:", err);
       }
@@ -414,15 +410,14 @@ const Quiz = () => {
     // Save email to quiz_responses - user creation happens only after payment via webhook
     if (quizId) {
       try {
-        await supabase
-          .from("quiz_responses")
-          .update({ 
+        await supabase.rpc("update_quiz_response", {
+          _quiz_id: quizId,
+          _data: { 
             email: submittedEmail,
             completed_at: completedAt,
             reached_results: true,
-          })
-          .eq("id", quizId)
-          .select();
+          },
+        } as any);
       } catch (err) {
         console.error("Email submit update error:", err);
       }

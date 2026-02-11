@@ -405,6 +405,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin_email: { Args: { _email: string }; Returns: boolean }
+      update_quiz_response: {
+        Args: { _data: Json; _quiz_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
