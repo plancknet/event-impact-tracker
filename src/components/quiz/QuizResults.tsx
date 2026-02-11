@@ -50,8 +50,8 @@ const QuizResults = () => {
         _quiz_id: quizId,
         _data: { sales_page_at: getSaoPauloTimestamp() },
       } as any)
-      .catch((error) => {
-        console.error("Failed to track sales page:", error);
+      .then(({ error }) => {
+        if (error) console.error("Failed to track sales page:", error);
       });
   }, [quizId]);
 

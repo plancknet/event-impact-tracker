@@ -173,17 +173,17 @@ export default function QuizAnalytics() {
     const salesPage = responses.filter((r) => r.sales_page_at).length;
     steps.push({
       step: "sales_page",
-      label: "PÃ¡gina de Vendas",
+      label: "Página de Vendas",
       count: salesPage,
       percentage: (salesPage / total) * 100,
     });
 
     const checkoutButtons = [
-      { key: "checkout_button_1_at", label: "Clique Checkout (BotÃ£o 1)" },
-      { key: "checkout_button_2_at", label: "Clique Checkout (BotÃ£o 2)" },
-      { key: "checkout_button_3_at", label: "Clique Checkout (BotÃ£o 3)" },
-      { key: "checkout_button_4_at", label: "Clique Checkout (BotÃ£o 4)" },
-      { key: "checkout_button_5_at", label: "Clique Checkout (BotÃ£o 5)" },
+      { key: "checkout_button_1_at", label: "Clique Checkout (Botão 1)" },
+      { key: "checkout_button_2_at", label: "Clique Checkout (Botão 2)" },
+      { key: "checkout_button_3_at", label: "Clique Checkout (Botão 3)" },
+      { key: "checkout_button_4_at", label: "Clique Checkout (Botão 4)" },
+      { key: "checkout_button_5_at", label: "Clique Checkout (Botão 5)" },
     ];
 
     checkoutButtons.forEach((button) => {
