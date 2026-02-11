@@ -131,6 +131,11 @@ export type Database = {
           audience_type_at: string | null
           biggest_challenge: string | null
           biggest_challenge_at: string | null
+          checkout_button_1_at: string | null
+          checkout_button_2_at: string | null
+          checkout_button_3_at: string | null
+          checkout_button_4_at: string | null
+          checkout_button_5_at: string | null
           comfort_recording: string | null
           comfort_recording_at: string | null
           completed_at: string | null
@@ -160,11 +165,6 @@ export type Database = {
           platforms_at: string | null
           reached_results: boolean | null
           sales_page_at: string | null
-          checkout_button_1_at: string | null
-          checkout_button_2_at: string | null
-          checkout_button_3_at: string | null
-          checkout_button_4_at: string | null
-          checkout_button_5_at: string | null
           session_started_at: string | null
           speaking_tone: string | null
           speaking_tone_at: string | null
@@ -187,6 +187,11 @@ export type Database = {
           audience_type_at?: string | null
           biggest_challenge?: string | null
           biggest_challenge_at?: string | null
+          checkout_button_1_at?: string | null
+          checkout_button_2_at?: string | null
+          checkout_button_3_at?: string | null
+          checkout_button_4_at?: string | null
+          checkout_button_5_at?: string | null
           comfort_recording?: string | null
           comfort_recording_at?: string | null
           completed_at?: string | null
@@ -216,11 +221,6 @@ export type Database = {
           platforms_at?: string | null
           reached_results?: boolean | null
           sales_page_at?: string | null
-          checkout_button_1_at?: string | null
-          checkout_button_2_at?: string | null
-          checkout_button_3_at?: string | null
-          checkout_button_4_at?: string | null
-          checkout_button_5_at?: string | null
           session_started_at?: string | null
           speaking_tone?: string | null
           speaking_tone_at?: string | null
@@ -243,6 +243,11 @@ export type Database = {
           audience_type_at?: string | null
           biggest_challenge?: string | null
           biggest_challenge_at?: string | null
+          checkout_button_1_at?: string | null
+          checkout_button_2_at?: string | null
+          checkout_button_3_at?: string | null
+          checkout_button_4_at?: string | null
+          checkout_button_5_at?: string | null
           comfort_recording?: string | null
           comfort_recording_at?: string | null
           completed_at?: string | null
@@ -272,11 +277,6 @@ export type Database = {
           platforms_at?: string | null
           reached_results?: boolean | null
           sales_page_at?: string | null
-          checkout_button_1_at?: string | null
-          checkout_button_2_at?: string | null
-          checkout_button_3_at?: string | null
-          checkout_button_4_at?: string | null
-          checkout_button_5_at?: string | null
           session_started_at?: string | null
           speaking_tone?: string | null
           speaking_tone_at?: string | null
