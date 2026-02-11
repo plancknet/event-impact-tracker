@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/i18n";
 
 interface QuizAgeHighlightProps {
   ageRange?: string;
@@ -8,10 +9,7 @@ interface QuizAgeHighlightProps {
   onContinue: () => void;
 }
 
-const ageImageSources: Record<
-  string,
-  { avif: string; webp: string }
-> = {
+const ageImageSources: Record<string, { avif: string; webp: string }> = {
   under_18: {
     avif: "/imgs/m18-512.avif 1x, /imgs/m18-1024.avif 2x",
     webp: "/imgs/m18-512.webp 1x, /imgs/m18-1024.webp 2x",
@@ -41,6 +39,7 @@ const QuizAgeHighlight = ({
   totalQuestions,
   onContinue,
 }: QuizAgeHighlightProps) => {
+  const { t } = useLanguage();
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
   const imageSources = ageRange ? ageImageSources[ageRange] : undefined;
   const quizFontFamily =
@@ -65,7 +64,6 @@ const QuizAgeHighlight = ({
 
   return (
     <div className="min-h-screen flex flex-col px-4 pt-2 pb-6 sm:px-6">
-      {/* Progress Bar - Mobile */}
       <div className="w-full max-w-lg mx-auto mb-4 md:hidden">
         <div className="h-1.5 bg-quiz-border/30 rounded-full overflow-hidden">
           <div
@@ -77,7 +75,6 @@ const QuizAgeHighlight = ({
 
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg mx-auto animate-slide-in-right">
         <div className="w-full grid gap-5">
-          {/* Image Card with scale animation */}
           <div className="w-full rounded-2xl border border-quiz-border/40 bg-quiz-card p-4 flex items-center justify-center animate-scale-up-card shadow-lg">
             {imageSources ? (
               <picture>
@@ -85,7 +82,7 @@ const QuizAgeHighlight = ({
                 <source type="image/webp" srcSet={imageSources.webp} />
                 <img
                   srcSet={imageSources.webp}
-                  alt="Depoimento"
+                  alt={t("Depoimento")}
                   className="max-h-64 w-auto object-contain"
                   loading="eager"
                   decoding="async"
@@ -96,27 +93,25 @@ const QuizAgeHighlight = ({
             )}
           </div>
 
-          {/* Text with stagger animation */}
           <p
             className="text-quiz-foreground font-medium text-center animate-stagger-fade"
             style={{ fontFamily: quizFontFamily, fontSize: "1.3rem", animationDelay: "100ms" }}
           >
-            Em <span className={highlightClass}>menos de 7 dias</span> eles conseguiram aumentar o número de{" "}
+            {t("Em menos de 7 dias eles conseguiram aumentar o número de")}{" "}
             <span className={highlightClass} style={{ fontSize: "1.95rem" }}>
-              {goalPhrase || "seguidores"}
+              {t(goalPhrase || "seguidores")}
             </span>
-            {" "}em <span className={highlightClass}>{goalIncrease}</span>. Você também vai{" "}
-            <span className={highlightClass} style={{ fontSize: "1.95rem" }}>conseguir</span>!
+            {" "}{t("em")} <span className={highlightClass}>{goalIncrease}</span>. {t("Você também vai")}{" "}
+            <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{t("conseguir")}</span>!
           </p>
 
-          {/* Button with delayed animation */}
           <Button
             onClick={onContinue}
             size="lg"
             className="w-full h-12 text-base font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple hover:opacity-90 transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.01] animate-stagger-fade"
             style={{ fontFamily: quizFontFamily, animationDelay: "200ms" }}
           >
-            Continuar
+            {t("Continuar")}
           </Button>
         </div>
       </div>

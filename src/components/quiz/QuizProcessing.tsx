@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Loader2 } from "lucide-react";
 import { QuizAnswers } from "@/pages/Quiz";
+import { useLanguage } from "@/i18n";
 
 interface QuizProcessingProps {
   currentIndex: number;
@@ -10,6 +11,7 @@ interface QuizProcessingProps {
 }
 
 const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: QuizProcessingProps) => {
+  const { t } = useLanguage();
   const [canContinue, setCanContinue] = useState(false);
   const [visibleLines, setVisibleLines] = useState(0);
   const quizFontFamily =
@@ -59,30 +61,30 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
             className={`h-4 w-4 ${canContinue ? "opacity-0" : "animate-spin opacity-100"} transition-opacity duration-300`}
           />
           <span className={`${canContinue ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}>
-            Processando
+            {t("Processando")}
           </span>
         </div>
         <p
           className={`text-quiz-foreground font-medium transition-opacity duration-500 ${visibleLines >= 1 ? "opacity-100" : "opacity-0"}`}
           style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
         >
-          Nossa <span className={highlightClass} style={{ fontSize: "1.95rem" }}>IA</span> vai criar um{" "}
-          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>aplicativo</span> personalizado para você...{" "}
-          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{confidencePhrase}</span> gravando vídeos.
+          {t("Nossa")} <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{t("IA")}</span> {t("vai criar um")}{" "}
+          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{t("aplicativo")}</span> {t("personalizado para você...")}{" "}
+          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{t(confidencePhrase)}</span> {t("gravando vídeos.")}
         </p>
         <p
           className={`text-quiz-foreground font-medium transition-opacity duration-500 ${visibleLines >= 2 ? "opacity-100" : "opacity-0"}`}
           style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
         >
-          Vamos te ajudar{" "}
-          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{challengePhrase}</span>, criando um{" "}
-          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>roteiro</span> prático.
+          {t("Vamos te ajudar")}{" "}
+          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{t(challengePhrase)}</span>, {t("criando um")}{" "}
+          <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{t("roteiro")}</span> {t("roteiro prático.")}
         </p>
         <p
           className={`text-quiz-foreground font-medium transition-opacity duration-500 ${visibleLines >= 3 ? "opacity-100" : "opacity-0"}`}
           style={{ fontFamily: quizFontFamily, fontSize: "1.3rem" }}
         >
-          Em menos de <span className={highlightClass} style={{ fontSize: "1.95rem" }}>5 minutos</span> seu vídeo estará pronto.
+          {t("Em menos de")} <span className={highlightClass} style={{ fontSize: "1.95rem" }}>{t("5 minutos")}</span> {t("seu vídeo estará pronto.")}
         </p>
         {visibleLines >= 3 && (
           <button
@@ -91,7 +93,7 @@ const QuizProcessing = ({ currentIndex, totalQuestions, answers, onComplete }: Q
             className="w-full max-w-xs h-12 text-base font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple text-white rounded-xl shadow-lg hover:opacity-90 transition-all duration-300 hover:scale-[1.01] animate-fade-in"
             style={{ fontFamily: quizFontFamily }}
           >
-            Continuar
+            {t("Continuar")}
           </button>
         )}
       </div>

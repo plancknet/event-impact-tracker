@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/i18n";
 
 interface AgeOption {
   value: string;
@@ -7,26 +8,11 @@ interface AgeOption {
 }
 
 const ageOptions: AgeOption[] = [
-  {
-    value: "under_18",
-    label: "Até 18",
-  },
-  {
-    value: "18_24",
-    label: "18-24",
-  },
-  {
-    value: "25_34",
-    label: "25-34",
-  },
-  {
-    value: "35_44",
-    label: "35-44",
-  },
-  {
-    value: "45_plus",
-    label: "45+",
-  },
+  { value: "under_18", label: "Até 18" },
+  { value: "18_24", label: "18-24" },
+  { value: "25_34", label: "25-34" },
+  { value: "35_44", label: "35-44" },
+  { value: "45_plus", label: "45+" },
 ];
 
 interface QuizAgeCardsProps {
@@ -35,32 +21,30 @@ interface QuizAgeCardsProps {
 }
 
 const QuizAgeCards = ({ onSelect, selectedValue }: QuizAgeCardsProps) => {
+  const { t } = useLanguage();
   const quizFontFamily =
     "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
   return (
     <div className="w-full space-y-6">
-      {/* Title */}
       <div className="text-center space-y-2">
         <h1
           className="text-2xl sm:text-3xl font-semibold text-quiz-foreground leading-tight"
           style={{ fontFamily: quizFontFamily }}
         >
-          O Segredo dos criadores de conteúdo
+          {t("O Segredo dos criadores de conteúdo")}
         </h1>
         <h2
           className="text-xl sm:text-2xl font-medium text-quiz-foreground"
           style={{ fontFamily: quizFontFamily }}
         >
-          Quantos anos você tem?
+          {t("Quantos anos você tem?")}
         </h2>
       </div>
 
-      {/* Age Cards Grid */}
       <div className="w-full grid gap-3 md:grid-cols-2">
         {ageOptions.map((option, index) => {
           const isSelected = selectedValue === option.value;
-
           return (
             <button
               key={option.value}
@@ -73,9 +57,7 @@ const QuizAgeCards = ({ onSelect, selectedValue }: QuizAgeCardsProps) => {
                   ? "border-quiz-purple bg-quiz-selected/50 shadow-sm"
                   : "border-quiz-border/40 bg-quiz-card"
               )}
-              style={{
-                animationDelay: `${index * 80}ms`,
-              }}
+              style={{ animationDelay: `${index * 80}ms` }}
             >
               <span
                 className={cn(
@@ -84,7 +66,7 @@ const QuizAgeCards = ({ onSelect, selectedValue }: QuizAgeCardsProps) => {
                 )}
                 style={{ fontFamily: quizFontFamily }}
               >
-                {option.label}
+                {t(option.label)}
               </span>
               <div
                 className={cn(

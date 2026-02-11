@@ -1,8 +1,11 @@
+import { useLanguage } from "@/i18n";
+
 interface QuizIntroProps {
   onStart: () => void;
 }
 
 const QuizIntro = ({ onStart }: QuizIntroProps) => {
+  const { t } = useLanguage();
   const titleFont =
     "'Space Grotesk', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   const bodyFont =
@@ -22,16 +25,16 @@ const QuizIntro = ({ onStart }: QuizIntroProps) => {
                 className="text-balance text-4xl font-semibold leading-tight text-quiz-foreground sm:text-5xl lg:text-6xl"
                 style={{ fontFamily: titleFont }}
               >
-                O Segredo dos criadores de conteúdo
+                {t("O Segredo dos criadores de conteúdo")}
               </h1>
 
               <p
                 className="text-balance text-base text-quiz-muted sm:text-lg"
                 style={{ fontFamily: bodyFont }}
               >
-                Os maiores criadores de conteúdos estão utilizando IA personalizada para impulsionar suas carreiras.
+                {t("Os maiores criadores de conteúdos estão utilizando IA personalizada para impulsionar suas carreiras.")}
                 <span className="mt-2 block text-quiz-foreground">
-                  Nós vamos te mostrar como, em apenas 3 minutos.
+                  {t("Nós vamos te mostrar como, em apenas 3 minutos.")}
                 </span>
               </p>
 
@@ -41,7 +44,7 @@ const QuizIntro = ({ onStart }: QuizIntroProps) => {
                 className="group inline-flex h-12 items-center justify-center gap-3 rounded-full bg-gradient-to-r from-quiz-blue to-quiz-purple px-8 text-base font-semibold text-white shadow-lg shadow-quiz-purple/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl focus-visible:outline-none"
                 style={{ fontFamily: titleFont }}
               >
-                Vamos lá!
+                {t("Vamos lá!")}
                 <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-sm transition-transform duration-300 group-hover:translate-x-0.5">
                   →
                 </span>
