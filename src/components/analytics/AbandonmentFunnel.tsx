@@ -74,8 +74,8 @@ export function AbandonmentFunnel({ steps }: AbandonmentFunnelProps) {
                 tick={{ fontSize: 11 }}
               />
               <Tooltip
-                formatter={(value: number, name: string) => [
-                  `${value.toFixed(1)}%`,
+                formatter={(value: number, name: string, props: any) => [
+                  `${value.toFixed(1)}% (${props.payload.count})`,
                   name === "percentage" ? "Alcançaram" : "Taxa de Abandono",
                 ]}
                 labelFormatter={(label) => label}
