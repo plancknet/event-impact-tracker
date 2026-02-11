@@ -2,40 +2,27 @@ import { useState } from "react";
 import { Mail, ArrowRight, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useLanguage } from "@/i18n";
 
 interface QuizEmailCaptureProps {
   onSubmit: (email: string) => void;
 }
 
 const QuizEmailCapture = ({ onSubmit }: QuizEmailCaptureProps) => {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const validateEmail = (email: string) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-  };
+  const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
-    if (!email.trim()) {
-      setError("Por favor, insira seu email");
-      return;
-    }
-
-    if (!validateEmail(email)) {
-      setError("Por favor, insira um email válido");
-      return;
-    }
-
+    if (!email.trim()) { setError(t("Por favor, insira seu email")); return; }
+    if (!validateEmail(email)) { setError(t("Por favor, insira um email válido")); return; }
     setIsLoading(true);
-    
-    // Simulate a brief delay
     await new Promise(resolve => setTimeout(resolve, 500));
-    
     onSubmit(email);
     setIsLoading(false);
   };
@@ -43,22 +30,19 @@ const QuizEmailCapture = ({ onSubmit }: QuizEmailCaptureProps) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 animate-slide-in-right">
       <div className="w-full max-w-md flex flex-col items-center text-center space-y-8">
-        {/* Icon */}
         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-quiz-blue/20 to-quiz-purple/20 flex items-center justify-center animate-scale-up-card">
           <Mail className="h-10 w-10 text-quiz-purple" />
         </div>
 
-        {/* Header */}
         <div className="space-y-3 animate-stagger-fade" style={{ animationDelay: "100ms" }}>
           <h2 className="text-2xl font-semibold text-quiz-foreground">
-            Quase lá! 🎉
+            {t("Quase lá! 🎉")}
           </h2>
           <p className="text-quiz-muted">
-            Garanta seu DESCONTO de 40% informando seu EMAIL. Ele será seu LOGIN no aplicativo.
+            {t("Garanta seu DESCONTO de 40% informando seu EMAIL. Ele será seu LOGIN no aplicativo.")}
           </p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="w-full space-y-4 animate-stagger-fade" style={{ animationDelay: "200ms" }}>
           <div className="space-y-2">
             <div className="relative">
@@ -67,16 +51,11 @@ const QuizEmailCapture = ({ onSubmit }: QuizEmailCaptureProps) => {
                 type="email"
                 placeholder="seu@email.com"
                 value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setError("");
-                }}
+                onChange={(e) => { setEmail(e.target.value); setError(""); }}
                 className="h-14 pl-12 text-base bg-quiz-card border-quiz-border rounded-xl focus:border-quiz-purple focus:ring-quiz-purple"
               />
             </div>
-            {error && (
-              <p className="text-sm text-red-500 text-left">{error}</p>
-            )}
+            {error && <p className="text-sm text-red-500 text-left">{error}</p>}
           </div>
 
           <Button
@@ -84,21 +63,18 @@ const QuizEmailCapture = ({ onSubmit }: QuizEmailCaptureProps) => {
             disabled={isLoading}
             className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple hover:opacity-90 transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.01]"
           >
-            {isLoading ? (
-              "Processando..."
-            ) : (
+            {isLoading ? t("Processando...") : (
               <>
-                Vamos lá!
+                {t("Vamos lá!")}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </>
             )}
           </Button>
         </form>
 
-        {/* Privacy Note */}
         <div className="flex items-center gap-2 text-sm text-quiz-muted animate-stagger-fade" style={{ animationDelay: "300ms" }}>
           <Shield className="h-4 w-4" />
-          <span>Seus dados estão seguros. Sem spam.</span>
+          <span>{t("Seus dados estão seguros. Sem spam.")}</span>
         </div>
       </div>
     </div>

@@ -8,6 +8,7 @@ import { ArrowLeft, Baby, GraduationCap, Briefcase, Users, UserCheck } from "luc
 import { useToast } from "@/hooks/use-toast";
 import { QuizQuestionData } from "@/components/quiz/quizTypes";
 import { DEFAULT_CREATOR_PROFILE } from "@/types/creatorProfile";
+import { useLanguage } from "@/i18n";
 
 const QuizTransition = lazy(() => import("@/components/quiz/QuizTransition"));
 const QuizCoupon = lazy(() => import("@/components/quiz/QuizCoupon"));
@@ -260,6 +261,7 @@ const Quiz = () => {
   const [quizId, setQuizId] = useState<string | null>(null);
   const [slideDirection, setSlideDirection] = useState<"left" | "right">("left");
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   // Create quiz response on start
   const handleStart = async () => {
@@ -276,8 +278,8 @@ const Quiz = () => {
     if (quizError) {
       console.error("Failed to create quiz response:", quizError);
       toast({
-        title: "Erro ao iniciar o quiz",
-        description: "Tente novamente em instantes.",
+        title: t("Erro ao iniciar o quiz"),
+        description: t("Tente novamente em instantes."),
         variant: "destructive",
       });
       setQuizId(null);

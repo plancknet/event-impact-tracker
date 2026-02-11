@@ -1,17 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
+import { useLanguage } from "@/i18n";
 
 interface QuizTransitionProps {
   onComplete: () => void;
 }
 
-const LOADING_MESSAGES = [
+const LOADING_MESSAGES_PT = [
   "Analisando seu perfil...",
   "Ajustando o tom ideal...",
   "Preparando seus roteiros...",
   "Criando seu plano personalizado...",
 ];
 
-const SOCIAL_PROOF = [
+const SOCIAL_PROOF_PT = [
   "\"Com o ThinkAndTalk, passei a gravar 3x mais rápido!\"",
   "\"Finalmente consegui manter consistência nos meus vídeos\"",
   "\"Minha confiança ao gravar aumentou demais\"",
@@ -20,6 +21,7 @@ const SOCIAL_PROOF = [
 ];
 
 const QuizTransition = ({ onComplete }: QuizTransitionProps) => {
+  const { t } = useLanguage();
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [currentProofIndex, setCurrentProofIndex] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -41,12 +43,12 @@ const QuizTransition = ({ onComplete }: QuizTransitionProps) => {
 
     const messageInterval = setInterval(() => {
       setCurrentMessageIndex((prev) =>
-        prev < LOADING_MESSAGES.length - 1 ? prev + 1 : prev
+        prev < LOADING_MESSAGES_PT.length - 1 ? prev + 1 : prev
       );
     }, 2000);
 
     const proofInterval = setInterval(() => {
-      setCurrentProofIndex((prev) => (prev + 1) % SOCIAL_PROOF.length);
+      setCurrentProofIndex((prev) => (prev + 1) % SOCIAL_PROOF_PT.length);
     }, 2500);
 
     const completeTimeout = setTimeout(() => {
@@ -83,7 +85,7 @@ const QuizTransition = ({ onComplete }: QuizTransitionProps) => {
             key={currentMessageIndex}
             className="text-lg font-medium text-quiz-foreground animate-fade-in"
           >
-            {LOADING_MESSAGES[currentMessageIndex]}
+            {t(LOADING_MESSAGES_PT[currentMessageIndex])}
           </p>
         </div>
 
@@ -106,9 +108,9 @@ const QuizTransition = ({ onComplete }: QuizTransitionProps) => {
             key={currentProofIndex}
             className="text-quiz-foreground italic animate-fade-in"
           >
-            {SOCIAL_PROOF[currentProofIndex]}
+            {t(SOCIAL_PROOF_PT[currentProofIndex])}
           </p>
-          <p className="text-sm text-quiz-muted mt-2">— Criador ThinkAndTalk</p>
+          <p className="text-sm text-quiz-muted mt-2">{t("— Criador ThinkAndTalk")}</p>
         </div>
       </div>
     </div>
