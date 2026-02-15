@@ -8,6 +8,10 @@ interface SalesHeroProps {
 
 const SalesHero = ({ onCtaClick, isLoading }: SalesHeroProps) => {
   const { t } = useLanguage();
+  const gender = sessionStorage.getItem("quizGender");
+  const heroImage = gender === "woman"
+    ? "/imgs/thinkandtalk_mulher.webp"
+    : "/imgs/thinkandtalk_homem.webp";
 
   return (
     <section className="text-center space-y-6 pt-8 pb-4 animate-stagger-fade">
@@ -26,6 +30,13 @@ const SalesHero = ({ onCtaClick, isLoading }: SalesHeroProps) => {
       <p className="text-base text-quiz-muted leading-relaxed max-w-md mx-auto">
         {t("O ThinkAndTalk cria roteiros personalizados para o seu nicho e ainda funciona como teleprompter inteligente.")}
       </p>
+
+      <img
+        src={heroImage}
+        alt={t("Criador de conteúdo usando o ThinkAndTalk")}
+        className="w-full max-w-sm mx-auto rounded-2xl shadow-lg"
+        loading="eager"
+      />
 
       <button
         onClick={onCtaClick}

@@ -429,6 +429,7 @@ const Quiz = () => {
     const creatorProfilePayload = buildCreatorProfileFromQuiz(answers);
     sessionStorage.setItem("draftCreatorProfile", JSON.stringify(creatorProfilePayload));
     sessionStorage.setItem("pendingQuizEmail", submittedEmail);
+    if (answers.gender) sessionStorage.setItem("quizGender", answers.gender);
     
     navigate("/quiz/sales");
   };
