@@ -5,14 +5,6 @@ const SalesScarcity = () => {
 
   return (
     <section className="space-y-4 animate-stagger-fade" style={{ animationDelay: "550ms" }}>
-      {/* Quiz bonus */}
-      <div className="rounded-2xl border border-quiz-purple/30 bg-gradient-to-br from-quiz-purple/5 to-quiz-blue/5 p-5 space-y-3 text-center">
-        <p className="text-sm font-bold text-quiz-purple">🎁 {t("Bônus exclusivo para quem fez o diagnóstico")}</p>
-        <p className="text-sm text-quiz-foreground leading-relaxed">
-          {t("Você receberá um pack de roteiros virais prontos para usar nos seus primeiros vídeos.")}
-        </p>
-      </div>
-
       {/* WhatsApp group */}
       <div className="rounded-2xl border border-green-200 bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 p-4 text-center text-sm text-green-900 shadow-sm">
         <span className="inline-flex items-center justify-center gap-2 font-semibold">
