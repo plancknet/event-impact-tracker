@@ -149,7 +149,6 @@ const QuizResults = () => {
             <span className="text-xs text-quiz-muted font-medium">{t("pagamento único")}</span>
           </div>
 
-          {renderActivateButton(1)}
         </div>
 
         {/* Lifetime Access */}
@@ -236,7 +235,7 @@ const QuizResults = () => {
           </div>
         </div>
 
-        {renderActivateButton(2)}
+        {renderActivateButton(1)}
 
         {/* Differentials */}
         <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "260ms" }}>
@@ -252,8 +251,6 @@ const QuizResults = () => {
             </div>
           </div>
         </div>
-
-        {renderActivateButton(3)}
 
         {/* How it works */}
         <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "340ms" }}>
@@ -271,8 +268,6 @@ const QuizResults = () => {
           </div>
         </div>
 
-        {renderActivateButton(4)}
-
         {/* Guarantee */}
         <div className="space-y-4 animate-stagger-fade" style={{ animationDelay: "480ms" }}>
           <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-6 flex flex-col items-center text-center space-y-3">
@@ -288,7 +283,7 @@ const QuizResults = () => {
 
         {/* Final CTA */}
         <div className="pb-8">
-          {renderActivateButton(5)}
+          {renderActivateButton(2)}
         </div>
       </div>
       </div>

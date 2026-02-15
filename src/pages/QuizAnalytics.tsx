@@ -36,9 +36,6 @@ interface QuizResponse {
   sales_page_at: string | null;
   checkout_button_1_at: string | null;
   checkout_button_2_at: string | null;
-  checkout_button_3_at: string | null;
-  checkout_button_4_at: string | null;
-  checkout_button_5_at: string | null;
   // Timestamps for each question
   age_range_at: string | null;
   gender_at: string | null;
@@ -181,9 +178,6 @@ export default function QuizAnalytics() {
     const checkoutButtons = [
       { key: "checkout_button_1_at", label: "Clique Checkout (Botão 1)" },
       { key: "checkout_button_2_at", label: "Clique Checkout (Botão 2)" },
-      { key: "checkout_button_3_at", label: "Clique Checkout (Botão 3)" },
-      { key: "checkout_button_4_at", label: "Clique Checkout (Botão 4)" },
-      { key: "checkout_button_5_at", label: "Clique Checkout (Botão 5)" },
     ];
 
     checkoutButtons.forEach((button) => {

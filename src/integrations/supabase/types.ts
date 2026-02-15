@@ -133,9 +133,6 @@ export type Database = {
           biggest_challenge_at: string | null
           checkout_button_1_at: string | null
           checkout_button_2_at: string | null
-          checkout_button_3_at: string | null
-          checkout_button_4_at: string | null
-          checkout_button_5_at: string | null
           comfort_recording: string | null
           comfort_recording_at: string | null
           completed_at: string | null
@@ -189,9 +186,6 @@ export type Database = {
           biggest_challenge_at?: string | null
           checkout_button_1_at?: string | null
           checkout_button_2_at?: string | null
-          checkout_button_3_at?: string | null
-          checkout_button_4_at?: string | null
-          checkout_button_5_at?: string | null
           comfort_recording?: string | null
           comfort_recording_at?: string | null
           completed_at?: string | null
@@ -245,9 +239,6 @@ export type Database = {
           biggest_challenge_at?: string | null
           checkout_button_1_at?: string | null
           checkout_button_2_at?: string | null
-          checkout_button_3_at?: string | null
-          checkout_button_4_at?: string | null
-          checkout_button_5_at?: string | null
           comfort_recording?: string | null
           comfort_recording_at?: string | null
           completed_at?: string | null
