@@ -32,8 +32,7 @@ const QuizIntro = ({ onStart }: QuizIntroProps) => {
                 className="text-balance text-base text-quiz-muted sm:text-lg"
                 style={{ fontFamily: bodyFont }}
               >
-                {t("Os maiores criadores de conteúdos estão utilizando IA personalizada para impulsionar suas carreiras.")}
-                <span className="mt-2 block text-quiz-foreground">
+                <span className="text-quiz-foreground">
                   {t("Nós vamos te mostrar como, em apenas 3 minutos.")}
                 </span>
               </p>
