@@ -1,29 +1,28 @@
 
+# Filtro por data e soma de cliques no checkout -- Analytics
 
-## Ajuste no botão "Começar a criar" da /premium/success
+## O que sera feito
 
-### Problema atual
-O botão navega para `/?step=roteiro` apenas quando `activated` é `true`. Se `activated` for `false`, redireciona de volta para `/premium/success`, criando um loop.
+1. **Filtro por range de data (De / Ate)**
+   - Dois campos de data (usando o componente `DateFilter` ja existente) no topo da pagina, ao lado do titulo
+   - Ao preencher as datas, a query ao banco filtra `session_started_at` pelo intervalo selecionado
+   - Os dados recarregam automaticamente quando ambas as datas estao completas (10 caracteres cada)
 
-### Solução
-Alterar o botão para **sempre** navegar para `/?step=roteiro`. A rota `/` ja é protegida pelo `ProtectedRoute`, que:
-- Redireciona para `/auth` se o usuário não estiver autenticado
-- Redireciona para `/quiz?step=results` se não tiver licença
+2. **Card de cliques no checkout**
+   - Novo card nos summary cards (grid passara de 4 para 5 colunas) com:
+     - Total de cliques (botao 1 + botao 2)
+     - Detalhe abaixo: "Botao 1: X | Botao 2: Y"
+   - Icone: `MousePointerClick` do lucide-react
 
-Isso garante o comportamento desejado sem lógica extra.
+## Detalhes tecnicos
 
-### Alteracao tecnica
+### `src/pages/QuizAnalytics.tsx`
 
-**Arquivo:** `src/pages/PremiumSuccess.tsx`
-
-Linha do botão (aproximadamente linha 168):
-```tsx
-// De:
-onClick={() => navigate(activated ? "/?step=roteiro" : "/premium/success")}
-
-// Para:
-onClick={() => navigate("/?step=roteiro")}
-```
-
-Apenas uma linha precisa ser alterada.
-
+- Adicionar estados `startDate` e `endDate` (strings no formato dd/mm/aaaa)
+- Converter dd/mm/aaaa para ISO (aaaa-mm-dd) para usar no filtro `.gte()` e `.lte()` da query Supabase
+- Re-fetch dos dados quando ambas as datas estiverem preenchidas (10 chars) -- useEffect com dependencia nas datas
+- Na funcao `fetchResponses`, aplicar `.gte("session_started_at", isoStart)` e `.lte("session_started_at", isoEnd + "T23:59:59")` quando os filtros estiverem preenchidos
+- Calcular `checkoutClicks` (contagem de `checkout_button_1_at` e `checkout_button_2_at` nao-nulos) a partir dos `responses` ja filtrados
+- Adicionar o 5o card no grid com os totais
+- Renderizar os dois `DateFilter` entre o titulo e os cards, com labels "De" e "Ate"
+- Ajustar grid para `md:grid-cols-5`
