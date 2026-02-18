@@ -54,12 +54,14 @@ const CheckoutTransition = ({ onComplete }: CheckoutTransitionProps) => {
           <p className="text-sm text-quiz-muted leading-relaxed">
             Você será direcionado para a plataforma oficial de pagamento
           </p>
-          <img
-            src="/imgs/lastlink_logo.webp"
-            alt="Lastlink"
-            className="h-8 mx-auto object-contain"
-            loading="eager"
-          />
+          <div className="bg-black rounded-lg px-4 py-3 inline-block">
+            <img
+              src="/imgs/lastlink_logo.webp"
+              alt="Lastlink"
+              className="h-8 mx-auto object-contain"
+              loading="eager"
+            />
+          </div>
         </div>
       </div>
     </div>
