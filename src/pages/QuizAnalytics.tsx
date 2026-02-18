@@ -142,7 +142,13 @@ export default function QuizAnalytics() {
   }, [startDate, endDate]);
 
   useEffect(() => {
-    fetchResponses();
+    // Only fetch when both dates are complete or both are empty
+    const startComplete = startDate.length === 10;
+    const endComplete = endDate.length === 10;
+    const bothEmpty = startDate.length === 0 && endDate.length === 0;
+    if (bothEmpty || (startComplete && endComplete) || (startComplete && !endDate) || (!startDate && endComplete)) {
+      fetchResponses();
+    }
   }, [fetchResponses]);
 
   const calculateCompletionRate = (): { completed: number; total: number; rate: number } => {
