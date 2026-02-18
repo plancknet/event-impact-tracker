@@ -131,7 +131,9 @@ export default function QuizAnalytics() {
       const { data, error } = await query;
       if (error) throw error;
 
-      setResponses((data || []) as QuizResponse[]);
+      // Only include sessions where age_range was answered
+      const filtered = ((data || []) as QuizResponse[]).filter((r) => r.age_range_at !== null);
+      setResponses(filtered);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar dados");
     } finally {
@@ -197,22 +199,16 @@ export default function QuizAnalytics() {
       percentage: (salesPage / total) * 100,
     });
 
-    const checkoutButtons = [
-      { key: "checkout_button_1_at", label: "Clique Checkout (Botão 1)" },
-      { key: "checkout_button_2_at", label: "Clique Checkout (Botão 2)" },
-    ];
-
-    checkoutButtons.forEach((button) => {
-      const clickedCount = responses.filter((r) => r[button.key as keyof QuizResponse]).length;
-      steps.push({
-        step: button.key,
-        label: button.label,
-        count: clickedCount,
-        percentage: (clickedCount / total) * 100,
-      });
+    const checkoutClicked = responses.filter((r) => r.checkout_button_1_at || r.checkout_button_2_at).length;
+    steps.push({
+      step: "checkout_total",
+      label: "Clique Checkout (Total)",
+      count: checkoutClicked,
+      percentage: (checkoutClicked / total) * 100,
     });
 
-    return steps;
+    // Filter out steps with zero count (except the first "start" step)
+    return steps.filter((s, i) => i === 0 || s.count > 0);
   };
 
   const calculateTimePerQuestion = (): QuestionTime[] => {
