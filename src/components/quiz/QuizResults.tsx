@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import SalesSocialProof from "@/components/sales/SalesSocialProof";
 import SalesOffer from "@/components/sales/SalesOffer";
 import SalesScarcity from "@/components/sales/SalesScarcity";
 import SalesFinalCta from "@/components/sales/SalesFinalCta";
+import CheckoutTransition from "@/components/sales/CheckoutTransition";
 
 const CHECKOUT_URL = "https://lastlink.com/p/C7229FE68/checkout-payment/";
 
@@ -30,6 +31,8 @@ const buildCheckoutUrl = (email?: string) => {
 const QuizResults = () => {
   const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
+  const [showTransition, setShowTransition] = useState(false);
+  const [pendingRedirectUrl, setPendingRedirectUrl] = useState<string | null>(null);
   const [remainingSeconds, setRemainingSeconds] = useState(600);
   const { toast } = useToast();
   const quizId = sessionStorage.getItem("quizId");
@@ -71,7 +74,9 @@ const QuizResults = () => {
           _data: { [clickKey]: getSaoPauloTimestamp() },
         } as any);
       }
-      window.location.href = buildCheckoutUrl(preferredEmail || undefined);
+      const url = buildCheckoutUrl(preferredEmail || undefined);
+      setPendingRedirectUrl(url);
+      setShowTransition(true);
     } catch (error: unknown) {
       console.error("Subscription error:", error);
       toast({
@@ -79,16 +84,22 @@ const QuizResults = () => {
         description: error instanceof Error ? error.message : t("Tente novamente mais tarde."),
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
+
+  const handleTransitionComplete = useCallback(() => {
+    if (pendingRedirectUrl) {
+      window.location.href = pendingRedirectUrl;
+    }
+  }, [pendingRedirectUrl]);
 
   const minutes = String(Math.floor(remainingSeconds / 60)).padStart(2, "0");
   const seconds = String(remainingSeconds % 60).padStart(2, "0");
 
   return (
     <div className="min-h-screen flex flex-col bg-quiz-background">
+      {showTransition && <CheckoutTransition onComplete={handleTransitionComplete} />}
       <SalesHeader minutes={minutes} seconds={seconds} />
 
       <div className="flex-1 px-4 sm:px-6">
