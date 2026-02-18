@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,7 +6,8 @@ import { QUIZ_QUESTIONS } from "@/components/quiz/quizData";
 import { AbandonmentFunnel } from "@/components/analytics/AbandonmentFunnel";
 import { TimePerQuestion } from "@/components/analytics/TimePerQuestion";
 import { RecentSessions } from "@/components/analytics/RecentSessions";
-import { Loader2, BarChart3, Clock, Users, TrendingDown } from "lucide-react";
+import { DateFilter } from "@/components/DateFilter";
+import { Loader2, BarChart3, Clock, Users, TrendingDown, MousePointerClick } from "lucide-react";
 
 interface QuizResponse {
   id: string;
@@ -97,20 +98,37 @@ export default function QuizAnalytics() {
   const [responses, setResponses] = useState<QuizResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
-  useEffect(() => {
-    fetchResponses();
-  }, []);
+  const parseDateToISO = (ddmmyyyy: string): string | null => {
+    if (ddmmyyyy.length !== 10) return null;
+    const [dd, mm, yyyy] = ddmmyyyy.split("/");
+    if (!dd || !mm || !yyyy || yyyy.length !== 4) return null;
+    return `${yyyy}-${mm}-${dd}`;
+  };
 
-  const fetchResponses = async () => {
+  const fetchResponses = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      setLoading(true);
+      let query = supabase
         .from("quiz_responses")
         .select("*")
         .not("session_started_at", "is", null)
         .order("session_started_at", { ascending: false })
         .limit(500);
 
+      const isoStart = parseDateToISO(startDate);
+      const isoEnd = parseDateToISO(endDate);
+
+      if (isoStart) {
+        query = query.gte("session_started_at", isoStart);
+      }
+      if (isoEnd) {
+        query = query.lte("session_started_at", isoEnd + "T23:59:59");
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
 
       setResponses((data || []) as QuizResponse[]);
@@ -119,7 +137,11 @@ export default function QuizAnalytics() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    fetchResponses();
+  }, [fetchResponses]);
 
   const calculateCompletionRate = (): { completed: number; total: number; rate: number } => {
     const total = responses.length;
@@ -308,16 +330,28 @@ export default function QuizAnalytics() {
   const questionTimes = calculateTimePerQuestion();
   const sessionsForDisplay = getSessionsForDisplay();
 
+  const checkoutBtn1 = responses.filter((r) => r.checkout_button_1_at).length;
+  const checkoutBtn2 = responses.filter((r) => r.checkout_button_2_at).length;
+  const checkoutTotal = checkoutBtn1 + checkoutBtn2;
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center gap-3">
-          <BarChart3 className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold text-foreground">Analytics do Quiz</h1>
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <BarChart3 className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold text-foreground">Analytics do Quiz</h1>
+          </div>
+          <div className="flex items-center gap-2 md:ml-auto">
+            <span className="text-sm text-muted-foreground">De</span>
+            <DateFilter value={startDate} onChange={setStartDate} />
+            <span className="text-sm text-muted-foreground">Até</span>
+            <DateFilter value={endDate} onChange={setEndDate} />
+          </div>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -375,6 +409,21 @@ export default function QuizAnalytics() {
                   : 0}
                 s
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Cliques Checkout
+              </CardTitle>
+              <MousePointerClick className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{checkoutTotal}</div>
+              <p className="text-xs text-muted-foreground">
+                Botão 1: {checkoutBtn1} | Botão 2: {checkoutBtn2}
+              </p>
             </CardContent>
           </Card>
         </div>
