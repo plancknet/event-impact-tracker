@@ -12,6 +12,8 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { QUIZ_QUESTIONS } from "@/components/quiz/quizData";
 import { SortableTableHead, type SortDirection } from "@/components/SortableTableHead";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 
 interface SessionDisplay {
   id: string;
@@ -87,10 +89,33 @@ export function RecentSessions({ sessions }: RecentSessionsProps) {
     });
   }, [sessions, sort]);
 
+  const exportCsv = () => {
+    const headers = ["Início", "Questões", "Duração", "Status", "Email"];
+    const rows = sortedSessions.map((s) => [
+      formatDate(s.session_started_at),
+      `${s.answered_count}/${totalQuestions}`,
+      calculateDuration(s),
+      s.reached_results ? "Concluído" : "Abandonou",
+      s.email || "",
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sessoes_quiz_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Sessões Recentes</CardTitle>
+        <Button variant="outline" size="sm" onClick={exportCsv} disabled={sessions.length === 0}>
+          <Download className="h-4 w-4 mr-1" />
+          Exportar CSV
+        </Button>
       </CardHeader>
       <CardContent>
         <Table>
