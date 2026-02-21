@@ -12,8 +12,15 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3000',
 ];
 
+function isAllowedOrigin(origin: string): boolean {
+  if (ALLOWED_ORIGINS.some((o) => origin.startsWith(o.replace(/\/$/, '')))) return true;
+  // Allow Lovable preview URLs
+  if (/^https:\/\/id-preview--[a-z0-9-]+\.lovable\.app$/.test(origin)) return true;
+  return false;
+}
+
 function getCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = origin && ALLOWED_ORIGINS.some((o) => origin.startsWith(o.replace(/\/$/, '')))
+  const allowedOrigin = origin && isAllowedOrigin(origin)
     ? origin
     : ALLOWED_ORIGINS[0];
 
