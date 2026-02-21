@@ -110,6 +110,9 @@ export default function Demo() {
             },
             complementaryPrompt: `Tema principal: ${topic.trim()}`,
           },
+          {
+            allowGuest: true,
+          },
         );
 
         if (!script) {

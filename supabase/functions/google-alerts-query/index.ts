@@ -4,17 +4,21 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const ALLOWED_ORIGINS = [
   'https://bficxnetrsuyzygutztn.lovableproject.com',
   'https://thinkandtalk.lovable.app',
+  'https://thinkandtalk.site',
+  'https://www.thinkandtalk.site',
   'http://localhost:5173',
   'http://localhost:3000',
 ];
 
 function getCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = origin && ALLOWED_ORIGINS.some(o => origin.startsWith(o.replace(/\/$/, ''))) 
-    ? origin 
+  const allowedOrigin = origin && ALLOWED_ORIGINS.some((o) => origin.startsWith(o.replace(/\/$/, '')))
+    ? origin
     : ALLOWED_ORIGINS[0];
+
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   };
 }
 

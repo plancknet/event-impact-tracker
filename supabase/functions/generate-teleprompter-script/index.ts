@@ -6,17 +6,21 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const ALLOWED_ORIGINS = [
   'https://bficxnetrsuyzygutztn.lovableproject.com',
   'https://thinkandtalk.lovable.app',
+  'https://thinkandtalk.site',
+  'https://www.thinkandtalk.site',
   'http://localhost:5173',
   'http://localhost:3000',
 ];
 
 function getCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = origin && ALLOWED_ORIGINS.some(o => origin.startsWith(o.replace(/\/$/, ''))) 
-    ? origin 
+  const allowedOrigin = origin && ALLOWED_ORIGINS.some((o) => origin.startsWith(o.replace(/\/$/, '')))
+    ? origin
     : ALLOWED_ORIGINS[0];
+
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   };
 }
 
@@ -123,37 +127,44 @@ serve(async (req) => {
   }
 
   try {
-    // Security: Validate authentication before processing
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized: Missing or invalid authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    const token = authHeader.replace('Bearer ', '');
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    
-    // Verify user with anon key first
-    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } }
-    });
-    
-    const { data: { user }, error: authError } = await authClient.auth.getUser();
-    
-    if (authError || !user) {
-      console.error('Authentication failed:', authError?.message);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized: Invalid token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    console.log('Authenticated user:', user.id);
-
     const body = await req.json();
+    const allowGuest = body?.allowGuest === true;
+    let userId: string | null = null;
+
+    // Security: Validate authentication before processing unless guest mode is explicitly allowed
+    if (!allowGuest) {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized: Missing or invalid authorization header' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      const token = authHeader.replace('Bearer ', '');
+      
+      // Verify user with anon key first
+      const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: `Bearer ${token}` } }
+      });
+      
+      const { data: { user }, error: authError } = await authClient.auth.getUser();
+      
+      if (authError || !user) {
+        console.error('Authentication failed:', authError?.message);
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized: Invalid token' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      userId = user.id;
+      console.log('Authenticated user:', userId);
+    } else {
+      console.log('Guest mode enabled for generate-teleprompter-script');
+    }
     
     // Validate and sanitize inputs
     const rawNewsItems = body.newsItems;
@@ -543,39 +554,44 @@ Retorne APENAS o JSON solicitado.`;
       throw new Error("A IA não retornou um roteiro válido");
     }
 
-    // Save to database using service role (after authentication is verified)
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    let savedScriptId: string | undefined;
+    if (userId) {
+      // Save to database using service role for authenticated users
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const parametersForStorage = {
-      ...parameters,
-      profile: typeof rawParameters === "object" && rawParameters !== null
-        ? (rawParameters as Record<string, unknown>).profile
-        : undefined,
-      complementaryPrompt,
-    };
+      const parametersForStorage = {
+        ...parameters,
+        profile: typeof rawParameters === "object" && rawParameters !== null
+          ? (rawParameters as Record<string, unknown>).profile
+          : undefined,
+        complementaryPrompt,
+      };
 
-    const { data: savedScript, error: saveError } = await supabase
-      .from("teleprompter_scripts")
-      .insert({
-        user_id: user.id, // Now we have verified user from auth
-        news_ids_json: newsItems.map(n => n.id),
-        parameters_json: parametersForStorage,
-        script_text: scriptText,
-        raw_ai_response: JSON.stringify(data),
-      })
-      .select()
-      .single();
+      const { data: savedScript, error: saveError } = await supabase
+        .from("teleprompter_scripts")
+        .insert({
+          user_id: userId,
+          news_ids_json: newsItems.map(n => n.id),
+          parameters_json: parametersForStorage,
+          script_text: scriptText,
+          raw_ai_response: JSON.stringify(data),
+        })
+        .select()
+        .single();
 
-    if (saveError) {
-      console.error("Erro ao salvar roteiro:", saveError);
-      // Still return the script even if saving fails
+      if (saveError) {
+        console.error("Erro ao salvar roteiro:", saveError);
+        // Still return the script even if saving fails
+      } else {
+        savedScriptId = savedScript?.id;
+      }
     }
     console.log("Roteiro gerado com sucesso:", scriptText.length, "caracteres");
 
     return new Response(JSON.stringify({ 
       script: scriptText,
-      scriptId: savedScript?.id,
+      scriptId: savedScriptId,
       questions,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

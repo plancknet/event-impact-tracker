@@ -1,22 +1,26 @@
-Ôªøimport { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const ALLOWED_ORIGINS = [
   "https://bficxnetrsuyzygutztn.lovableproject.com",
   "https://thinkandtalk.lovable.app",
+  "https://thinkandtalk.site",
+  "https://www.thinkandtalk.site",
   "http://localhost:5173",
   "http://localhost:3000",
   "https://bficxnetrsuyzygutztn.supabase.co",
 ];
 
 function getCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = origin && ALLOWED_ORIGINS.some((o) => origin.startsWith(o.replace(/\/$/, "")))
+  const allowedOrigin = origin && ALLOWED_ORIGINS.some((o) => origin.startsWith(o.replace(/\/$/, '')))
     ? origin
     : ALLOWED_ORIGINS[0];
+
   return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   };
 }
 
@@ -63,12 +67,12 @@ serve(async (req) => {
 
     const priceId = Deno.env.get("STRIPE_THINKANDTALK_PRICE_ID");
     if (!priceId) {
-      throw new Error("Price ID n√£o configurado.");
+      throw new Error("Price ID n„o configurado.");
     }
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
-      throw new Error("Stripe n√£o configurado.");
+      throw new Error("Stripe n„o configurado.");
     }
 
     const stripe = new Stripe(stripeKey, {
@@ -127,7 +131,7 @@ serve(async (req) => {
     });
   } catch (error: unknown) {
     console.error("Error creating subscription checkout:", error);
-    const errorMessage = error instanceof Error ? error.message : "Erro ao criar sess√£o de checkout.";
+    const errorMessage = error instanceof Error ? error.message : "Erro ao criar sess„o de checkout.";
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...getCorsHeaders(req.headers.get("origin")), "Content-Type": "application/json" },
       status: 500,

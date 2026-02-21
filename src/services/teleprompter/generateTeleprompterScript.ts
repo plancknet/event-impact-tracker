@@ -36,6 +36,7 @@ export async function generateTeleprompterScript(
     refinementPrompt?: string;
     baseScript?: string;
     feedback?: { question: string; answer: string }[];
+    allowGuest?: boolean;
   },
 ): Promise<TeleprompterGenerationResult> {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -49,6 +50,7 @@ export async function generateTeleprompterScript(
       refinementPrompt: options?.refinementPrompt,
       baseScript: options?.baseScript,
       feedback: options?.feedback,
+      allowGuest: options?.allowGuest === true,
     },
   });
 
