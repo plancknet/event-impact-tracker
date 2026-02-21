@@ -1021,7 +1021,13 @@ export function TeleprompterDisplay({
         
         <div
           ref={contentRef}
-          className="px-8 pt-32"
+          className={`px-8 pt-32 transition-all duration-300 ${
+            recordEnabled
+              ? recordOrientation === "portrait"
+                ? "pl-44"
+                : "pl-60"
+              : ""
+          }`}
           style={{
             fontFamily,
             fontSize: isFullscreen ? Math.round(fontSize * 1.3) : fontSize,
