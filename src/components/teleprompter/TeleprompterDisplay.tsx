@@ -424,8 +424,13 @@ export function TeleprompterDisplay({
     };
   }, [isPlaying, isUserPaused]);
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (countdown !== null) return;
+    // Request camera from click-handler context (user gesture required)
+    if (recordEnabled || autoRecordOnPlay) {
+      if (!recordEnabled) setRecordEnabled(true);
+      await ensurePreview();
+    }
     setIsPlaying(false);
     setIsPaused(false);
     setIsUserPaused(false);
@@ -552,15 +557,21 @@ export function TeleprompterDisplay({
       }
       return;
     }
-    void ensurePreview();
-  }, [recordEnabled, ensurePreview, stopPreviewStream, stopRecording, recordedUrl]);
+    // Skip auto-preview from useEffect when autoEnableRecording is set;
+    // getUserMedia will be called from handleStart (user gesture context).
+    if (!autoEnableRecording) {
+      void ensurePreview();
+    }
+  }, [recordEnabled, ensurePreview, stopPreviewStream, stopRecording, recordedUrl, autoEnableRecording]);
 
   useEffect(() => {
     if (!recordEnabled) return;
     stopRecording();
     stopPreviewStream();
-    void ensurePreview();
-  }, [recordOrientation, recordEnabled, ensurePreview, stopPreviewStream, stopRecording]);
+    if (!autoEnableRecording) {
+      void ensurePreview();
+    }
+  }, [recordOrientation, recordEnabled, ensurePreview, stopPreviewStream, stopRecording, autoEnableRecording]);
 
   useEffect(() => {
     return () => {
@@ -966,7 +977,15 @@ export function TeleprompterDisplay({
 
         {recordEnabled && (
           <div
-            className={`absolute right-4 top-4 z-20 rounded-lg border border-white/30 bg-black/40 overflow-hidden ${recordOrientation === "portrait" ? "w-24 h-36" : "w-36 h-24"}`}
+            className={`absolute z-20 rounded-lg border overflow-hidden shadow-lg transition-all duration-300 ${
+              isRecording
+                ? recordOrientation === "portrait"
+                  ? "w-32 h-48 right-4 bottom-8 border-red-500/60 ring-2 ring-red-500/40"
+                  : "w-48 h-32 right-4 bottom-8 border-red-500/60 ring-2 ring-red-500/40"
+                : recordOrientation === "portrait"
+                  ? "w-24 h-36 right-4 top-4 border-white/30"
+                  : "w-36 h-24 right-4 top-4 border-white/30"
+            } bg-black/40`}
           >
             <video
               ref={previewRef}
@@ -975,6 +994,12 @@ export function TeleprompterDisplay({
               playsInline
               autoPlay
             />
+            {isRecording && (
+              <div className="absolute top-1 left-1 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
+                <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[10px] text-red-300 font-medium">REC</span>
+              </div>
+            )}
             {recordingError && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/70 px-2 text-center text-xs text-red-200">
                 {recordingError}
