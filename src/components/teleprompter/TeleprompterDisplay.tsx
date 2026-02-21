@@ -977,7 +977,7 @@ export function TeleprompterDisplay({
 
         {recordEnabled && (
           <div
-            className={`absolute z-20 rounded-lg border overflow-hidden shadow-lg transition-all duration-300 ${
+            className={`fixed z-50 rounded-lg border overflow-hidden shadow-lg transition-all duration-300 ${
               isRecording
                 ? recordOrientation === "portrait"
                   ? "w-32 h-48 right-4 bottom-8 border-red-500/60 ring-2 ring-red-500/40"
