@@ -11,4 +11,6 @@ export interface QuizQuestionData {
   icon?: any;
   options: QuizOption[];
   multiSelect?: boolean;
+  freeText?: boolean;
+  freeTextPlaceholder?: string;
 }
