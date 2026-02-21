@@ -124,14 +124,9 @@ export const QUIZ_QUESTIONS: QuizQuestionData[] = [
   {
     key: "niche",
     question: "Sobre o que você gosta de falar?",
-    options: [
-      { value: "education", label: "Educação / Conteúdo informativo", icon: BookOpen },
-      { value: "business", label: "Negócios / Marketing / Vendas", icon: BriefcaseBusiness },
-      { value: "lifestyle", label: "Lifestyle / Rotina / Vlogs", icon: Heart },
-      { value: "health", label: "Saúde / Fitness / Bem-estar", icon: HeartPulse },
-      { value: "entertainment", label: "Entretenimento / Humor", icon: Film },
-      { value: "other", label: "Outro / Ainda estou definindo", icon: Sparkles },
-    ],
+    freeText: true,
+    freeTextPlaceholder: "Ex: Tecnologia, Marketing, Culinária, Fitness...",
+    options: [],
   },
   {
     key: "creator_level",

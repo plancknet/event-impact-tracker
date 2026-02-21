@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Check } from "lucide-react";
+import { Check, Send } from "lucide-react";
 import { QuizQuestionData } from "./quizTypes";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n";
@@ -24,13 +24,17 @@ const QuizQuestion = ({
 }: QuizQuestionProps) => {
   const { t } = useLanguage();
   const [localSelected, setLocalSelected] = useState<string[]>([]);
+  const [freeTextValue, setFreeTextValue] = useState("");
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
     if (question.multiSelect) {
       setLocalSelected(Array.isArray(selectedAnswer) ? selectedAnswer : []);
     }
-  }, [question.key, selectedAnswer, question.multiSelect]);
+    if (question.freeText) {
+      setFreeTextValue(typeof selectedAnswer === "string" ? selectedAnswer : "");
+    }
+  }, [question.key, selectedAnswer, question.multiSelect, question.freeText]);
 
   const handleOptionClick = (value: string) => {
     if (isAnimating) return;
@@ -111,70 +115,105 @@ const QuizQuestion = ({
               )}
             </div>
 
-            <div
-              className={cn(
-                "w-full grid gap-3",
-                ["editing_time", "creator_level", "audience_age", "video_duration", "energy_level"].includes(question.key)
-                  ? "grid-cols-1"
-                  : "md:grid-cols-2"
-              )}
-            >
-              {question.options.map((option, index) => {
-                const selected = isSelected(option.value);
-                const IconComponent = option.icon;
-
-                return (
+            {question.freeText ? (
+              <div className="w-full space-y-4">
+                <input
+                  type="text"
+                  value={freeTextValue}
+                  onChange={(e) => setFreeTextValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && freeTextValue.trim()) {
+                      setIsAnimating(true);
+                      onAnswer(question.key, freeTextValue.trim());
+                      setTimeout(() => setIsAnimating(false), 400);
+                    }
+                  }}
+                  placeholder={question.freeTextPlaceholder ? t(question.freeTextPlaceholder) : ""}
+                  className="w-full p-4 rounded-xl border-2 border-quiz-border/40 bg-quiz-card text-quiz-foreground placeholder:text-quiz-muted/50 focus:border-quiz-purple/60 focus:outline-none transition-all duration-200"
+                  style={{ fontFamily: quizFontFamily }}
+                  autoFocus
+                />
+                {freeTextValue.trim() && (
                   <button
-                    key={option.value}
-                    onClick={() => handleOptionClick(option.value)}
-                    disabled={isAnimating}
-                    className={cn(
-                      "w-full p-4 rounded-xl border-2 transition-all duration-200 flex items-center gap-4 text-left",
-                      "hover:border-quiz-purple/40 hover:bg-quiz-selected/30 hover:scale-[1.01]",
-                      "animate-stagger-fade",
-                      selected
-                        ? "border-quiz-purple bg-quiz-selected/50 shadow-sm"
-                        : "border-quiz-border/40 bg-quiz-card",
-                      isAnimating && "pointer-events-none"
-                    )}
-                    style={{ animationDelay: `${index * 60}ms` }}
+                    onClick={() => {
+                      setIsAnimating(true);
+                      onAnswer(question.key, freeTextValue.trim());
+                      setTimeout(() => setIsAnimating(false), 400);
+                    }}
+                    className="w-full max-w-xs mx-auto h-12 text-base font-semibold bg-gradient-to-r from-quiz-blue to-quiz-purple text-white rounded-xl shadow-lg hover:opacity-90 transition-all duration-300 hover:scale-[1.02] animate-fade-in flex items-center justify-center gap-2"
+                    style={{ fontFamily: quizFontFamily }}
                   >
-                    {IconComponent && (
-                      <div className={cn(
-                        "w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-200",
-                        selected
-                          ? "bg-gradient-to-br from-quiz-blue/20 to-quiz-purple/20"
-                          : "bg-quiz-muted/10"
-                      )}>
-                        <IconComponent className={cn(
-                          "h-5 w-5 transition-colors duration-200",
-                          selected ? "text-quiz-purple" : "text-quiz-muted"
-                        )} />
-                      </div>
-                    )}
-
-                    <span
-                      className={cn(
-                        "flex-1 font-medium transition-colors duration-200",
-                        selected ? "text-quiz-purple" : "text-quiz-foreground"
-                      )}
-                      style={{ fontFamily: quizFontFamily }}
-                    >
-                      {t(option.label)}
-                    </span>
-
-                    <div className={cn(
-                      "w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300",
-                      selected
-                        ? "bg-quiz-purple scale-100 opacity-100"
-                        : "bg-quiz-border/30 scale-75 opacity-0"
-                    )}>
-                      <Check className="h-4 w-4 text-white" />
-                    </div>
+                    <Send className="h-4 w-4" />
+                    {t("Continuar")}
                   </button>
-                );
-              })}
-            </div>
+                )}
+              </div>
+            ) : (
+              <div
+                className={cn(
+                  "w-full grid gap-3",
+                  ["editing_time", "creator_level", "audience_age", "video_duration", "energy_level"].includes(question.key)
+                    ? "grid-cols-1"
+                    : "md:grid-cols-2"
+                )}
+              >
+                {question.options.map((option, index) => {
+                  const selected = isSelected(option.value);
+                  const IconComponent = option.icon;
+
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() => handleOptionClick(option.value)}
+                      disabled={isAnimating}
+                      className={cn(
+                        "w-full p-4 rounded-xl border-2 transition-all duration-200 flex items-center gap-4 text-left",
+                        "hover:border-quiz-purple/40 hover:bg-quiz-selected/30 hover:scale-[1.01]",
+                        "animate-stagger-fade",
+                        selected
+                          ? "border-quiz-purple bg-quiz-selected/50 shadow-sm"
+                          : "border-quiz-border/40 bg-quiz-card",
+                        isAnimating && "pointer-events-none"
+                      )}
+                      style={{ animationDelay: `${index * 60}ms` }}
+                    >
+                      {IconComponent && (
+                        <div className={cn(
+                          "w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-200",
+                          selected
+                            ? "bg-gradient-to-br from-quiz-blue/20 to-quiz-purple/20"
+                            : "bg-quiz-muted/10"
+                        )}>
+                          <IconComponent className={cn(
+                            "h-5 w-5 transition-colors duration-200",
+                            selected ? "text-quiz-purple" : "text-quiz-muted"
+                          )} />
+                        </div>
+                      )}
+
+                      <span
+                        className={cn(
+                          "flex-1 font-medium transition-colors duration-200",
+                          selected ? "text-quiz-purple" : "text-quiz-foreground"
+                        )}
+                        style={{ fontFamily: quizFontFamily }}
+                      >
+                        {t(option.label)}
+                      </span>
+
+                      <div className={cn(
+                        "w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300",
+                        selected
+                          ? "bg-quiz-purple scale-100 opacity-100"
+                          : "bg-quiz-border/30 scale-75 opacity-0"
+                      )}>
+                        <Check className="h-4 w-4 text-white" />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {question.multiSelect && localSelected.length > 0 && (
               <button
