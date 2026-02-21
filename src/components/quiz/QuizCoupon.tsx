@@ -129,7 +129,7 @@ const QuizCoupon = ({ onReveal }: QuizCouponProps) => {
             <p className="text-xl font-semibold text-quiz-foreground mt-2">
               {t("DE DESCONTO")}
             </p>
-            <p className="text-sm text-quiz-muted mt-1">{t("Código: CREATOR40")}</p>
+            
           </div>
 
           <canvas
