@@ -142,10 +142,10 @@ export default function Demo() {
         <TeleprompterDisplay
           script={generatedScript}
           settings={DEFAULT_TELEPROMPTER_SETTINGS}
-          onBack={() => navigate("/quiz/sales")}
+          onBack={() => navigate("/demo/sales")}
           autoEnableRecording
           autoRecordOnPlay
-          onScriptComplete={() => navigate("/quiz/sales")}
+          onScriptComplete={() => navigate("/demo/sales")}
         />
       </div>
     );
