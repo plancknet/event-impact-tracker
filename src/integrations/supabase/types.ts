@@ -165,6 +165,7 @@ export type Database = {
           session_started_at: string | null
           speaking_tone: string | null
           speaking_tone_at: string | null
+          total_answers_count: number
           transition_complete_at: string | null
           updated_at: string
           user_id: string | null
@@ -218,6 +219,7 @@ export type Database = {
           session_started_at?: string | null
           speaking_tone?: string | null
           speaking_tone_at?: string | null
+          total_answers_count?: number
           transition_complete_at?: string | null
           updated_at?: string
           user_id?: string | null
@@ -271,6 +273,7 @@ export type Database = {
           session_started_at?: string | null
           speaking_tone?: string | null
           speaking_tone_at?: string | null
+          total_answers_count?: number
           transition_complete_at?: string | null
           updated_at?: string
           user_id?: string | null
