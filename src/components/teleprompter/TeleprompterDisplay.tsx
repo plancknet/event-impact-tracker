@@ -725,10 +725,13 @@ export function TeleprompterDisplay({
                 </div>
               )}
               {recordedUrl && !isRecording && (
-                <Button asChild size="sm" variant="default" className="animate-pulse">
-                  <a href={recordedUrl} download="teleprompter.webm">
-                    {t("Salvar vídeo")}
-                  </a>
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="animate-pulse"
+                  onClick={() => triggerDownload(recordedUrl, "video/webm")}
+                >
+                  {t("Salvar vídeo")}
                 </Button>
               )}
               <Button
