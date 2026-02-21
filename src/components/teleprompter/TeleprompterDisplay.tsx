@@ -62,6 +62,9 @@ interface TeleprompterDisplayProps {
   settings?: TeleprompterSettings;
   onSettingsChange?: (settings: TeleprompterSettings) => void;
   onBack?: () => void;
+  autoEnableRecording?: boolean;
+  autoRecordOnPlay?: boolean;
+  onScriptComplete?: () => void;
 }
 
 const DEFAULT_PAUSE_DURATIONS = {
@@ -87,6 +90,9 @@ export function TeleprompterDisplay({
   settings,
   onSettingsChange,
   onBack,
+  autoEnableRecording = false,
+  autoRecordOnPlay = false,
+  onScriptComplete,
 }: TeleprompterDisplayProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -105,7 +111,7 @@ export function TeleprompterDisplay({
   const [backgroundColor, setBackgroundColor] = useState(settings?.backgroundColor ?? DEFAULT_TELEPROMPTER_SETTINGS.backgroundColor);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [showControls, setShowControls] = useState(true);
-  const [recordEnabled, setRecordEnabled] = useState(false);
+  const [recordEnabled, setRecordEnabled] = useState(autoEnableRecording);
   const [isRecording, setIsRecording] = useState(false);
   const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
   const [recordingError, setRecordingError] = useState<string | null>(null);
@@ -146,6 +152,7 @@ export function TeleprompterDisplay({
   const recordedChunksRef = useRef<Blob[]>([]);
   const previewRef = useRef<HTMLVideoElement | null>(null);
   const latestRecordedUrlRef = useRef<string | null>(null);
+  const hasCompletedRef = useRef(false);
 
   // Parse script to identify pause positions
   const parseScript = useCallback((text: string) => {
@@ -349,6 +356,10 @@ export function TeleprompterDisplay({
         // Stop only when fully scrolled
         setIsPlaying(false);
         stopRecording();
+        if (!hasCompletedRef.current) {
+          hasCompletedRef.current = true;
+          onScriptComplete?.();
+        }
       }
       
       containerRef.current.scrollTop = scrollPositionRef.current;
@@ -376,7 +387,7 @@ export function TeleprompterDisplay({
     if (isPlaying) {
       animationRef.current = requestAnimationFrame(animate);
     }
-  }, [speed, isPaused, isPlaying, handlePause, stopRecording]);
+  }, [speed, isPaused, isPlaying, handlePause, onScriptComplete, stopRecording]);
 
   useEffect(() => {
     if (isPlaying && !isPaused) {
@@ -423,6 +434,7 @@ export function TeleprompterDisplay({
       URL.revokeObjectURL(recordedUrl);
       setRecordedUrl(null);
     }
+    hasCompletedRef.current = false;
   };
 
   const handlePauseToggle = () => {
@@ -459,6 +471,7 @@ export function TeleprompterDisplay({
     scrollPositionRef.current = 0;
     setElapsedSeconds(0);
     setCountdown(null);
+    hasCompletedRef.current = false;
     if (containerRef.current) {
       containerRef.current.scrollTop = 0;
     }
@@ -508,7 +521,10 @@ export function TeleprompterDisplay({
       if (countdown === 1) {
         setCountdown(null);
         setIsPlaying(true);
-        if (recordEnabled) {
+        if (recordEnabled || autoRecordOnPlay) {
+          if (!recordEnabled) {
+            setRecordEnabled(true);
+          }
           void startRecording();
         }
         return;
@@ -517,7 +533,12 @@ export function TeleprompterDisplay({
     }, 1000);
 
     return () => window.clearTimeout(timeoutId);
-  }, [countdown, recordEnabled, startRecording]);
+  }, [autoRecordOnPlay, countdown, recordEnabled, startRecording]);
+
+  useEffect(() => {
+    if (!autoEnableRecording) return;
+    setRecordEnabled(true);
+  }, [autoEnableRecording]);
 
   useEffect(() => {
     if (!recordEnabled) {
