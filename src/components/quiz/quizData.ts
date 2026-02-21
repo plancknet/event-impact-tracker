@@ -200,7 +200,7 @@ export const QUIZ_QUESTIONS: QuizQuestionData[] = [
   },
   {
     key: "platforms",
-    question: "Qual é a sua principal plataforma para publicação de vídeos?",
+    question: "Qual é a sua PRINCIPAL plataforma para publicação de vídeos?",
     options: [
       { value: "instagram", label: "Instagram (Reels / Stories)", icon: Camera },
       { value: "tiktok", label: "TikTok", icon: Music },
