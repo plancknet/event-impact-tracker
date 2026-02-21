@@ -151,8 +151,29 @@ export function TeleprompterDisplay({
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const previewRef = useRef<HTMLVideoElement | null>(null);
+  const previewContainerRef = useRef<HTMLDivElement | null>(null);
   const latestRecordedUrlRef = useRef<string | null>(null);
   const hasCompletedRef = useRef(false);
+  const [previewHeight, setPreviewHeight] = useState(0);
+
+  // Measure preview container height for text offset
+  useEffect(() => {
+    if (!recordEnabled) {
+      setPreviewHeight(0);
+      return;
+    }
+    const measure = () => {
+      if (previewContainerRef.current) {
+        const rect = previewContainerRef.current.getBoundingClientRect();
+        // bottom of preview relative to viewport top + 16px gap
+        setPreviewHeight(rect.height + 16 + 16); // top-4 (16px) + height + 16px gap
+      }
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (previewContainerRef.current) observer.observe(previewContainerRef.current);
+    return () => observer.disconnect();
+  }, [recordEnabled, isRecording, recordOrientation]);
 
   // Parse script to identify pause positions
   const parseScript = useCallback((text: string) => {
@@ -980,7 +1001,8 @@ export function TeleprompterDisplay({
 
         {recordEnabled && (
           <div
-            className={`fixed z-50 rounded-lg border overflow-hidden shadow-lg transition-all duration-300 left-4 top-4 ${
+            ref={previewContainerRef}
+            className={`fixed z-50 rounded-lg border overflow-hidden shadow-lg transition-all duration-300 right-4 top-4 ${
               isRecording
                 ? recordOrientation === "portrait"
                   ? "w-32 h-48 border-red-500/60 ring-2 ring-red-500/40"
@@ -1024,14 +1046,9 @@ export function TeleprompterDisplay({
         
         <div
           ref={contentRef}
-          className={`px-8 pt-32 transition-all duration-300 ${
-            recordEnabled
-              ? recordOrientation === "portrait"
-                ? "pl-44"
-                : "pl-60"
-              : ""
-          }`}
+          className="px-8 transition-all duration-300"
           style={{
+            paddingTop: recordEnabled && previewHeight > 0 ? `${previewHeight}px` : '8rem',
             fontFamily,
             fontSize: isFullscreen ? Math.round(fontSize * 1.3) : fontSize,
             lineHeight: 1.6,
