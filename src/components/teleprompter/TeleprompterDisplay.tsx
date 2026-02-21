@@ -654,7 +654,7 @@ export function TeleprompterDisplay({
     >
       {/* Controls */}
       <Card className={`mb-4 md:mb-4 md:static fixed inset-x-0 bottom-0 z-30 ${isFullscreen ? "bg-background/80 backdrop-blur" : "bg-background/95"} md:rounded-lg rounded-t-xl`}>
-        <CardContent className="py-3">
+        <CardContent className="py-3 max-h-[50vh] overflow-y-auto">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
               {onBack && (
@@ -725,7 +725,7 @@ export function TeleprompterDisplay({
                 </div>
               )}
               {recordedUrl && !isRecording && (
-                <Button asChild size="sm" variant="outline">
+                <Button asChild size="sm" variant="default" className="animate-pulse">
                   <a href={recordedUrl} download="teleprompter.webm">
                     {t("Salvar vídeo")}
                   </a>
@@ -977,14 +977,14 @@ export function TeleprompterDisplay({
 
         {recordEnabled && (
           <div
-            className={`fixed z-50 rounded-lg border overflow-hidden shadow-lg transition-all duration-300 ${
+            className={`fixed z-50 rounded-lg border overflow-hidden shadow-lg transition-all duration-300 left-4 top-4 ${
               isRecording
                 ? recordOrientation === "portrait"
-                  ? "w-32 h-48 right-4 bottom-8 border-red-500/60 ring-2 ring-red-500/40"
-                  : "w-48 h-32 right-4 bottom-8 border-red-500/60 ring-2 ring-red-500/40"
+                  ? "w-32 h-48 border-red-500/60 ring-2 ring-red-500/40"
+                  : "w-48 h-32 border-red-500/60 ring-2 ring-red-500/40"
                 : recordOrientation === "portrait"
-                  ? "w-24 h-36 right-4 top-4 border-white/30"
-                  : "w-36 h-24 right-4 top-4 border-white/30"
+                  ? "w-24 h-36 border-white/30"
+                  : "w-36 h-24 border-white/30"
             } bg-black/40`}
           >
             <video
