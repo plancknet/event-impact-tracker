@@ -154,12 +154,12 @@ export default function Demo() {
   return (
     <div className="min-h-screen bg-quiz-background">
       <header className="border-b bg-quiz-card/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <div className="container max-w-6xl mx-auto px-3 py-2.5 sm:px-4 sm:py-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <img
               src="/imgs/ThinkAndTalk.png"
               alt="ThinkAndTalk"
-              className="h-8 w-auto"
+              className="h-7 sm:h-8 w-auto"
               loading="eager"
               decoding="async"
               fetchPriority="high"
@@ -168,14 +168,14 @@ export default function Demo() {
               <button
                 type="button"
                 onClick={handleStepBack}
-                className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-quiz-border/60 text-quiz-muted hover:text-quiz-foreground hover:border-quiz-purple/40 transition-colors"
+                className="inline-flex items-center justify-center h-8 w-8 sm:h-9 sm:w-9 rounded-full border border-quiz-border/60 text-quiz-muted hover:text-quiz-foreground hover:border-quiz-purple/40 transition-colors"
                 aria-label="Voltar"
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>
             ) : null}
           </div>
-          <div className="hidden md:block w-[240px]">
+          <div className="flex-1 max-w-[180px] sm:max-w-[240px]">
             <div className="h-1.5 bg-quiz-border/30 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-quiz-blue to-quiz-purple transition-all duration-500 ease-out rounded-full"
@@ -188,8 +188,8 @@ export default function Demo() {
 
       {step === 1 && (
         <div className="space-y-0">
-          <div className="container max-w-3xl mx-auto px-4 pt-8 pb-2 text-center">
-            <h1 className="text-2xl md:text-3xl font-bold text-quiz-foreground leading-tight">
+          <div className="container max-w-3xl mx-auto px-4 pt-6 sm:pt-8 pb-1 sm:pb-2 text-center">
+            <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-quiz-foreground leading-tight">
               Comece a gravar hoje! Em menos de 10 minutos você terá um vídeo pronto para postar.
             </h1>
           </div>
@@ -213,13 +213,13 @@ export default function Demo() {
       )}
 
       {step === 2 && (
-        <main className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
-          <div className="rounded-2xl border bg-card p-6 md:p-8 space-y-2">
-            <h1 className="text-xl md:text-2xl font-semibold text-quiz-foreground">
+        <main className="container max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-6">
+          <div className="rounded-xl sm:rounded-2xl border bg-card p-4 sm:p-6 md:p-8 space-y-1.5 sm:space-y-2">
+            <h1 className="text-base sm:text-xl md:text-2xl font-semibold text-quiz-foreground">
               Selecione ao menos 2 notícias vão guiar o conteúdo do vídeo
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Tema da demonstração: <span className="font-medium text-foreground">{topic}</span>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Tema: <span className="font-medium text-foreground">{topic}</span>
             </p>
           </div>
 
@@ -232,15 +232,14 @@ export default function Demo() {
             onRefresh={() => void fetchAndSaveNews(topic, "pt-BR")}
           />
 
-          <div className="flex justify-end">
-            <Button
-              size="lg"
-              onClick={() => setStep(3)}
-              disabled={selectedNewsIds.length < 2 || isLoadingNews}
-            >
-              Avançar
-            </Button>
-          </div>
+          <Button
+            size="lg"
+            onClick={() => setStep(3)}
+            disabled={selectedNewsIds.length < 2 || isLoadingNews}
+            className="w-full sm:w-auto sm:ml-auto sm:flex"
+          >
+            Avançar
+          </Button>
         </main>
       )}
 
@@ -259,41 +258,41 @@ export default function Demo() {
       )}
 
       {step === 4 && (
-        <main className="container max-w-3xl mx-auto px-4 py-20">
-          <div className="rounded-2xl border bg-card p-10 text-center space-y-4">
-            <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Loader2 className="h-6 w-6 text-primary animate-spin" />
+        <main className="container max-w-3xl mx-auto px-4 py-10 sm:py-20">
+          <div className="rounded-xl sm:rounded-2xl border bg-card p-6 sm:p-10 text-center space-y-3 sm:space-y-4">
+            <div className="mx-auto w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary animate-spin" />
             </div>
-            <h2 className="text-2xl font-semibold text-foreground">Gerando seu roteiro...</h2>
-            <p className="text-muted-foreground">
+            <h2 className="text-xl sm:text-2xl font-semibold text-foreground">Gerando seu roteiro...</h2>
+            <p className="text-sm text-muted-foreground">
               Estamos cruzando o assunto, as notícias e o estilo da fala para montar sua demonstração.
             </p>
             {isGenerating ? (
-              <p className="text-sm text-muted-foreground">Isso pode levar alguns segundos.</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Isso pode levar alguns segundos.</p>
             ) : null}
           </div>
         </main>
       )}
 
       {step === 5 && (
-        <main className="relative min-h-[calc(100vh-81px)] overflow-hidden">
+        <main className="relative min-h-[calc(100vh-57px)] sm:min-h-[calc(100vh-81px)] overflow-hidden">
           <div className="absolute inset-0 bg-black" />
           <div className="absolute inset-0 opacity-30 text-white">
-            <div className="h-full overflow-hidden p-8 md:p-12">
-              <p className="whitespace-pre-wrap leading-relaxed text-base md:text-lg">{generatedScript}</p>
+            <div className="h-full overflow-hidden p-4 sm:p-8 md:p-12">
+              <p className="whitespace-pre-wrap leading-relaxed text-sm sm:text-base md:text-lg">{generatedScript}</p>
             </div>
           </div>
           <div className="absolute inset-0 bg-black/50" />
 
-          <div className="relative z-10 container max-w-3xl mx-auto px-4 py-12 md:py-20">
-            <div className="rounded-2xl border border-white/20 bg-black/70 p-6 md:p-8 text-white space-y-4">
-              <h1 className="text-2xl md:text-3xl font-semibold">
+          <div className="relative z-10 container max-w-3xl mx-auto px-4 py-8 sm:py-12 md:py-20">
+            <div className="rounded-xl sm:rounded-2xl border border-white/20 bg-black/70 p-5 sm:p-6 md:p-8 text-white space-y-3 sm:space-y-4">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold leading-tight">
                 Pronto... agora é só apertar o PLAY para dar o seu toque especial
               </h1>
-              <p className="text-white/90">
-                Se necessário, utilize os comandos para aumentar ou diminiur a velocidade de reprodução, a fonte do texto, alterar a cor do fundo, etc.
+              <p className="text-sm sm:text-base text-white/90">
+                Se necessário, utilize os comandos para aumentar ou diminuir a velocidade de reprodução, a fonte do texto, alterar a cor do fundo, etc.
               </p>
-              <Button size="lg" onClick={() => setStep(6)}>
+              <Button size="lg" onClick={() => setStep(6)} className="w-full sm:w-auto">
                 Vamos lá
               </Button>
             </div>
