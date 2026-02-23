@@ -187,22 +187,29 @@ export default function Demo() {
       </header>
 
       {step === 1 && (
-        <QuizQuestion
-          question={stepOneQuestion}
-          currentIndex={0}
-          totalQuestions={6}
-          onAnswer={(_, value) => {
-            const nextTopic = String(value || "").trim();
-            if (!nextTopic) return;
-            setTopic(nextTopic);
-            setSelectedNewsIds([]);
-            setGeneratedScript("");
-            fetchedTopicRef.current = null;
-            setStep(2);
-          }}
-          selectedAnswer={topic}
-          slideDirection="left"
-        />
+        <div className="space-y-0">
+          <div className="container max-w-3xl mx-auto px-4 pt-8 pb-2 text-center">
+            <h1 className="text-2xl md:text-3xl font-bold text-quiz-foreground leading-tight">
+              Comece a gravar hoje! Em menos de 10 minutos você terá um vídeo pronto para postar.
+            </h1>
+          </div>
+          <QuizQuestion
+            question={stepOneQuestion}
+            currentIndex={0}
+            totalQuestions={6}
+            onAnswer={(_, value) => {
+              const nextTopic = String(value || "").trim();
+              if (!nextTopic) return;
+              setTopic(nextTopic);
+              setSelectedNewsIds([]);
+              setGeneratedScript("");
+              fetchedTopicRef.current = null;
+              setStep(2);
+            }}
+            selectedAnswer={topic}
+            slideDirection="left"
+          />
+        </div>
       )}
 
       {step === 2 && (
