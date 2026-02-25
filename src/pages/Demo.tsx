@@ -11,7 +11,7 @@ import { generateTeleprompterScript } from "@/services/teleprompter/generateTele
 import { useUserNews } from "@/hooks/useUserNews";
 import { useToast } from "@/hooks/use-toast";
 
-type DemoStep = 1 | 2 | 3 | 4 | 5 | 6;
+type DemoStep = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 const stepOneQuestion: QuizQuestionData = {
   key: "demo_topic",
@@ -142,10 +142,10 @@ export default function Demo() {
         <TeleprompterDisplay
           script={generatedScript}
           settings={DEFAULT_TELEPROMPTER_SETTINGS}
-          onBack={() => navigate("/demo/sales")}
+          onBack={() => setStep(7)}
           autoEnableRecording
           autoRecordOnPlay
-          onScriptComplete={() => navigate("/demo/sales")}
+          onScriptComplete={() => setStep(7)}
         />
       </div>
     );
@@ -286,6 +286,18 @@ export default function Demo() {
                 Vamos lá
               </Button>
             </div>
+          </div>
+        </main>
+      )}
+      {step === 7 && (
+        <main className="container max-w-3xl mx-auto px-4 py-8 sm:py-12 md:py-20">
+          <div className="rounded-xl sm:rounded-2xl border bg-card p-5 sm:p-6 md:p-8 space-y-4 sm:space-y-5">
+            <p className="text-base sm:text-lg md:text-xl text-foreground leading-relaxed whitespace-pre-line">
+              {"Esta foi uma breve demonstração do aplicativo.\nComo você pôde observar, foi rápido e prático e totalmente auxiliado por IA.\nCom o ThinkAndTalk você terá total controle do Roteiro e da apresentação no Teleprompter, ajustando a velocidade de reprodução, tamanho da fonte, cor do fundo, dentre outros."}
+            </p>
+            <Button size="lg" onClick={() => navigate("/demo/sales")} className="w-full sm:w-auto">
+              Continuar
+            </Button>
           </div>
         </main>
       )}
