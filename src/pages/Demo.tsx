@@ -15,7 +15,7 @@ type DemoStep = 1 | 2 | 3 | 4 | 5 | 6;
 
 const stepOneQuestion: QuizQuestionData = {
   key: "demo_topic",
-  question: "Sobre que o que quer falar hoje?",
+  question: "Sobre o que você quer falar hoje?",
   freeText: true,
   freeTextPlaceholder: "Digite o assunto do seu vídeo",
   options: [],
@@ -154,43 +154,33 @@ export default function Demo() {
   return (
     <div className="min-h-screen bg-quiz-background">
       <header className="border-b bg-quiz-card/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container max-w-6xl mx-auto px-3 py-2.5 sm:px-4 sm:py-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <img
-              src="/imgs/ThinkAndTalk.png"
-              alt="ThinkAndTalk"
-              className="h-7 sm:h-8 w-auto"
-              loading="eager"
-              decoding="async"
-              fetchPriority="high"
-            />
-            {step > 1 ? (
-              <button
-                type="button"
-                onClick={handleStepBack}
-                className="inline-flex items-center justify-center h-8 w-8 sm:h-9 sm:w-9 rounded-full border border-quiz-border/60 text-quiz-muted hover:text-quiz-foreground hover:border-quiz-purple/40 transition-colors"
-                aria-label="Voltar"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-            ) : null}
-          </div>
-          <div className="flex-1 max-w-[180px] sm:max-w-[240px]">
-            <div className="h-1.5 bg-quiz-border/30 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-quiz-blue to-quiz-purple transition-all duration-500 ease-out rounded-full"
-                style={{ width: `${(step / 6) * 100}%` }}
-              />
-            </div>
-          </div>
+        <div className="container max-w-6xl mx-auto px-3 py-2.5 sm:px-4 sm:py-4 flex items-center gap-2 sm:gap-3">
+          <img
+            src="/imgs/ThinkAndTalk.png"
+            alt="ThinkAndTalk"
+            className="h-7 sm:h-8 w-auto"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
+          />
+          {step > 1 ? (
+            <button
+              type="button"
+              onClick={handleStepBack}
+              className="inline-flex items-center justify-center h-8 w-8 sm:h-9 sm:w-9 rounded-full border border-quiz-border/60 text-quiz-muted hover:text-quiz-foreground hover:border-quiz-purple/40 transition-colors"
+              aria-label="Voltar"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+          ) : null}
         </div>
       </header>
 
       {step === 1 && (
         <div className="space-y-0">
-          <div className="container max-w-3xl mx-auto px-4 pt-6 sm:pt-8 pb-1 sm:pb-2 text-center">
+          <div className="container max-w-3xl mx-auto px-4 pt-6 sm:pt-8 pb-0 text-center">
             <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-quiz-foreground leading-tight">
-              Comece a gravar hoje! Em menos de 10 minutos você terá um vídeo pronto para postar.
+              Vamos iniciar a demonstração do aplicativo ThinkAndTalk. Em menos de 10 minutos você terá um vídeo pronto!
             </h1>
           </div>
           <QuizQuestion
@@ -215,7 +205,7 @@ export default function Demo() {
       {step === 2 && (
         <main className="container max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-6">
           <div className="rounded-xl sm:rounded-2xl border bg-card p-4 sm:p-6 md:p-8 space-y-1.5 sm:space-y-2">
-            <h1 className="text-base sm:text-xl md:text-2xl font-semibold text-quiz-foreground">
+            <h1 className="text-lg sm:text-2xl md:text-3xl font-semibold text-quiz-foreground">
               Selecione ao menos 2 notícias vão guiar o conteúdo do vídeo
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground">
@@ -285,7 +275,7 @@ export default function Demo() {
           <div className="absolute inset-0 bg-black/50" />
 
           <div className="relative z-10 container max-w-3xl mx-auto px-4 py-8 sm:py-12 md:py-20">
-            <div className="rounded-xl sm:rounded-2xl border border-white/20 bg-black/70 p-5 sm:p-6 md:p-8 text-white space-y-3 sm:space-y-4">
+            <div className="rounded-xl sm:rounded-2xl border border-quiz-purple/40 bg-quiz-purple/90 p-5 sm:p-6 md:p-8 text-white space-y-3 sm:space-y-4 shadow-lg shadow-quiz-purple/30">
               <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold leading-tight">
                 Pronto... agora é só apertar o PLAY para dar o seu toque especial
               </h1>
