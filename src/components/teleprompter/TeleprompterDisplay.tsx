@@ -686,7 +686,7 @@ export function TeleprompterDisplay({
               {!isPlaying ? (
                 <Button onClick={handleStart} size="sm" disabled={countdown !== null}>
                   <Play className="w-4 h-4 mr-1" />
-                  {countdown !== null ? t("Preparando") : t("Iniciar")}
+                  {countdown !== null ? t("Preparando") : t("Play")}
                 </Button>
               ) : (
                 <Button onClick={handlePauseToggle} size="sm" variant={isPaused ? "default" : "secondary"}>

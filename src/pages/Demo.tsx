@@ -290,7 +290,7 @@ export default function Demo() {
               Estamos cruzando o assunto, as notícias e o estilo da fala para montar sua demonstração.
             </p>
             {isGenerating ? (
-              <p className="text-xs sm:text-sm text-muted-foreground">Isso pode levar alguns segundos.</p>
+              <p className="text-sm sm:text-base md:text-lg text-muted-foreground">Isso pode levar alguns segundos.</p>
             ) : null}
           </div>
         </main>
@@ -311,8 +311,8 @@ export default function Demo() {
               <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold leading-tight">
                 Pronto... agora é só apertar o PLAY para dar o seu toque especial
               </h1>
-              <p className="text-sm sm:text-base text-white/90">
-                Se necessário, utilize os comandos para aumentar ou diminuir a velocidade de reprodução, a fonte do texto, alterar a cor do fundo, etc.
+              <p className="text-base sm:text-lg md:text-xl text-white/90">
+                Se necessário, utilize os controles do teleprompter para aumentar ou diminuir a velocidade de reprodução, a fonte do texto, alterar a cor do fundo, etc.
               </p>
               <Button size="lg" onClick={() => setStep(6)} className="w-full sm:w-auto">
                 Vamos lá
@@ -323,12 +323,24 @@ export default function Demo() {
       )}
       {step === 7 && (
         <main className="container max-w-3xl mx-auto px-4 py-8 sm:py-12 md:py-20">
-          <div className="rounded-xl sm:rounded-2xl border bg-card p-5 sm:p-6 md:p-8 space-y-4 sm:space-y-5">
-            <p className="text-base sm:text-lg md:text-xl text-foreground leading-relaxed whitespace-pre-line">
-              {"Esta foi uma breve demonstração do aplicativo.\nComo você pôde observar, foi rápido e prático e totalmente auxiliado por IA.\nCom o ThinkAndTalk você terá total controle do Roteiro e da apresentação no Teleprompter, ajustando a velocidade de reprodução, tamanho da fonte, cor do fundo, dentre outros."}
-            </p>
-            <Button size="lg" onClick={() => navigate("/demo/sales")} className="w-full sm:w-auto">
-              Quero saber mais
+          <div className="rounded-xl sm:rounded-2xl border border-quiz-purple/30 bg-gradient-to-br from-card via-card to-quiz-purple/5 p-6 sm:p-8 md:p-10 space-y-5 sm:space-y-6 shadow-lg">
+            <div className="space-y-3">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-quiz-foreground leading-tight">
+                🎬 E isso foi só o começo!
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed">
+                Em poucos passos você criou um vídeo completo — <span className="text-quiz-foreground font-medium">rápido, prático e 100% auxiliado por IA</span>.
+              </p>
+              <p className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed">
+                Com o <span className="text-quiz-purple font-semibold">ThinkAndTalk</span> você terá total controle do roteiro e do teleprompter: velocidade, fonte, cor de fundo e muito mais.
+              </p>
+            </div>
+            <Button
+              size="lg"
+              onClick={() => navigate("/demo/sales")}
+              className="w-full sm:w-auto bg-quiz-purple hover:bg-quiz-purple/90 text-white text-base sm:text-lg px-8 py-3 shadow-md shadow-quiz-purple/25"
+            >
+              🚀 Quero saber mais
             </Button>
           </div>
         </main>
