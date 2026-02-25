@@ -296,7 +296,7 @@ export default function Demo() {
               {"Esta foi uma breve demonstração do aplicativo.\nComo você pôde observar, foi rápido e prático e totalmente auxiliado por IA.\nCom o ThinkAndTalk você terá total controle do Roteiro e da apresentação no Teleprompter, ajustando a velocidade de reprodução, tamanho da fonte, cor do fundo, dentre outros."}
             </p>
             <Button size="lg" onClick={() => navigate("/demo/sales")} className="w-full sm:w-auto">
-              Continuar
+              Quero saber mais
             </Button>
           </div>
         </main>
