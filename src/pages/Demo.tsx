@@ -11,7 +11,15 @@ import { generateTeleprompterScript } from "@/services/teleprompter/generateTele
 import { useUserNews } from "@/hooks/useUserNews";
 import { useToast } from "@/hooks/use-toast";
 
-type DemoStep = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+type DemoStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+const stepNameQuestion: QuizQuestionData = {
+  key: "demo_name",
+  question: "Qual o seu nome?",
+  freeText: true,
+  freeTextPlaceholder: "Digite seu nome",
+  options: [],
+};
 
 const stepOneQuestion: QuizQuestionData = {
   key: "demo_topic",
@@ -39,7 +47,8 @@ const toneMap: Record<string, string> = {
 export default function Demo() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [step, setStep] = useState<DemoStep>(1);
+  const [step, setStep] = useState<DemoStep>(0);
+  const [userName, setUserName] = useState("");
   const [topic, setTopic] = useState("");
   const [tone, setTone] = useState("");
   const [generatedScript, setGeneratedScript] = useState("");
@@ -60,7 +69,7 @@ export default function Demo() {
   );
 
   const handleStepBack = () => {
-    if (step <= 1) return;
+    if (step <= 0) return;
     setStep((previous) => (previous - 1) as DemoStep);
   };
 
@@ -99,7 +108,7 @@ export default function Demo() {
             audienceAgeMax: 65,
             audienceGenderSplit: 50,
             language: "Portuguese",
-            duration: "3",
+            duration: "1",
             durationUnit: "minutes",
             scriptType: "video_curto",
             includeCta: true,
@@ -108,7 +117,7 @@ export default function Demo() {
               goal: "informar",
               platform: "YouTube",
             },
-            complementaryPrompt: `Tema principal: ${topic.trim()}`,
+            complementaryPrompt: `Tema principal: ${topic.trim()}. O apresentador se chama ${userName.trim()} — use o nome dele(a) na abertura do roteiro.`,
           },
           {
             allowGuest: true,
@@ -163,7 +172,7 @@ export default function Demo() {
             decoding="async"
             fetchPriority="high"
           />
-          {step > 1 ? (
+          {step > 0 ? (
             <button
               type="button"
               onClick={handleStepBack}
@@ -176,17 +185,40 @@ export default function Demo() {
         </div>
       </header>
 
+      {step === 0 && (
+        <div className="space-y-0">
+          <div className="container max-w-3xl mx-auto px-4 pt-6 sm:pt-8 pb-0 text-center">
+            <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-quiz-foreground leading-tight">
+              Vamos iniciar a demonstração do aplicativo ThinkAndTalk. Em menos de 3 minutos você terá um vídeo pronto!
+            </h1>
+          </div>
+          <QuizQuestion
+            question={stepNameQuestion}
+            currentIndex={0}
+            totalQuestions={7}
+            onAnswer={(_, value) => {
+              const name = String(value || "").trim();
+              if (!name) return;
+              setUserName(name);
+              setStep(1);
+            }}
+            selectedAnswer={userName}
+            slideDirection="left"
+          />
+        </div>
+      )}
+
       {step === 1 && (
         <div className="space-y-0">
           <div className="container max-w-3xl mx-auto px-4 pt-6 sm:pt-8 pb-0 text-center">
             <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-quiz-foreground leading-tight">
-              Vamos iniciar a demonstração do aplicativo ThinkAndTalk. Em menos de 10 minutos você terá um vídeo pronto!
+              Vamos iniciar a demonstração do aplicativo ThinkAndTalk. Em menos de 3 minutos você terá um vídeo pronto!
             </h1>
           </div>
           <QuizQuestion
             question={stepOneQuestion}
-            currentIndex={0}
-            totalQuestions={6}
+            currentIndex={1}
+            totalQuestions={7}
             onAnswer={(_, value) => {
               const nextTopic = String(value || "").trim();
               if (!nextTopic) return;
