@@ -706,13 +706,20 @@ export function TeleprompterDisplay({
           }
         })();
         const isLongPause = part.pauseType === "pause-long";
+        const wordIdx = globalWordIndex++;
         if (showPauseTags) {
           return (
             <span key={index} className={isLongPause ? "block mt-4" : "inline"}>
               {isLongPause ? <span className="block h-4" /> : null}
               <span
                 data-pause={part.pauseType}
-                className={`inline-block px-2 py-1 rounded text-sm ${pauseClass}`}
+                data-word-index={wordIdx}
+                ref={(el) => { if (el) wordSpansRef.current[wordIdx] = el; }}
+                className={`inline-block px-2 py-1 rounded text-sm transition-colors duration-100 ${pauseClass}`}
+                style={{
+                  outline: wordIdx === highlightIndex ? '2px solid rgba(255,255,255,0.4)' : 'none',
+                  outlineOffset: '2px',
+                }}
               >
                 {pauseLabel}
               </span>
@@ -724,7 +731,9 @@ export function TeleprompterDisplay({
             {isLongPause ? <span className="block h-4" /> : null}
             <span
               data-pause={part.pauseType}
-              className="inline-block w-0 h-0"
+              data-word-index={wordIdx}
+              ref={(el) => { if (el) wordSpansRef.current[wordIdx] = el; }}
+              className="inline-block w-1 h-4"
             />
           </span>
         );
@@ -821,11 +830,13 @@ export function TeleprompterDisplay({
                 <Label htmlFor="recordVideo" className="text-sm">
                   {t("Gravar vídeo")}
                 </Label>
-                {isRecording && (
+                {isRecording ? (
                   <span className="flex items-center gap-1 text-xs text-red-500">
-                    <span className="h-2 w-2 rounded-full bg-red-500" />
-                    REC
+                    <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                    REC {formatElapsed(elapsedSeconds)}
                   </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">{formatElapsed(elapsedSeconds)}</span>
                 )}
               </div>
               {recordEnabled && (
@@ -867,12 +878,10 @@ export function TeleprompterDisplay({
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="text-sm text-muted-foreground">
-                {formatElapsed(elapsedSeconds)}
-              </div>
               <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{t("Velocidade")}</span>
                 <Button onClick={() => handleSpeedChange(-10)} size="sm" variant="outline">
-                  <ChevronDown className="w-4 h-4" />
+                  <Minus className="w-4 h-4" />
                 </Button>
                 <div className="w-32">
                   <Slider
@@ -884,7 +893,7 @@ export function TeleprompterDisplay({
                   />
                 </div>
                 <Button onClick={() => handleSpeedChange(10)} size="sm" variant="outline">
-                  <ChevronUp className="w-4 h-4" />
+                  <Plus className="w-4 h-4" />
                 </Button>
                 <span className="text-sm text-muted-foreground w-24 text-center">{getSpeedLabel(speed)}</span>
               </div>
@@ -1103,16 +1112,21 @@ export function TeleprompterDisplay({
         {recordEnabled && (
           <div
             ref={previewContainerRef}
-            className={`fixed z-50 rounded-lg border overflow-hidden shadow-lg cursor-grab active:cursor-grabbing ${
+            className={`fixed z-50 rounded-lg overflow-hidden shadow-lg cursor-grab active:cursor-grabbing ${
               isRecording
                 ? recordOrientation === "portrait"
-                  ? "w-32 h-48 border-red-500/60 ring-2 ring-red-500/40"
-                  : "w-48 h-32 border-red-500/60 ring-2 ring-red-500/40"
+                  ? "w-32 h-48 ring-2 ring-red-500/40"
+                  : "w-48 h-32 ring-2 ring-red-500/40"
                 : recordOrientation === "portrait"
-                  ? "w-24 h-36 border-white/30"
-                  : "w-36 h-24 border-white/30"
-            } bg-black/40`}
-            style={previewPos.x >= 0 ? { left: previewPos.x, top: previewPos.y, right: 'auto' } : { right: 16, top: 16 }}
+                  ? "w-24 h-36"
+                  : "w-36 h-24"
+            } bg-black`}
+            style={{
+              ...(previewPos.x >= 0 ? { left: previewPos.x, top: previewPos.y, right: 'auto' } : { right: 16, top: 16 }),
+              border: '3px solid rgba(0,0,0,0.9)',
+              boxShadow: '0 0 0 2px rgba(255,255,255,0.3), 0 4px 20px rgba(0,0,0,0.8)',
+            }}
+            
             onMouseDown={(e) => { e.preventDefault(); handleDragStart(e.clientX, e.clientY); }}
             onTouchStart={(e) => { if (e.touches.length === 1) handleDragStart(e.touches[0].clientX, e.touches[0].clientY); }}
           >
