@@ -42,17 +42,17 @@ export interface TeleprompterSettings {
 }
 
 export const DEFAULT_TELEPROMPTER_SETTINGS: TeleprompterSettings = {
-  speed: 50,
+  speed: 30,
   fontFamily: "Inter, system-ui, sans-serif",
   fontSize: 28,
   textColor: "#ffffff",
   backgroundColor: "#000000",
   showPauseTags: true,
   pauseDurations: {
-    "pause-short": 1000,
-    "pause-medium": 2000,
-    "pause-long": 3000,
-    "pause": 2000,
+    "pause-short": 500,
+    "pause-medium": 1000,
+    "pause-long": 1500,
+    "pause": 1000,
   },
 };
 
@@ -68,10 +68,10 @@ interface TeleprompterDisplayProps {
 }
 
 const DEFAULT_PAUSE_DURATIONS = {
-  "pause-short": 1000,
-  "pause-medium": 2000,
-  "pause-long": 3000,
-  "pause": 2000,
+  "pause-short": 500,
+  "pause-medium": 1000,
+  "pause-long": 1500,
+  "pause": 1000,
 } as const;
 
 type PauseType = keyof typeof DEFAULT_PAUSE_DURATIONS;
@@ -156,6 +156,14 @@ export function TeleprompterDisplay({
   const hasCompletedRef = useRef(false);
   const [previewHeight, setPreviewHeight] = useState(0);
 
+  // Draggable preview state
+  const [previewPos, setPreviewPos] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
+  const dragStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null);
+
+  // Word highlight state
+  const [highlightIndex, setHighlightIndex] = useState(-1);
+  const wordSpansRef = useRef<HTMLSpanElement[]>([]);
+
   // Measure preview container height for text offset
   useEffect(() => {
     if (!recordEnabled) {
@@ -174,6 +182,52 @@ export function TeleprompterDisplay({
     if (previewContainerRef.current) observer.observe(previewContainerRef.current);
     return () => observer.disconnect();
   }, [recordEnabled, isRecording, recordOrientation]);
+
+  // Draggable preview handlers
+  const handleDragStart = useCallback((clientX: number, clientY: number) => {
+    const el = previewContainerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    dragStartRef.current = { x: clientX, y: clientY, posX: rect.left, posY: rect.top };
+  }, []);
+
+  const handleDragMove = useCallback((clientX: number, clientY: number) => {
+    if (!dragStartRef.current) return;
+    const dx = clientX - dragStartRef.current.x;
+    const dy = clientY - dragStartRef.current.y;
+    setPreviewPos({ x: dragStartRef.current.posX + dx, y: dragStartRef.current.posY + dy });
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    dragStartRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => handleDragMove(e.clientX, e.clientY);
+    const onMouseUp = () => handleDragEnd();
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1) handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+    };
+    const onTouchEnd = () => handleDragEnd();
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("touchmove", onTouchMove);
+    window.addEventListener("touchend", onTouchEnd);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [handleDragMove, handleDragEnd]);
+
+  // Speed label helper
+  const getSpeedLabel = (s: number) => {
+    if (s <= 30) return "Lento";
+    if (s <= 70) return "Normal";
+    if (s <= 120) return "Rápido";
+    return "Muito rápido";
+  };
 
   // Parse script to identify pause positions
   const parseScript = useCallback((text: string) => {
@@ -385,6 +439,24 @@ export function TeleprompterDisplay({
       
       containerRef.current.scrollTop = scrollPositionRef.current;
 
+      // Update word highlight based on scroll position
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const highlightLine = containerRect.top + containerRect.height * 0.3;
+      let bestIdx = -1;
+      let bestDist = Infinity;
+      for (let i = 0; i < wordSpansRef.current.length; i++) {
+        const span = wordSpansRef.current[i];
+        if (!span) continue;
+        const rect = span.getBoundingClientRect();
+        const mid = rect.top + rect.height / 2;
+        const dist = Math.abs(mid - highlightLine);
+        if (dist < bestDist && rect.top < highlightLine + 20) {
+          bestDist = dist;
+          bestIdx = i;
+        }
+      }
+      setHighlightIndex(bestIdx);
+
       // Check for pause markers reaching the first line (top) of the display
       const pauseElements = contentRef.current.querySelectorAll("[data-pause]");
       pauseElements.forEach((el) => {
@@ -456,6 +528,7 @@ export function TeleprompterDisplay({
     setIsPaused(false);
     setIsUserPaused(false);
     setCountdown(3);
+    setShowControls(false); // Auto-collapse controls on play
     if (recordedUrl) {
       URL.revokeObjectURL(recordedUrl);
       setRecordedUrl(null);
@@ -605,6 +678,7 @@ export function TeleprompterDisplay({
   }, [stopPreviewStream, stopRecording]);
 
   const renderContent = () => {
+    let globalWordIndex = 0;
     return parsedScript.map((part, index) => {
       if (part.type === "pause") {
         const pauseLabel = (() => {
@@ -658,7 +732,34 @@ export function TeleprompterDisplay({
       if (part.type === "topic") {
         return null;
       }
-      return <span key={index}>{part.content}</span>;
+      // Split text into words for highlighting
+      const words = part.content.split(/(\s+)/);
+      return (
+        <span key={index}>
+          {words.map((word, wIdx) => {
+            if (/^\s+$/.test(word)) {
+              return <span key={wIdx}>{word}</span>;
+            }
+            const wordIdx = globalWordIndex++;
+            return (
+              <span
+                key={wIdx}
+                data-word-index={wordIdx}
+                ref={(el) => {
+                  if (el) wordSpansRef.current[wordIdx] = el;
+                }}
+                className="transition-colors duration-100"
+                style={{
+                  backgroundColor: wordIdx === highlightIndex ? 'rgba(255,255,255,0.25)' : 'transparent',
+                  borderRadius: wordIdx === highlightIndex ? '2px' : undefined,
+                }}
+              >
+                {word}
+              </span>
+            );
+          })}
+        </span>
+      );
     });
   };
 
@@ -785,7 +886,7 @@ export function TeleprompterDisplay({
                 <Button onClick={() => handleSpeedChange(10)} size="sm" variant="outline">
                   <ChevronUp className="w-4 h-4" />
                 </Button>
-                <span className="text-sm text-muted-foreground w-16">{speed} px/s</span>
+                <span className="text-sm text-muted-foreground w-24 text-center">{getSpeedLabel(speed)}</span>
               </div>
 
               <Button onClick={() => setShowPauseTags(!showPauseTags)} size="sm" variant="outline">
@@ -1002,7 +1103,7 @@ export function TeleprompterDisplay({
         {recordEnabled && (
           <div
             ref={previewContainerRef}
-            className={`fixed z-50 rounded-lg border overflow-hidden shadow-lg transition-all duration-300 right-4 top-4 ${
+            className={`fixed z-50 rounded-lg border overflow-hidden shadow-lg cursor-grab active:cursor-grabbing ${
               isRecording
                 ? recordOrientation === "portrait"
                   ? "w-32 h-48 border-red-500/60 ring-2 ring-red-500/40"
@@ -1011,10 +1112,13 @@ export function TeleprompterDisplay({
                   ? "w-24 h-36 border-white/30"
                   : "w-36 h-24 border-white/30"
             } bg-black/40`}
+            style={previewPos.x >= 0 ? { left: previewPos.x, top: previewPos.y, right: 'auto' } : { right: 16, top: 16 }}
+            onMouseDown={(e) => { e.preventDefault(); handleDragStart(e.clientX, e.clientY); }}
+            onTouchStart={(e) => { if (e.touches.length === 1) handleDragStart(e.touches[0].clientX, e.touches[0].clientY); }}
           >
             <video
               ref={previewRef}
-              className="h-full w-full object-cover scale-x-[-1]"
+              className="h-full w-full object-cover scale-x-[-1] pointer-events-none"
               muted
               playsInline
               autoPlay
@@ -1063,7 +1167,4 @@ export function TeleprompterDisplay({
     </div>
   );
 }
-
-
-
 
