@@ -163,6 +163,7 @@ export function TeleprompterDisplay({
 
   // Word highlight state
   const [highlightIndex, setHighlightIndex] = useState(-1);
+  const highlightIndexRef = useRef(-1);
   const wordSpansRef = useRef<HTMLSpanElement[]>([]);
 
   // Header height for camera preview area
@@ -426,38 +427,43 @@ export function TeleprompterDisplay({
       
       containerRef.current.scrollTop = scrollPositionRef.current;
 
-      // Keep highlight tied to what is visible: nearest word to the guide line (30% viewport height).
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const targetY = containerRect.top + containerRef.current.clientHeight * 0.3;
-      let nearestIndex = -1;
-      let nearestDistance = Number.POSITIVE_INFINITY;
+      // Sequential highlight (all words), clamped to what's still visible.
+      const totalWords = wordSpansRef.current.filter(Boolean).length;
+      if (maxScroll > 0 && totalWords > 0) {
+        const progress = Math.min(scrollPositionRef.current / maxScroll, 1);
+        const targetIndex = Math.min(Math.floor(progress * totalWords), totalWords - 1);
+        let nextIndex = targetIndex;
 
-      for (let i = 0; i < wordSpansRef.current.length; i++) {
-        const span = wordSpansRef.current[i];
-        if (!span) continue;
-        const rect = span.getBoundingClientRect();
-
-        // Consider only words currently visible in the scroll viewport.
-        if (rect.bottom < containerRect.top || rect.top > containerRect.bottom) continue;
-
-        const midY = rect.top + rect.height / 2;
-        const distance = Math.abs(midY - targetY);
-        if (distance < nearestDistance) {
-          nearestDistance = distance;
-          nearestIndex = i;
+        // Avoid skipping multiple words in a single frame.
+        if (nextIndex > highlightIndexRef.current + 1) {
+          nextIndex = highlightIndexRef.current + 1;
         }
-      }
+        if (nextIndex < highlightIndexRef.current) {
+          nextIndex = highlightIndexRef.current;
+        }
 
-      if (nearestIndex >= 0) {
-        setHighlightIndex(nearestIndex);
+        // If calculated word is above the visible viewport, advance to first visible.
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const topSafe = containerRect.top + 2;
+        while (nextIndex < totalWords - 1) {
+          const span = wordSpansRef.current[nextIndex];
+          if (!span) break;
+          const rect = span.getBoundingClientRect();
+          if (rect.bottom >= topSafe) break;
+          nextIndex += 1;
+        }
 
-        // Trigger pauses when the pause token reaches the visible guide line.
-        const currentSpan = wordSpansRef.current[nearestIndex];
-        if (currentSpan) {
-          const pauseType = currentSpan.getAttribute("data-pause") as PauseType;
-          if (pauseType && !currentSpan.hasAttribute("data-triggered")) {
-            currentSpan.setAttribute("data-triggered", "true");
-            handlePause(pauseType, nearestIndex);
+        if (nextIndex !== highlightIndexRef.current) {
+          highlightIndexRef.current = nextIndex;
+          setHighlightIndex(nextIndex);
+
+          const currentSpan = wordSpansRef.current[nextIndex];
+          if (currentSpan) {
+            const pauseType = currentSpan.getAttribute("data-pause") as PauseType;
+            if (pauseType && !currentSpan.hasAttribute("data-triggered")) {
+              currentSpan.setAttribute("data-triggered", "true");
+              handlePause(pauseType, nextIndex);
+            }
           }
         }
       }
@@ -557,6 +563,7 @@ export function TeleprompterDisplay({
     setElapsedSeconds(0);
     setCountdown(null);
     setHighlightIndex(-1);
+    highlightIndexRef.current = -1;
     hasCompletedRef.current = false;
     if (containerRef.current) {
       containerRef.current.scrollTop = 0;
@@ -663,6 +670,11 @@ export function TeleprompterDisplay({
       }
     };
   }, [stopPreviewStream, stopRecording]);
+
+  useEffect(() => {
+    setHighlightIndex(-1);
+    highlightIndexRef.current = -1;
+  }, [script]);
 
   const renderContent = () => {
     wordSpansRef.current = [];
