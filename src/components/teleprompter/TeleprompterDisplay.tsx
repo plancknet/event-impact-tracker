@@ -426,20 +426,38 @@ export function TeleprompterDisplay({
       
       containerRef.current.scrollTop = scrollPositionRef.current;
 
-      // Update word highlight proportionally to scroll position
-      const totalWords = wordSpansRef.current.filter(Boolean).length;
-      if (maxScroll > 0 && totalWords > 0) {
-        const progress = Math.min(scrollPositionRef.current / maxScroll, 1);
-        const wordIdx = Math.min(Math.floor(progress * totalWords), totalWords - 1);
-        setHighlightIndex(wordIdx);
+      // Keep highlight tied to what is visible: nearest word to the guide line (30% viewport height).
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const targetY = containerRect.top + containerRef.current.clientHeight * 0.3;
+      let nearestIndex = -1;
+      let nearestDistance = Number.POSITIVE_INFINITY;
 
-        // Check if the highlighted word is a pause marker — trigger pause from highlight
-        const currentSpan = wordSpansRef.current[wordIdx];
+      for (let i = 0; i < wordSpansRef.current.length; i++) {
+        const span = wordSpansRef.current[i];
+        if (!span) continue;
+        const rect = span.getBoundingClientRect();
+
+        // Consider only words currently visible in the scroll viewport.
+        if (rect.bottom < containerRect.top || rect.top > containerRect.bottom) continue;
+
+        const midY = rect.top + rect.height / 2;
+        const distance = Math.abs(midY - targetY);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestIndex = i;
+        }
+      }
+
+      if (nearestIndex >= 0) {
+        setHighlightIndex(nearestIndex);
+
+        // Trigger pauses when the pause token reaches the visible guide line.
+        const currentSpan = wordSpansRef.current[nearestIndex];
         if (currentSpan) {
           const pauseType = currentSpan.getAttribute("data-pause") as PauseType;
           if (pauseType && !currentSpan.hasAttribute("data-triggered")) {
             currentSpan.setAttribute("data-triggered", "true");
-            handlePause(pauseType, wordIdx);
+            handlePause(pauseType, nearestIndex);
           }
         }
       }
