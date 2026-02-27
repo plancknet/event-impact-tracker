@@ -1157,7 +1157,7 @@ export function TeleprompterDisplay({
             ref={contentRef}
             className="px-8 transition-all duration-300"
             style={{
-              paddingTop: '2rem',
+              paddingTop: recordEnabled ? 'calc(2rem + 30px)' : '2rem',
               fontFamily,
               fontSize: isFullscreen ? Math.round(fontSize * 1.3) : fontSize,
               lineHeight: 1.6,
