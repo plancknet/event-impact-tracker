@@ -84,6 +84,8 @@ const FONT_OPTIONS = [
   { label: "Courier", value: "\"Courier New\", monospace" },
 ];
 
+const READING_BAND_COLOR = "rgba(255,255,0,0.35)";
+
 export function TeleprompterDisplay({
   script,
   references = [],
@@ -161,13 +163,12 @@ export function TeleprompterDisplay({
   const headerRef = useRef<HTMLDivElement>(null);
   const dragStartRef = useRef<{ x: number; startPercent: number } | null>(null);
 
-  // Word highlight state
-  const [highlightIndex, setHighlightIndex] = useState(-1);
-  const highlightIndexRef = useRef(-1);
   const wordSpansRef = useRef<HTMLSpanElement[]>([]);
 
   // Header height for camera preview area
   const HEADER_HEIGHT = recordEnabled ? (recordOrientation === "portrait" ? (isRecording ? 200 : 160) : (isRecording ? 140 : 110)) : 0;
+  const effectiveFontSize = isFullscreen ? Math.round(fontSize * 1.3) : fontSize;
+  const readingBandHeight = Math.round(effectiveFontSize * 1.3);
 
   // Draggable preview handlers (horizontal only)
   const handleDragStart = useCallback((clientX: number) => {
@@ -263,12 +264,9 @@ export function TeleprompterDisplay({
 
   const parsedScript = parseScript(script);
 
-  const handlePause = useCallback((pauseType: PauseType, pauseWordIndex?: number) => {
+  const handlePause = useCallback((pauseType: PauseType) => {
     setIsPaused(true);
     setCurrentPause(pauseType);
-    if (pauseWordIndex !== undefined && pauseWordIndex >= 0) {
-      setHighlightIndex(pauseWordIndex);
-    }
     
     pauseTimeoutRef.current = setTimeout(() => {
       setIsPaused(false);
@@ -427,43 +425,36 @@ export function TeleprompterDisplay({
       
       containerRef.current.scrollTop = scrollPositionRef.current;
 
-      // Sequential highlight (all words), clamped to what's still visible.
-      const totalWords = wordSpansRef.current.filter(Boolean).length;
-      if (maxScroll > 0 && totalWords > 0) {
-        const progress = Math.min(scrollPositionRef.current / maxScroll, 1);
-        const targetIndex = Math.min(Math.floor(progress * totalWords), totalWords - 1);
-        let nextIndex = targetIndex;
+      // Trigger pauses when pause markers cross the reading band center.
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const guideY = containerRect.top + readingBandHeight / 2;
+      let candidate: { index: number; distance: number } | null = null;
 
-        // Avoid skipping multiple words in a single frame.
-        if (nextIndex > highlightIndexRef.current + 1) {
-          nextIndex = highlightIndexRef.current + 1;
+      for (let i = 0; i < wordSpansRef.current.length; i++) {
+        const span = wordSpansRef.current[i];
+        if (!span) continue;
+        if (!span.hasAttribute("data-pause")) continue;
+        if (span.hasAttribute("data-triggered")) continue;
+
+        const rect = span.getBoundingClientRect();
+        if (rect.bottom < containerRect.top || rect.top > containerRect.bottom) continue;
+
+        const midY = rect.top + rect.height / 2;
+        if (midY > guideY) continue;
+
+        const distance = guideY - midY;
+        if (!candidate || distance < candidate.distance) {
+          candidate = { index: i, distance };
         }
-        if (nextIndex < highlightIndexRef.current) {
-          nextIndex = highlightIndexRef.current;
-        }
+      }
 
-        // If calculated word is above the visible viewport, advance to first visible.
-        const containerRect = containerRef.current.getBoundingClientRect();
-        const topSafe = containerRect.top + 2;
-        while (nextIndex < totalWords - 1) {
-          const span = wordSpansRef.current[nextIndex];
-          if (!span) break;
-          const rect = span.getBoundingClientRect();
-          if (rect.bottom >= topSafe) break;
-          nextIndex += 1;
-        }
-
-        if (nextIndex !== highlightIndexRef.current) {
-          highlightIndexRef.current = nextIndex;
-          setHighlightIndex(nextIndex);
-
-          const currentSpan = wordSpansRef.current[nextIndex];
-          if (currentSpan) {
-            const pauseType = currentSpan.getAttribute("data-pause") as PauseType;
-            if (pauseType && !currentSpan.hasAttribute("data-triggered")) {
-              currentSpan.setAttribute("data-triggered", "true");
-              handlePause(pauseType, nextIndex);
-            }
+      if (candidate) {
+        const currentSpan = wordSpansRef.current[candidate.index];
+        if (currentSpan) {
+          const pauseType = currentSpan.getAttribute("data-pause") as PauseType;
+          if (pauseType) {
+            currentSpan.setAttribute("data-triggered", "true");
+            handlePause(pauseType);
           }
         }
       }
@@ -472,7 +463,7 @@ export function TeleprompterDisplay({
     if (isPlaying) {
       animationRef.current = requestAnimationFrame(animate);
     }
-  }, [speed, isPaused, isPlaying, handlePause, onScriptComplete, stopRecording]);
+  }, [speed, isPaused, isPlaying, handlePause, onScriptComplete, stopRecording, readingBandHeight]);
 
   useEffect(() => {
     if (isPlaying && !isPaused) {
@@ -562,8 +553,6 @@ export function TeleprompterDisplay({
     scrollPositionRef.current = 0;
     setElapsedSeconds(0);
     setCountdown(null);
-    setHighlightIndex(-1);
-    highlightIndexRef.current = -1;
     hasCompletedRef.current = false;
     if (containerRef.current) {
       containerRef.current.scrollTop = 0;
@@ -671,11 +660,6 @@ export function TeleprompterDisplay({
     };
   }, [stopPreviewStream, stopRecording]);
 
-  useEffect(() => {
-    setHighlightIndex(-1);
-    highlightIndexRef.current = -1;
-  }, [script]);
-
   const renderContent = () => {
     wordSpansRef.current = [];
     let globalWordIndex = 0;
@@ -716,10 +700,6 @@ export function TeleprompterDisplay({
                 data-word-index={wordIdx}
                 ref={(el) => { if (el) wordSpansRef.current[wordIdx] = el; }}
                 className={`inline-block px-2 py-1 rounded text-sm transition-colors duration-100 ${pauseClass}`}
-                style={{
-                  outline: wordIdx === highlightIndex ? '2px solid rgba(255,255,255,0.4)' : 'none',
-                  outlineOffset: '2px',
-                }}
               >
                 {pauseLabel}
               </span>
@@ -758,13 +738,6 @@ export function TeleprompterDisplay({
                   if (el) wordSpansRef.current[wordIdx] = el;
                 }}
                 className="transition-all duration-75"
-                style={{
-                  backgroundColor: wordIdx === highlightIndex ? 'rgba(255,255,0,0.35)' : 'transparent',
-                  borderRadius: wordIdx === highlightIndex ? '3px' : undefined,
-                  padding: wordIdx === highlightIndex ? '1px 2px' : undefined,
-                  color: wordIdx === highlightIndex ? '#ffffff' : undefined,
-                  textShadow: wordIdx === highlightIndex ? '0 0 8px rgba(255,255,255,0.5)' : undefined,
-                }}
               >
                 {word}
               </span>
@@ -1146,10 +1119,7 @@ export function TeleprompterDisplay({
         <div
           ref={containerRef}
           className="relative overflow-hidden text-white flex-1 pb-40 md:pb-0"
-          style={{
-            scrollBehavior: "auto",
-            marginTop: recordEnabled ? "30px" : "0px",
-          }}
+          style={{ scrollBehavior: "auto" }}
           onWheel={(event) => {
             if (!containerRef.current || !contentRef.current) return;
             const maxScroll =
@@ -1171,6 +1141,13 @@ export function TeleprompterDisplay({
             className="absolute inset-x-0 bottom-0 h-24 z-10 pointer-events-none"
             style={{ background: `linear-gradient(to top, ${backgroundColor}, transparent)` }}
           />
+          <div
+            className="absolute inset-x-0 top-0 z-20 pointer-events-none"
+            style={{
+              height: `${readingBandHeight}px`,
+              backgroundColor: READING_BAND_COLOR,
+            }}
+          />
 
           {countdown !== null && (
             <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
@@ -1180,16 +1157,13 @@ export function TeleprompterDisplay({
             </div>
           )}
           
-          {/* Center line indicator */}
-          <div className="absolute inset-x-0 top-[30%] h-0.5 bg-primary/30 z-10 pointer-events-none" />
-          
           <div
             ref={contentRef}
             className="px-8 transition-all duration-300"
             style={{
-              paddingTop: recordEnabled ? 'calc(2rem + 30px)' : '2rem',
+              paddingTop: '2rem',
               fontFamily,
-              fontSize: isFullscreen ? Math.round(fontSize * 1.3) : fontSize,
+              fontSize: effectiveFontSize,
               lineHeight: 1.6,
               color: textColor,
             }}
