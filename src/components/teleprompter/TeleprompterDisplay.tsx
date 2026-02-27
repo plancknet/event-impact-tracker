@@ -448,27 +448,17 @@ export function TeleprompterDisplay({
         const progress = Math.min(scrollPositionRef.current / maxScroll, 1);
         const wordIdx = Math.min(Math.floor(progress * totalWords), totalWords - 1);
         setHighlightIndex(wordIdx);
-      }
 
-      // Check for pause markers reaching the first line (top) of the display
-      const pauseElements = contentRef.current.querySelectorAll("[data-pause]");
-      pauseElements.forEach((el) => {
-        const rect = el.getBoundingClientRect();
-        const containerRect = containerRef.current!.getBoundingClientRect();
-        // Trigger when pause tag reaches the top of the visible area (first line)
-        // Allow a small tolerance of ~30px for the first line area
-        const firstLineTop = containerRect.top;
-        const firstLineBottom = containerRect.top + 50;
-        
-        if (rect.top <= firstLineBottom && rect.bottom >= firstLineTop) {
-          const pauseType = el.getAttribute("data-pause") as PauseType;
-          const pauseWordIdx = parseInt(el.getAttribute("data-word-index") || "-1", 10);
-          if (pauseType && !el.hasAttribute("data-triggered")) {
-            el.setAttribute("data-triggered", "true");
-            handlePause(pauseType, pauseWordIdx);
+        // Check if the highlighted word is a pause marker — trigger pause from highlight
+        const currentSpan = wordSpansRef.current[wordIdx];
+        if (currentSpan) {
+          const pauseType = currentSpan.getAttribute("data-pause") as PauseType;
+          if (pauseType && !currentSpan.hasAttribute("data-triggered")) {
+            currentSpan.setAttribute("data-triggered", "true");
+            handlePause(pauseType, wordIdx);
           }
         }
-      });
+      }
     }
 
     if (isPlaying) {
@@ -1165,7 +1155,7 @@ export function TeleprompterDisplay({
           ref={contentRef}
           className="px-8 transition-all duration-300"
           style={{
-            paddingTop: recordEnabled && previewHeight > 0 ? `${previewHeight}px` : '8rem',
+            paddingTop: recordEnabled && previewHeight > 0 ? `${previewHeight}px` : '2rem',
             fontFamily,
             fontSize: isFullscreen ? Math.round(fontSize * 1.3) : fontSize,
             lineHeight: 1.6,
