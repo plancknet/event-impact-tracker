@@ -1115,6 +1115,17 @@ export function TeleprompterDisplay({
           </div>
         )}
 
+        {recordEnabled && (
+          <div
+            className="absolute inset-x-0 z-20 pointer-events-none"
+            style={{
+              top: `${HEADER_HEIGHT}px`,
+              height: `${readingBandHeight}px`,
+              backgroundColor: READING_BAND_COLOR,
+            }}
+          />
+        )}
+
         {/* Scrollable text area */}
         <div
           ref={containerRef}
@@ -1141,14 +1152,6 @@ export function TeleprompterDisplay({
             className="absolute inset-x-0 bottom-0 h-24 z-10 pointer-events-none"
             style={{ background: `linear-gradient(to top, ${backgroundColor}, transparent)` }}
           />
-          <div
-            className="absolute inset-x-0 top-0 z-20 pointer-events-none"
-            style={{
-              height: `${readingBandHeight}px`,
-              backgroundColor: READING_BAND_COLOR,
-            }}
-          />
-
           {countdown !== null && (
             <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
               <div className="rounded-full bg-black/60 px-10 py-6 text-6xl font-bold tracking-wide text-white">
