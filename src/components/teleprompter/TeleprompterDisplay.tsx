@@ -172,6 +172,7 @@ export function TeleprompterDisplay({
   const effectiveFontSize = isFullscreen ? Math.round(fontSize * 1.3) : fontSize;
   const readingBandHeight = Math.round(effectiveFontSize * 1.3);
   const lineHeightPx = effectiveFontSize * CONTENT_LINE_HEIGHT;
+  const contentTopPaddingPx = CONTENT_TOP_PADDING_PX + lineHeightPx * 2;
   const thirdLineCenterOffset = CONTENT_TOP_PADDING_PX + lineHeightPx * 2.5;
   const readingBandTopOffset = Math.max(0, thirdLineCenterOffset - readingBandHeight / 2);
 
@@ -1169,7 +1170,7 @@ export function TeleprompterDisplay({
             ref={contentRef}
             className="px-8 transition-all duration-300"
             style={{
-              paddingTop: '2rem',
+              paddingTop: `${contentTopPaddingPx}px`,
               fontFamily,
               fontSize: effectiveFontSize,
               lineHeight: 1.6,
