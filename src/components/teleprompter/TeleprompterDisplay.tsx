@@ -154,48 +154,32 @@ export function TeleprompterDisplay({
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
   const latestRecordedUrlRef = useRef<string | null>(null);
   const hasCompletedRef = useRef(false);
-  const [previewHeight, setPreviewHeight] = useState(0);
+  
 
-  // Draggable preview state
-  const [previewPos, setPreviewPos] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
-  const dragStartRef = useRef<{ x: number; y: number; posX: number; posY: number } | null>(null);
+  // Draggable preview state (horizontal only within header)
+  const [previewXPercent, setPreviewXPercent] = useState(50); // 0-100, centered
+  const headerRef = useRef<HTMLDivElement>(null);
+  const dragStartRef = useRef<{ x: number; startPercent: number } | null>(null);
 
   // Word highlight state
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const wordSpansRef = useRef<HTMLSpanElement[]>([]);
 
-  // Measure preview container height for text offset
-  useEffect(() => {
-    if (!recordEnabled) {
-      setPreviewHeight(0);
-      return;
-    }
-    const measure = () => {
-      if (previewContainerRef.current) {
-        const rect = previewContainerRef.current.getBoundingClientRect();
-        // bottom of preview relative to viewport top + 16px gap
-        setPreviewHeight(rect.height + 16 + 16); // top-4 (16px) + height + 16px gap
-      }
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    if (previewContainerRef.current) observer.observe(previewContainerRef.current);
-    return () => observer.disconnect();
-  }, [recordEnabled, isRecording, recordOrientation]);
+  // Header height for camera preview area
+  const HEADER_HEIGHT = recordEnabled ? (recordOrientation === "portrait" ? (isRecording ? 200 : 160) : (isRecording ? 140 : 110)) : 0;
 
-  // Draggable preview handlers
-  const handleDragStart = useCallback((clientX: number, clientY: number) => {
-    const el = previewContainerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    dragStartRef.current = { x: clientX, y: clientY, posX: rect.left, posY: rect.top };
-  }, []);
+  // Draggable preview handlers (horizontal only)
+  const handleDragStart = useCallback((clientX: number) => {
+    dragStartRef.current = { x: clientX, startPercent: previewXPercent };
+  }, [previewXPercent]);
 
-  const handleDragMove = useCallback((clientX: number, clientY: number) => {
-    if (!dragStartRef.current) return;
+  const handleDragMove = useCallback((clientX: number) => {
+    if (!dragStartRef.current || !headerRef.current) return;
+    const headerWidth = headerRef.current.clientWidth;
     const dx = clientX - dragStartRef.current.x;
-    const dy = clientY - dragStartRef.current.y;
-    setPreviewPos({ x: dragStartRef.current.posX + dx, y: dragStartRef.current.posY + dy });
+    const dPercent = (dx / headerWidth) * 100;
+    const newPercent = Math.max(10, Math.min(90, dragStartRef.current.startPercent + dPercent));
+    setPreviewXPercent(newPercent);
   }, []);
 
   const handleDragEnd = useCallback(() => {
@@ -203,10 +187,10 @@ export function TeleprompterDisplay({
   }, []);
 
   useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => handleDragMove(e.clientX, e.clientY);
+    const onMouseMove = (e: MouseEvent) => handleDragMove(e.clientX);
     const onMouseUp = () => handleDragEnd();
     const onTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 1) handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+      if (e.touches.length === 1) handleDragMove(e.touches[0].clientX);
     };
     const onTouchEnd = () => handleDragEnd();
     window.addEventListener("mousemove", onMouseMove);
@@ -1098,45 +1082,60 @@ export function TeleprompterDisplay({
           style={{ background: `linear-gradient(to top, ${backgroundColor}, transparent)` }}
         />
 
+        {/* Camera preview header */}
         {recordEnabled && (
           <div
-            ref={previewContainerRef}
-            className={`fixed z-50 rounded-lg overflow-hidden shadow-lg cursor-grab active:cursor-grabbing ${
-              isRecording
-                ? recordOrientation === "portrait"
-                  ? "w-32 h-48 ring-2 ring-red-500/40"
-                  : "w-48 h-32 ring-2 ring-red-500/40"
-                : recordOrientation === "portrait"
-                  ? "w-24 h-36"
-                  : "w-36 h-24"
-            } bg-black`}
+            ref={headerRef}
+            className="relative z-20 w-full flex items-center justify-center"
             style={{
-              ...(previewPos.x >= 0 ? { left: previewPos.x, top: previewPos.y, right: 'auto' } : { right: 16, top: 16 }),
-              border: '3px solid rgba(0,0,0,0.9)',
-              boxShadow: '0 0 0 2px rgba(255,255,255,0.3), 0 4px 20px rgba(0,0,0,0.8)',
+              height: `${HEADER_HEIGHT}px`,
+              backgroundColor,
+              borderBottom: '2px solid rgba(255,255,255,0.15)',
             }}
-            
-            onMouseDown={(e) => { e.preventDefault(); handleDragStart(e.clientX, e.clientY); }}
-            onTouchStart={(e) => { if (e.touches.length === 1) handleDragStart(e.touches[0].clientX, e.touches[0].clientY); }}
           >
-            <video
-              ref={previewRef}
-              className="h-full w-full object-cover scale-x-[-1] pointer-events-none"
-              muted
-              playsInline
-              autoPlay
-            />
-            {isRecording && (
-              <div className="absolute top-1 left-1 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
-                <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-[10px] text-red-300 font-medium">REC</span>
-              </div>
-            )}
-            {recordingError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/70 px-2 text-center text-xs text-red-200">
-                {recordingError}
-              </div>
-            )}
+            <div
+              ref={previewContainerRef}
+              className={`absolute rounded-lg overflow-hidden shadow-lg cursor-grab active:cursor-grabbing ${
+                isRecording
+                  ? recordOrientation === "portrait"
+                    ? "w-32 h-48 ring-2 ring-red-500/40"
+                    : "w-48 h-32 ring-2 ring-red-500/40"
+                  : recordOrientation === "portrait"
+                    ? "w-24 h-36"
+                    : "w-36 h-24"
+              } bg-black`}
+              style={{
+                left: `${previewXPercent}%`,
+                transform: 'translateX(-50%)',
+                top: '50%',
+                marginTop: isRecording
+                  ? recordOrientation === "portrait" ? '-96px' : '-64px'
+                  : recordOrientation === "portrait" ? '-72px' : '-48px',
+                border: '3px solid rgba(0,0,0,0.9)',
+                boxShadow: '0 0 0 2px rgba(255,255,255,0.3), 0 4px 20px rgba(0,0,0,0.8)',
+              }}
+              onMouseDown={(e) => { e.preventDefault(); handleDragStart(e.clientX); }}
+              onTouchStart={(e) => { if (e.touches.length === 1) handleDragStart(e.touches[0].clientX); }}
+            >
+              <video
+                ref={previewRef}
+                className="h-full w-full object-cover scale-x-[-1] pointer-events-none"
+                muted
+                playsInline
+                autoPlay
+              />
+              {isRecording && (
+                <div className="absolute top-1 left-1 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
+                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className="text-[10px] text-red-300 font-medium">REC</span>
+                </div>
+              )}
+              {recordingError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/70 px-2 text-center text-xs text-red-200">
+                  {recordingError}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -1155,7 +1154,7 @@ export function TeleprompterDisplay({
           ref={contentRef}
           className="px-8 transition-all duration-300"
           style={{
-            paddingTop: recordEnabled && previewHeight > 0 ? `${previewHeight}px` : '2rem',
+            paddingTop: '2rem',
             fontFamily,
             fontSize: isFullscreen ? Math.round(fontSize * 1.3) : fontSize,
             lineHeight: 1.6,
