@@ -290,7 +290,7 @@ export default function Demo() {
               Estamos cruzando o assunto, as notícias e o estilo da fala para montar sua demonstração.
             </p>
             {isGenerating ? (
-              <p className="text-sm sm:text-base md:text-lg text-muted-foreground">Isso pode levar alguns segundos.</p>
+              <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground font-medium">Isso pode levar alguns segundos.</p>
             ) : null}
           </div>
         </main>
@@ -332,7 +332,7 @@ export default function Demo() {
                 Em poucos passos você criou um vídeo completo — <span className="text-quiz-foreground font-medium">rápido, prático e 100% auxiliado por IA</span>.
               </p>
               <p className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed">
-                Com o <span className="text-quiz-purple font-semibold">ThinkAndTalk</span> você terá total controle do roteiro e do teleprompter: velocidade, fonte, cor de fundo e muito mais.
+                Com o <span className="text-quiz-purple font-semibold">ThinkAndTalk</span> você terá total controle. Você pode criar seu próprio texto ou editar o conteúdo gerado pela IA. No teleprompter você poderá personalizar velocidade, fonte, cor de fundo e muito mais.
               </p>
             </div>
             <Button

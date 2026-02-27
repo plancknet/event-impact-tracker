@@ -22,8 +22,7 @@ const DemoSalesHero = ({ onCtaClick, isLoading }: DemoSalesHeroProps) => {
       <div className="text-left text-base text-quiz-foreground leading-relaxed max-w-md mx-auto space-y-1">
         <p className="font-medium">{t("Com o ThinkAndTalk você poderá:")}</p>
         <ul className="space-y-1 pl-1">
-          <li>✅ {t("Colocar um prompt complementar")}</li>
-          <li>✅ {t("Personalizar o texto")}</li>
+          <li>✅ {t("Criar, Apagar, Editar o texto")}</li>
           <li>✅ {t("Gravar o vídeo")}</li>
           <li>✅ {t("Ter suporte técnico")}</li>
           <li>✅ {t("Fazer Network via grupo no WhatsApp")}</li>
