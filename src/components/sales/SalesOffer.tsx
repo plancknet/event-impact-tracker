@@ -35,6 +35,10 @@ const SalesOffer = ({ onCtaClick, isLoading }: SalesOfferProps) => {
           {t("Pague uma vez e tenha acesso à IA personalizada para sempre.")}
         </p>
 
+        <p className="text-sm font-bold text-quiz-purple uppercase tracking-wide animate-pulse">
+          🔥 {t("OFERTA POR TEMPO LIMITADO!")}
+        </p>
+
         <button
           onClick={onCtaClick}
           disabled={isLoading}
@@ -47,7 +51,7 @@ const SalesOffer = ({ onCtaClick, isLoading }: SalesOfferProps) => {
             </>
           ) : (
             <>
-              {t("Ativar meu ThinkAndTalk agora")}
+              {t("Comprar com DESCONTO AGORA")}
               <ArrowRight className="h-5 w-5" />
             </>
           )}
@@ -64,8 +68,8 @@ const SalesOffer = ({ onCtaClick, isLoading }: SalesOfferProps) => {
 
       {/* Guarantee */}
       <div className="rounded-2xl border border-quiz-border/60 bg-quiz-card/90 p-5 flex flex-col items-center text-center space-y-3">
-        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center shadow-lg">
-          <ShieldCheck className="h-7 w-7 text-white" />
+        <div className="w-28 h-28 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center shadow-lg">
+          <ShieldCheck className="h-14 w-14 text-white" />
         </div>
         <p className="text-base font-semibold text-quiz-foreground">{t("Garantia de 7 dias")}</p>
         <p className="text-sm text-quiz-muted leading-relaxed">
