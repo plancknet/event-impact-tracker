@@ -439,23 +439,13 @@ export function TeleprompterDisplay({
       
       containerRef.current.scrollTop = scrollPositionRef.current;
 
-      // Update word highlight based on scroll position
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const highlightLine = containerRect.top + containerRect.height * 0.3;
-      let bestIdx = -1;
-      let bestDist = Infinity;
-      for (let i = 0; i < wordSpansRef.current.length; i++) {
-        const span = wordSpansRef.current[i];
-        if (!span) continue;
-        const rect = span.getBoundingClientRect();
-        const mid = rect.top + rect.height / 2;
-        const dist = Math.abs(mid - highlightLine);
-        if (dist < bestDist && rect.top < highlightLine + 20) {
-          bestDist = dist;
-          bestIdx = i;
-        }
+      // Update word highlight proportionally to scroll position
+      const totalWords = wordSpansRef.current.filter(Boolean).length;
+      if (maxScroll > 0 && totalWords > 0) {
+        const progress = Math.min(scrollPositionRef.current / maxScroll, 1);
+        const wordIdx = Math.min(Math.floor(progress * totalWords), totalWords - 1);
+        setHighlightIndex(wordIdx);
       }
-      setHighlightIndex(bestIdx);
 
       // Check for pause markers reaching the first line (top) of the display
       const pauseElements = contentRef.current.querySelectorAll("[data-pause]");

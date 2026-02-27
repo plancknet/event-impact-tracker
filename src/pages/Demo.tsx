@@ -254,14 +254,21 @@ export default function Demo() {
             onRefresh={() => void fetchAndSaveNews(topic, "pt-BR")}
           />
 
-          <Button
-            size="lg"
-            onClick={() => setStep(3)}
-            disabled={selectedNewsIds.length < 2 || isLoadingNews}
-            className="w-full sm:w-auto sm:ml-auto sm:flex"
-          >
-            Avançar
-          </Button>
+          {/* spacer so content isn't hidden behind sticky footer */}
+          <div className="h-20" />
+
+          <div className="fixed bottom-0 inset-x-0 z-40 bg-quiz-card/90 backdrop-blur-sm border-t border-quiz-border/40 p-3 sm:p-4">
+            <div className="container max-w-6xl mx-auto">
+              <Button
+                size="lg"
+                onClick={() => setStep(3)}
+                disabled={selectedNewsIds.length < 2 || isLoadingNews}
+                className="w-full sm:w-auto sm:float-right"
+              >
+                Avançar
+              </Button>
+            </div>
+          </div>
         </main>
       )}
 
@@ -345,7 +352,6 @@ export default function Demo() {
               </Button>
               <Button
                 size="lg"
-                variant="outline"
                 onClick={() => {
                   setStep(0);
                   setUserName("");
@@ -355,7 +361,7 @@ export default function Demo() {
                   setSelectedNewsIds([]);
                   fetchedTopicRef.current = null;
                 }}
-                className="w-full sm:w-auto text-base sm:text-lg px-8 py-3"
+                className="w-full sm:w-auto bg-quiz-purple hover:bg-quiz-purple/90 text-white text-base sm:text-lg px-8 py-3 shadow-md shadow-quiz-purple/25"
               >
                 🔄 Quero experimentar de novo
               </Button>
