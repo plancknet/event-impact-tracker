@@ -290,7 +290,7 @@ export default function Demo() {
               Estamos cruzando o assunto, as notícias e o estilo da fala para montar sua demonstração.
             </p>
             {isGenerating ? (
-              <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground font-medium">Isso pode levar alguns segundos.</p>
+              <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground font-medium">Só vai levar alguns segundos. Aguarde...</p>
             ) : null}
           </div>
         </main>
@@ -335,13 +335,31 @@ export default function Demo() {
                 Com o <span className="text-quiz-purple font-semibold">ThinkAndTalk</span> você terá total controle. Você pode criar seu próprio texto ou editar o conteúdo gerado pela IA. No teleprompter você poderá personalizar velocidade, fonte, cor de fundo e muito mais.
               </p>
             </div>
-            <Button
-              size="lg"
-              onClick={() => navigate("/demo/sales")}
-              className="w-full sm:w-auto bg-quiz-purple hover:bg-quiz-purple/90 text-white text-base sm:text-lg px-8 py-3 shadow-md shadow-quiz-purple/25"
-            >
-              🚀 Quero saber mais
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                size="lg"
+                onClick={() => navigate("/demo/sales")}
+                className="w-full sm:w-auto bg-quiz-purple hover:bg-quiz-purple/90 text-white text-base sm:text-lg px-8 py-3 shadow-md shadow-quiz-purple/25"
+              >
+                🚀 Quero saber mais
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => {
+                  setStep(0);
+                  setUserName("");
+                  setTopic("");
+                  setTone("");
+                  setGeneratedScript("");
+                  setSelectedNewsIds([]);
+                  fetchedTopicRef.current = null;
+                }}
+                className="w-full sm:w-auto text-base sm:text-lg px-8 py-3"
+              >
+                🔄 Quero experimentar de novo
+              </Button>
+            </div>
           </div>
         </main>
       )}
