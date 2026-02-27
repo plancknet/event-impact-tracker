@@ -85,6 +85,8 @@ const FONT_OPTIONS = [
 ];
 
 const READING_BAND_COLOR = "rgba(255,255,0,0.35)";
+const CONTENT_TOP_PADDING_PX = 32; // 2rem
+const CONTENT_LINE_HEIGHT = 1.6;
 
 export function TeleprompterDisplay({
   script,
@@ -169,6 +171,9 @@ export function TeleprompterDisplay({
   const HEADER_HEIGHT = recordEnabled ? (recordOrientation === "portrait" ? (isRecording ? 200 : 160) : (isRecording ? 140 : 110)) : 0;
   const effectiveFontSize = isFullscreen ? Math.round(fontSize * 1.3) : fontSize;
   const readingBandHeight = Math.round(effectiveFontSize * 1.3);
+  const lineHeightPx = effectiveFontSize * CONTENT_LINE_HEIGHT;
+  const thirdLineCenterOffset = CONTENT_TOP_PADDING_PX + lineHeightPx * 2.5;
+  const readingBandTopOffset = Math.max(0, thirdLineCenterOffset - readingBandHeight / 2);
 
   // Draggable preview handlers (horizontal only)
   const handleDragStart = useCallback((clientX: number) => {
@@ -427,7 +432,7 @@ export function TeleprompterDisplay({
 
       // Trigger pauses when pause markers cross the reading band center.
       const containerRect = containerRef.current.getBoundingClientRect();
-      const guideY = containerRect.top + readingBandHeight / 2;
+      const guideY = containerRect.top + readingBandTopOffset + readingBandHeight / 2;
       let candidate: { index: number; distance: number } | null = null;
 
       for (let i = 0; i < wordSpansRef.current.length; i++) {
@@ -463,7 +468,7 @@ export function TeleprompterDisplay({
     if (isPlaying) {
       animationRef.current = requestAnimationFrame(animate);
     }
-  }, [speed, isPaused, isPlaying, handlePause, onScriptComplete, stopRecording, readingBandHeight]);
+  }, [speed, isPaused, isPlaying, handlePause, onScriptComplete, stopRecording, readingBandHeight, readingBandTopOffset]);
 
   useEffect(() => {
     if (isPlaying && !isPaused) {
@@ -1119,7 +1124,7 @@ export function TeleprompterDisplay({
           <div
             className="absolute inset-x-0 z-20 pointer-events-none"
             style={{
-              top: `${HEADER_HEIGHT}px`,
+              top: `${HEADER_HEIGHT + readingBandTopOffset}px`,
               height: `${readingBandHeight}px`,
               backgroundColor: READING_BAND_COLOR,
             }}
