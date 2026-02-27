@@ -278,9 +278,12 @@ export function TeleprompterDisplay({
 
   const parsedScript = parseScript(script);
 
-  const handlePause = useCallback((pauseType: PauseType) => {
+  const handlePause = useCallback((pauseType: PauseType, pauseWordIndex?: number) => {
     setIsPaused(true);
     setCurrentPause(pauseType);
+    if (pauseWordIndex !== undefined && pauseWordIndex >= 0) {
+      setHighlightIndex(pauseWordIndex);
+    }
     
     pauseTimeoutRef.current = setTimeout(() => {
       setIsPaused(false);
@@ -459,9 +462,10 @@ export function TeleprompterDisplay({
         
         if (rect.top <= firstLineBottom && rect.bottom >= firstLineTop) {
           const pauseType = el.getAttribute("data-pause") as PauseType;
+          const pauseWordIdx = parseInt(el.getAttribute("data-word-index") || "-1", 10);
           if (pauseType && !el.hasAttribute("data-triggered")) {
             el.setAttribute("data-triggered", "true");
-            handlePause(pauseType);
+            handlePause(pauseType, pauseWordIdx);
           }
         }
       });
