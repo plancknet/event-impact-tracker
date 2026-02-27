@@ -1116,7 +1116,10 @@ export function TeleprompterDisplay({
         <div
           ref={containerRef}
           className="relative overflow-hidden text-white flex-1 pb-40 md:pb-0"
-          style={{ scrollBehavior: "auto" }}
+          style={{
+            scrollBehavior: "auto",
+            marginTop: recordEnabled ? "30px" : "0px",
+          }}
           onWheel={(event) => {
             if (!containerRef.current || !contentRef.current) return;
             const maxScroll =
