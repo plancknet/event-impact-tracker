@@ -570,6 +570,7 @@ export function TeleprompterDisplay({
     scrollPositionRef.current = 0;
     setElapsedSeconds(0);
     setCountdown(null);
+    setHighlightIndex(-1);
     hasCompletedRef.current = false;
     if (containerRef.current) {
       containerRef.current.scrollTop = 0;
@@ -678,6 +679,7 @@ export function TeleprompterDisplay({
   }, [stopPreviewStream, stopRecording]);
 
   const renderContent = () => {
+    wordSpansRef.current = [];
     let globalWordIndex = 0;
     return parsedScript.map((part, index) => {
       if (part.type === "pause") {
@@ -757,10 +759,13 @@ export function TeleprompterDisplay({
                 ref={(el) => {
                   if (el) wordSpansRef.current[wordIdx] = el;
                 }}
-                className="transition-colors duration-100"
+                className="transition-all duration-75"
                 style={{
-                  backgroundColor: wordIdx === highlightIndex ? 'rgba(255,255,255,0.25)' : 'transparent',
-                  borderRadius: wordIdx === highlightIndex ? '2px' : undefined,
+                  backgroundColor: wordIdx === highlightIndex ? 'rgba(255,255,0,0.35)' : 'transparent',
+                  borderRadius: wordIdx === highlightIndex ? '3px' : undefined,
+                  padding: wordIdx === highlightIndex ? '1px 2px' : undefined,
+                  color: wordIdx === highlightIndex ? '#ffffff' : undefined,
+                  textShadow: wordIdx === highlightIndex ? '0 0 8px rgba(255,255,255,0.5)' : undefined,
                 }}
               >
                 {word}
