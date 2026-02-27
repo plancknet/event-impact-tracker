@@ -1054,39 +1054,12 @@ export function TeleprompterDisplay({
       </Card>
 
       {/* Teleprompter Display */}
-      <div
-        ref={containerRef}
-        className={`relative overflow-hidden text-white rounded-lg pb-40 md:pb-0 ${
-          isFullscreen ? "flex-1" : "h-[500px]"
-        }`}
-        style={{ scrollBehavior: "auto", backgroundColor }}
-        onWheel={(event) => {
-          if (!containerRef.current || !contentRef.current) return;
-          const maxScroll =
-            contentRef.current.scrollHeight - containerRef.current.clientHeight;
-          const nextScroll = Math.min(
-            Math.max(0, containerRef.current.scrollTop + event.deltaY),
-            maxScroll
-          );
-          containerRef.current.scrollTop = nextScroll;
-          scrollPositionRef.current = nextScroll;
-        }}
-      >
-        {/* Gradient overlays for readability */}
-        <div
-          className="absolute inset-x-0 top-0 h-24 z-10 pointer-events-none"
-          style={{ background: `linear-gradient(to bottom, ${backgroundColor}, transparent)` }}
-        />
-        <div
-          className="absolute inset-x-0 bottom-0 h-24 z-10 pointer-events-none"
-          style={{ background: `linear-gradient(to top, ${backgroundColor}, transparent)` }}
-        />
-
-        {/* Camera preview header */}
+      <div className={`relative flex flex-col rounded-lg ${isFullscreen ? "flex-1" : "h-[500px]"}`} style={{ backgroundColor }}>
+        {/* Camera preview header — outside scroll container */}
         {recordEnabled && (
           <div
             ref={headerRef}
-            className="relative z-20 w-full flex items-center justify-center"
+            className="relative z-20 w-full flex-shrink-0 flex items-center justify-center"
             style={{
               height: `${HEADER_HEIGHT}px`,
               backgroundColor,
@@ -1139,31 +1112,59 @@ export function TeleprompterDisplay({
           </div>
         )}
 
-        {countdown !== null && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-            <div className="rounded-full bg-black/60 px-10 py-6 text-6xl font-bold tracking-wide text-white">
-              {countdown}
-            </div>
-          </div>
-        )}
-        
-        {/* Center line indicator */}
-        <div className="absolute inset-x-0 top-[30%] h-0.5 bg-primary/30 z-10 pointer-events-none" />
-        
+        {/* Scrollable text area */}
         <div
-          ref={contentRef}
-          className="px-8 transition-all duration-300"
-          style={{
-            paddingTop: '2rem',
-            fontFamily,
-            fontSize: isFullscreen ? Math.round(fontSize * 1.3) : fontSize,
-            lineHeight: 1.6,
-            color: textColor,
+          ref={containerRef}
+          className="relative overflow-hidden text-white flex-1 pb-40 md:pb-0"
+          style={{ scrollBehavior: "auto" }}
+          onWheel={(event) => {
+            if (!containerRef.current || !contentRef.current) return;
+            const maxScroll =
+              contentRef.current.scrollHeight - containerRef.current.clientHeight;
+            const nextScroll = Math.min(
+              Math.max(0, containerRef.current.scrollTop + event.deltaY),
+              maxScroll
+            );
+            containerRef.current.scrollTop = nextScroll;
+            scrollPositionRef.current = nextScroll;
           }}
         >
-          {renderContent()}
-          {/* Extra space to allow text to scroll completely off screen */}
-          <div style={{ height: isFullscreen ? '100vh' : '500px' }} />
+          {/* Gradient overlays for readability */}
+          <div
+            className="absolute inset-x-0 top-0 h-24 z-10 pointer-events-none"
+            style={{ background: `linear-gradient(to bottom, ${backgroundColor}, transparent)` }}
+          />
+          <div
+            className="absolute inset-x-0 bottom-0 h-24 z-10 pointer-events-none"
+            style={{ background: `linear-gradient(to top, ${backgroundColor}, transparent)` }}
+          />
+
+          {countdown !== null && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+              <div className="rounded-full bg-black/60 px-10 py-6 text-6xl font-bold tracking-wide text-white">
+                {countdown}
+              </div>
+            </div>
+          )}
+          
+          {/* Center line indicator */}
+          <div className="absolute inset-x-0 top-[30%] h-0.5 bg-primary/30 z-10 pointer-events-none" />
+          
+          <div
+            ref={contentRef}
+            className="px-8 transition-all duration-300"
+            style={{
+              paddingTop: '2rem',
+              fontFamily,
+              fontSize: isFullscreen ? Math.round(fontSize * 1.3) : fontSize,
+              lineHeight: 1.6,
+              color: textColor,
+            }}
+          >
+            {renderContent()}
+            {/* Extra space to allow text to scroll completely off screen */}
+            <div style={{ height: isFullscreen ? '100vh' : '500px' }} />
+          </div>
         </div>
       </div>
     </div>
