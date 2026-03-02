@@ -299,12 +299,12 @@ export default function QuizAnalytics() {
       return {
         id: r.id,
         session_started_at: r.session_started_at,
-        answer_timestamps: null, // Not used anymore
         reached_results: r.reached_results,
         email: r.email,
         completed_at: r.completed_at,
         answered_count: answeredCount,
         last_answer_at: lastAnswerTime,
+        niche: r.niche ?? null,
       };
     });
   };

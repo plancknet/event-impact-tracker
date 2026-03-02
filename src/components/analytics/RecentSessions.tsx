@@ -23,6 +23,7 @@ interface SessionDisplay {
   completed_at: string | null;
   answered_count: number;
   last_answer_at: string | null;
+  niche: string | null;
 }
 
 interface RecentSessionsProps {
@@ -81,6 +82,8 @@ export function RecentSessions({ sessions }: RecentSessionsProps) {
           return mult * (getDurationMs(a) - getDurationMs(b));
         case "status":
           return mult * (Number(a.reached_results) - Number(b.reached_results));
+        case "niche":
+          return mult * ((a.niche || "").localeCompare(b.niche || ""));
         case "email":
           return mult * ((a.email || "").localeCompare(b.email || ""));
         default:
@@ -90,12 +93,13 @@ export function RecentSessions({ sessions }: RecentSessionsProps) {
   }, [sessions, sort]);
 
   const exportCsv = () => {
-    const headers = ["Início", "Questões", "Duração", "Status", "Email"];
+    const headers = ["Início", "Questões", "Duração", "Status", "Nicho", "Email"];
     const rows = sortedSessions.map((s) => [
       formatDate(s.session_started_at),
       `${s.answered_count}/${totalQuestions}`,
       calculateDuration(s),
       s.reached_results ? "Concluído" : "Abandonou",
+      s.niche || "",
       s.email || "",
     ]);
     const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
@@ -125,6 +129,7 @@ export function RecentSessions({ sessions }: RecentSessionsProps) {
               <SortableTableHead sortKey="questions" currentSort={sort} onSort={handleSort}>Questões</SortableTableHead>
               <SortableTableHead sortKey="duration" currentSort={sort} onSort={handleSort}>Duração</SortableTableHead>
               <SortableTableHead sortKey="status" currentSort={sort} onSort={handleSort}>Status</SortableTableHead>
+              <SortableTableHead sortKey="niche" currentSort={sort} onSort={handleSort}>Nicho</SortableTableHead>
               <SortableTableHead sortKey="email" currentSort={sort} onSort={handleSort}>Email</SortableTableHead>
             </TableRow>
           </TableHeader>
@@ -146,6 +151,9 @@ export function RecentSessions({ sessions }: RecentSessionsProps) {
                   ) : (
                     <Badge variant="secondary">Abandonou</Badge>
                   )}
+                </TableCell>
+                <TableCell className="text-xs max-w-[150px] truncate">
+                  {session.niche || "-"}
                 </TableCell>
                 <TableCell className="text-xs max-w-[150px] truncate">
                   {session.email || "-"}
