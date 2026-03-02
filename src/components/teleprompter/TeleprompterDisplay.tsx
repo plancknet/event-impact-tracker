@@ -1121,16 +1121,14 @@ export function TeleprompterDisplay({
           </div>
         )}
 
-        {recordEnabled && (
-          <div
-            className="absolute inset-x-0 z-20 pointer-events-none"
-            style={{
-              top: `${HEADER_HEIGHT + readingBandTopOffset}px`,
-              height: `${readingBandHeight}px`,
-              backgroundColor: READING_BAND_COLOR,
-            }}
-          />
-        )}
+        <div
+          className="absolute inset-x-0 z-20 pointer-events-none"
+          style={{
+            top: `${HEADER_HEIGHT + readingBandTopOffset}px`,
+            height: `${readingBandHeight}px`,
+            backgroundColor: READING_BAND_COLOR,
+          }}
+        />
 
         {/* Scrollable text area */}
         <div
