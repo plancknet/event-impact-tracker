@@ -236,7 +236,7 @@ const buildCreatorProfileFromQuiz = (answers: QuizAnswers) => {
 
 const Quiz = () => {
   const navigate = useNavigate();
-  const initialStep = "questions";
+  const initialStep = "intro";
   const [step, setStep] = useState<QuizStep>(initialStep);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [questions, setQuestions] = useState<QuizQuestionData[]>([
@@ -552,6 +552,10 @@ const Quiz = () => {
           </div>
         </div>
       </header>
+
+      {step === "intro" && (
+        <QuizIntro onStart={handleIntroStart} />
+      )}
 
       {step === "questions" && (
         <div key={`question-${currentQuestion}`}>
