@@ -236,7 +236,7 @@ const buildCreatorProfileFromQuiz = (answers: QuizAnswers) => {
 
 const Quiz = () => {
   const navigate = useNavigate();
-  const initialStep = "intro";
+  const initialStep = "questions";
   const [step, setStep] = useState<QuizStep>(initialStep);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [questions, setQuestions] = useState<QuizQuestionData[]>([
@@ -566,7 +566,7 @@ const Quiz = () => {
         </div>
       )}
 
-      {step === "intro" && <QuizIntro onStart={handleIntroStart} />}
+
 
       {step === "age_highlight" && (
         <Suspense fallback={<div className="min-h-screen" />}>
