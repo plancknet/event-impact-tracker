@@ -553,6 +553,10 @@ const Quiz = () => {
         </div>
       </header>
 
+      {step === "intro" && (
+        <QuizIntro onStart={handleIntroStart} />
+      )}
+
       {step === "questions" && (
         <div key={`question-${currentQuestion}`}>
           <QuizQuestion
