@@ -39,14 +39,11 @@ export interface QuizAnswers {
   result_goal?: string;
   niche?: string;
   creator_level?: string;
-  audience_type?: string;
-  audience_age?: string;
   audience_gender?: string;
   video_format?: string;
   video_duration?: string;
   platforms?: string[];
   speaking_tone?: string;
-  energy_level?: string;
   content_goal?: string;
 }
 
@@ -218,14 +215,14 @@ const buildCreatorProfileFromQuiz = (answers: QuizAnswers) => {
     display_name: null,
     main_topic: mapQuizMainTopic(answers.niche),
     expertise_level: mapQuizExpertiseLevel(answers.creator_level),
-    audience_type: mapQuizAudienceType(answers.audience_type),
+    audience_type: DEFAULT_CREATOR_PROFILE.audience_type,
     audience_pain_points: [],
     video_type: videoType,
     target_duration: duration.target_duration,
     duration_unit: DEFAULT_CREATOR_PROFILE.duration_unit,
     platform: mapQuizPlatform(answers.platforms),
     speaking_tone: mapQuizSpeakingTone(answers.speaking_tone),
-    energy_level: mapQuizEnergyLevel(answers.energy_level),
+    energy_level: DEFAULT_CREATOR_PROFILE.energy_level,
     content_goal: mapQuizContentGoal(answers.content_goal),
     script_language: DEFAULT_CREATOR_PROFILE.script_language,
     news_language: DEFAULT_CREATOR_PROFILE.news_language,
@@ -236,7 +233,7 @@ const buildCreatorProfileFromQuiz = (answers: QuizAnswers) => {
 
 const Quiz = () => {
   const navigate = useNavigate();
-  const initialStep = "intro";
+const initialStep = "questions";
   const [step, setStep] = useState<QuizStep>(initialStep);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [questions, setQuestions] = useState<QuizQuestionData[]>([
@@ -356,7 +353,7 @@ const Quiz = () => {
         return;
       }
 
-      if (currentQuestion === 6) {
+      if (currentQuestion === 7) {
         setProcessingNextIndex(currentQuestion + 1);
         setStep("processing");
         return;
@@ -552,10 +549,6 @@ const Quiz = () => {
           </div>
         </div>
       </header>
-
-      {step === "intro" && (
-        <QuizIntro onStart={handleIntroStart} />
-      )}
 
       {step === "questions" && (
         <div key={`question-${currentQuestion}`}>
