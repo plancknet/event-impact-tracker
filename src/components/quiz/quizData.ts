@@ -19,9 +19,7 @@ import {
   Globe,
   GraduationCap,
   Heart,
-  HeartPulse,
   HelpCircle,
-  Info,
   Lightbulb,
   List,
   Megaphone,
@@ -42,14 +40,21 @@ import {
   Users,
   UserCheck,
   Video,
-  Volume2,
   Zap,
   ShoppingCart,
+  Info,
 } from "lucide-react";
 
 import { QuizQuestionData } from "./quizTypes";
 
 export const QUIZ_QUESTIONS: QuizQuestionData[] = [
+  {
+    key: "niche",
+    question: "Sobre o que você gosta de falar?",
+    freeText: true,
+    freeTextPlaceholder: "Ex: Tecnologia, Marketing, Culinária, Fitness...",
+    options: [],
+  },
   {
     key: "age_range",
     question: "Quantos anos você tem?",
@@ -122,13 +127,6 @@ export const QUIZ_QUESTIONS: QuizQuestionData[] = [
     ],
   },
   {
-    key: "niche",
-    question: "Sobre o que você gosta de falar?",
-    freeText: true,
-    freeTextPlaceholder: "Ex: Tecnologia, Marketing, Culinária, Fitness...",
-    options: [],
-  },
-  {
     key: "creator_level",
     question: "Qual é o seu nível como criador de conteúdo?",
     options: [
@@ -136,28 +134,6 @@ export const QUIZ_QUESTIONS: QuizQuestionData[] = [
       { value: "basic", label: "Básico (já postei alguns vídeos)", icon: Award },
       { value: "intermediate", label: "Intermediário (posto com frequência)", icon: Star },
       { value: "advanced", label: "Avançado (crio conteúdo profissionalmente)", icon: BadgeCheck },
-    ],
-  },
-  {
-    key: "audience_type",
-    question: "Quem é sua audiência principal?",
-    options: [
-      { value: "b2c", label: "Pessoas físicas (B2C)", icon: Users },
-      { value: "entrepreneurs", label: "Empreendedores / Profissionais", icon: BriefcaseBusiness },
-      { value: "creators", label: "Criadores de conteúdo", icon: Sparkles },
-      { value: "b2b", label: "Empresas (B2B)", icon: Building2 },
-      { value: "general", label: "Público geral", icon: Globe },
-    ],
-  },
-  {
-    key: "audience_age",
-    question: "Qual é a faixa etária do seu público?",
-    options: [
-      { value: "under_18", label: "Até 18 anos", icon: Baby },
-      { value: "18_24", label: "18-24", icon: GraduationCap },
-      { value: "25_34", label: "25-34", icon: Briefcase },
-      { value: "35_44", label: "35-44", icon: Users },
-      { value: "45_plus", label: "45+", icon: UserCheck },
     ],
   },
   {
@@ -214,15 +190,6 @@ export const QUIZ_QUESTIONS: QuizQuestionData[] = [
       { value: "motivational", label: "Motivacional / Inspirador", icon: Sparkles },
       { value: "fun", label: "Divertido / Descontraído", icon: Smile },
       { value: "direct", label: "Direto ao ponto", icon: ArrowRight },
-    ],
-  },
-  {
-    key: "energy_level",
-    question: "Qual é o nível de energia dos seus vídeos?",
-    options: [
-      { value: "low", label: "Baixo (calmo, reflexivo)", icon: BatteryLow },
-      { value: "medium", label: "Médio (equilibrado)", icon: BatteryMedium },
-      { value: "high", label: "Alto (animado, intenso)", icon: BatteryFull },
     ],
   },
   {

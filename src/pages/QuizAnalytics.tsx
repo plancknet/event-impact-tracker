@@ -25,14 +25,11 @@ interface QuizResponse {
   editing_time: string | null;
   niche: string | null;
   creator_level: string | null;
-  audience_type: string | null;
-  audience_age: string | null;
   audience_gender: string | null;
   video_format: string | null;
   video_duration: string | null;
   platforms: string[] | null;
   speaking_tone: string | null;
-  energy_level: string | null;
   content_goal: string | null;
   sales_page_at: string | null;
   checkout_button_1_at: string | null;
@@ -47,14 +44,11 @@ interface QuizResponse {
   editing_time_at: string | null;
   niche_at: string | null;
   creator_level_at: string | null;
-  audience_type_at: string | null;
-  audience_age_at: string | null;
   audience_gender_at: string | null;
   video_format_at: string | null;
   video_duration_at: string | null;
   platforms_at: string | null;
   speaking_tone_at: string | null;
-  energy_level_at: string | null;
   content_goal_at: string | null;
 }
 
@@ -83,14 +77,11 @@ const QUESTION_TIMESTAMP_MAP: Record<string, string> = {
   editing_time: "editing_time_at",
   niche: "niche_at",
   creator_level: "creator_level_at",
-  audience_type: "audience_type_at",
-  audience_age: "audience_age_at",
   audience_gender: "audience_gender_at",
   video_format: "video_format_at",
   video_duration: "video_duration_at",
   platforms: "platforms_at",
   speaking_tone: "speaking_tone_at",
-  energy_level: "energy_level_at",
   content_goal: "content_goal_at",
 };
 
@@ -131,8 +122,8 @@ export default function QuizAnalytics() {
       const { data, error } = await query;
       if (error) throw error;
 
-      // Only include sessions where age_range was answered
-      const filtered = ((data || []) as QuizResponse[]).filter((r) => r.age_range_at !== null);
+      // Only include sessions where niche was answered (first question)
+      const filtered = ((data || []) as QuizResponse[]).filter((r) => r.niche_at !== null);
       setResponses(filtered);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar dados");

@@ -39,14 +39,11 @@ export interface QuizAnswers {
   result_goal?: string;
   niche?: string;
   creator_level?: string;
-  audience_type?: string;
-  audience_age?: string;
   audience_gender?: string;
   video_format?: string;
   video_duration?: string;
   platforms?: string[];
   speaking_tone?: string;
-  energy_level?: string;
   content_goal?: string;
 }
 
@@ -236,7 +233,7 @@ const buildCreatorProfileFromQuiz = (answers: QuizAnswers) => {
 
 const Quiz = () => {
   const navigate = useNavigate();
-  const initialStep = "intro";
+const initialStep = "questions";
   const [step, setStep] = useState<QuizStep>(initialStep);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [questions, setQuestions] = useState<QuizQuestionData[]>([
@@ -356,7 +353,7 @@ const Quiz = () => {
         return;
       }
 
-      if (currentQuestion === 6) {
+      if (currentQuestion === 7) {
         setProcessingNextIndex(currentQuestion + 1);
         setStep("processing");
         return;
@@ -552,10 +549,6 @@ const Quiz = () => {
           </div>
         </div>
       </header>
-
-      {step === "intro" && (
-        <QuizIntro onStart={handleIntroStart} />
-      )}
 
       {step === "questions" && (
         <div key={`question-${currentQuestion}`}>
