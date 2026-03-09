@@ -10,6 +10,7 @@ import { TeleprompterDisplay, DEFAULT_TELEPROMPTER_SETTINGS } from "@/components
 import { generateTeleprompterScript } from "@/services/teleprompter/generateTeleprompterScript";
 import { useUserNews } from "@/hooks/useUserNews";
 import { useToast } from "@/hooks/use-toast";
+import { useDemoSession } from "@/hooks/useDemoSession";
 
 type DemoStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
@@ -47,6 +48,7 @@ const toneMap: Record<string, string> = {
 export default function Demo() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { track, resetSession } = useDemoSession();
   const [step, setStep] = useState<DemoStep>(0);
   const [userName, setUserName] = useState("");
   const [topic, setTopic] = useState("");
@@ -128,6 +130,7 @@ export default function Demo() {
           throw new Error("Empty script");
         }
         setGeneratedScript(script);
+        void track({ script_generated_at: new Date().toISOString() });
         setStep(5);
       } catch (error) {
         console.error("Failed to generate demo script:", error);
@@ -143,7 +146,7 @@ export default function Demo() {
     };
 
     void generate();
-  }, [step, isGenerating, generatedScript, selectedNews, topic, tone, toast]);
+  }, [step, isGenerating, generatedScript, selectedNews, topic, tone, toast, track]);
 
   if (step === 6) {
     return (
@@ -151,10 +154,16 @@ export default function Demo() {
         <TeleprompterDisplay
           script={generatedScript}
           settings={DEFAULT_TELEPROMPTER_SETTINGS}
-          onBack={() => setStep(7)}
+          onBack={() => {
+            void track({ teleprompter_completed_at: new Date().toISOString() });
+            setStep(7);
+          }}
           autoEnableRecording
           autoRecordOnPlay
-          onScriptComplete={() => setStep(7)}
+          onScriptComplete={() => {
+            void track({ teleprompter_completed_at: new Date().toISOString() });
+            setStep(7);
+          }}
         />
       </div>
     );
@@ -200,6 +209,10 @@ export default function Demo() {
               const name = String(value || "").trim();
               if (!name) return;
               setUserName(name);
+              void track({
+                user_name: name,
+                name_captured_at: new Date().toISOString(),
+              });
               setStep(1);
             }}
             selectedAnswer={userName}
@@ -226,6 +239,10 @@ export default function Demo() {
               setSelectedNewsIds([]);
               setGeneratedScript("");
               fetchedTopicRef.current = null;
+              void track({
+                topic: nextTopic,
+                topic_captured_at: new Date().toISOString(),
+              });
               setStep(2);
             }}
             selectedAnswer={topic}
@@ -262,7 +279,13 @@ export default function Demo() {
             <div className="container max-w-6xl mx-auto">
               <Button
                 size="lg"
-                onClick={() => setStep(3)}
+                onClick={() => {
+                  void track({
+                    news_selected_at: new Date().toISOString(),
+                    news_count: selectedNewsIds.length,
+                  });
+                  setStep(3);
+                }}
                 disabled={selectedNewsIds.length < 2 || isLoadingNews}
                 className="w-full sm:w-auto sm:float-right"
               >
@@ -279,7 +302,12 @@ export default function Demo() {
           currentIndex={2}
           totalQuestions={6}
           onAnswer={(_, value) => {
-            setTone(String(value));
+            const selectedTone = String(value);
+            setTone(selectedTone);
+            void track({
+              tone: selectedTone,
+              tone_selected_at: new Date().toISOString(),
+            });
             setStep(4);
           }}
           selectedAnswer={tone}
@@ -322,7 +350,10 @@ export default function Demo() {
               <p className="text-base sm:text-lg md:text-xl text-white/90">
                 Se necessário, utilize os controles do teleprompter para aumentar ou diminuir a velocidade de reprodução, a fonte do texto, alterar a cor do fundo, etc.
               </p>
-              <Button size="lg" onClick={() => setStep(6)} className="w-full sm:w-auto">
+              <Button size="lg" onClick={() => {
+                void track({ teleprompter_started_at: new Date().toISOString() });
+                setStep(6);
+              }} className="w-full sm:w-auto">
                 Vamos lá
               </Button>
             </div>
@@ -343,7 +374,10 @@ export default function Demo() {
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 size="lg"
-                onClick={() => navigate("/demo/sales")}
+                onClick={() => {
+                  void track({ sales_page_viewed_at: new Date().toISOString() });
+                  navigate("/demo/sales");
+                }}
                 className="w-full sm:w-auto bg-quiz-purple hover:bg-quiz-purple/90 text-white text-base sm:text-lg px-8 py-3 shadow-md shadow-quiz-purple/25"
               >
                 🚀 Quero saber mais
@@ -351,6 +385,8 @@ export default function Demo() {
               <Button
                 size="lg"
                 onClick={() => {
+                  void track({ restart_at: new Date().toISOString() });
+                  resetSession();
                   setStep(0);
                   setUserName("");
                   setTopic("");
