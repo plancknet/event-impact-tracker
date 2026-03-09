@@ -30,6 +30,7 @@ interface NewsGridProps {
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
   onRefresh: () => void;
+  demoMode?: boolean;
 }
 
 type SortKey = "title" | "source" | "published_at";
