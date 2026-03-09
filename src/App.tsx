@@ -38,6 +38,16 @@ const App = () => (
                 </AdminRoute>
               </ProtectedRoute>
             }
+            />
+          <Route
+            path="/demo/analytics"
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <DemoAnalytics />
+                </AdminRoute>
+              </ProtectedRoute>
+            }
           />
           <Route path="/auth" element={<Auth />} />
           <Route
