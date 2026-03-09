@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, User, MessageSquare, FileText, Play, Eye, ShoppingCart, RotateCcw } from "lucide-react";
-import DateFilter from "@/components/DateFilter";
+import { DateFilter } from "@/components/DateFilter";
 import { format } from "date-fns";
 
 interface DemoSession {
