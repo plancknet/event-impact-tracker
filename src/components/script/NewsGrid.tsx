@@ -159,23 +159,13 @@ export function NewsGrid({
             <p className="text-center text-destructive py-4">{error}</p>
           )}
 
-          {!isLoading && !error && (
-            <div className="flex flex-wrap items-center gap-2 justify-end">
-              <span className="text-sm text-muted-foreground mr-auto">
-                {t("{selected}/{total} selecionadas", {
-                  selected: String(selectedIds.length),
-                  total: String(newsItems.length),
-                })}
-              </span>
-              <Button variant="outline" size="sm" onClick={handleSelectAll} className="h-9">
-                <CheckSquare className="w-4 h-4 mr-1" />
-                {t("Todas")}
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleDeselectAll} className="h-9">
-                <Square className="w-4 h-4 mr-1" />
-                {t("Nenhuma")}
-              </Button>
-            </div>
+          {!isLoading && !error && newsItems.length > 0 && (
+            <span className="text-sm text-muted-foreground">
+              {t("{selected}/{total} selecionadas", {
+                selected: String(selectedIds.length),
+                total: String(newsItems.length),
+              })}
+            </span>
           )}
 
           {!isLoading && !error && (
