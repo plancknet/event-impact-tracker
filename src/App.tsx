@@ -12,6 +12,7 @@ import QuizSales from "@/pages/QuizSales";
 import QuizAnalytics from "@/pages/QuizAnalytics";
 import Demo from "@/pages/Demo";
 import DemoSales from "@/pages/DemoSales";
+import DemoAnalytics from "@/pages/DemoAnalytics";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 
@@ -34,6 +35,16 @@ const App = () => (
               <ProtectedRoute>
                 <AdminRoute>
                   <QuizAnalytics />
+                </AdminRoute>
+              </ProtectedRoute>
+            }
+            />
+          <Route
+            path="/demo/analytics"
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <DemoAnalytics />
                 </AdminRoute>
               </ProtectedRoute>
             }

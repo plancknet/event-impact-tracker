@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n";
+import { useDemoSession } from "@/hooks/useDemoSession";
 
 import SalesHeader from "@/components/sales/SalesHeader";
 import DemoSalesHero from "@/components/sales/DemoSalesHero";
@@ -29,11 +30,17 @@ const buildCheckoutUrl = (email?: string) => {
 
 const DemoSales = () => {
   const { t } = useLanguage();
+  const { track } = useDemoSession();
   const [isLoading, setIsLoading] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
   const [pendingRedirectUrl, setPendingRedirectUrl] = useState<string | null>(null);
   const [remainingSeconds, setRemainingSeconds] = useState(600);
   const { toast } = useToast();
+
+  // Track sales page view on mount
+  useEffect(() => {
+    void track({ sales_page_viewed_at: new Date().toISOString() });
+  }, [track]);
 
   useEffect(() => {
     const start = Date.now();
@@ -48,6 +55,10 @@ const DemoSales = () => {
 
   const handleActivatePlan = async (buttonIndex: number) => {
     setIsLoading(true);
+    // Track which checkout button was clicked
+    const field = buttonIndex === 1 ? "checkout_button_1_at" : "checkout_button_2_at";
+    void track({ [field]: new Date().toISOString() });
+
     try {
       const preferredEmail = sessionStorage.getItem("pendingQuizEmail") || undefined;
       const url = buildCheckoutUrl(preferredEmail || undefined);
