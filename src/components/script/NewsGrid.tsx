@@ -47,6 +47,7 @@ export function NewsGrid({
   selectedIds,
   onSelectionChange,
   onRefresh,
+  demoMode = false,
 }: NewsGridProps) {
   const { t, language } = useLanguage();
   const [isOpen, setIsOpen] = useState(true);
