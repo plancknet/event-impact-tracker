@@ -107,8 +107,8 @@ export default function DemoAnalytics() {
         <div className="container max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">Demo Analytics</h1>
           <div className="flex items-center gap-2">
-            <DateFilter label="De" value={startDate} onChange={setStartDate} />
-            <DateFilter label="Até" value={endDate} onChange={setEndDate} />
+            <DateFilter value={startDate} onChange={setStartDate} placeholder="De dd/mm/aaaa" />
+            <DateFilter value={endDate} onChange={setEndDate} placeholder="Até dd/mm/aaaa" />
           </div>
         </div>
       </header>
