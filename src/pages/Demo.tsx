@@ -252,6 +252,7 @@ export default function Demo() {
             selectedIds={selectedNewsIds}
             onSelectionChange={setSelectedNewsIds}
             onRefresh={() => void fetchAndSaveNews(topic, "pt-BR")}
+            demoMode
           />
 
           {/* spacer so content isn't hidden behind sticky footer */}
