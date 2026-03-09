@@ -30,6 +30,7 @@ interface NewsGridProps {
   selectedIds: string[];
   onSelectionChange: (ids: string[]) => void;
   onRefresh: () => void;
+  demoMode?: boolean;
 }
 
 type SortKey = "title" | "source" | "published_at";
@@ -46,6 +47,7 @@ export function NewsGrid({
   selectedIds,
   onSelectionChange,
   onRefresh,
+  demoMode = false,
 }: NewsGridProps) {
   const { t, language } = useLanguage();
   const [isOpen, setIsOpen] = useState(true);
@@ -134,6 +136,89 @@ export function NewsGrid({
     return format(date, "dd/MM/yyyy HH:mm:ss", { locale: language === "pt" ? ptBR : enUS });
   };
 
+  const cleanTitle = (title: string, source?: string | null) => {
+    if (!source) return title;
+    // Remove trailing " - Source" from title since source is shown separately
+    const suffix = ` - ${source}`;
+    if (title.endsWith(suffix)) return title.slice(0, -suffix.length);
+    return title;
+  };
+
+  if (demoMode) {
+    return (
+      <div className="rounded-xl border bg-card">
+        <div className="p-4 space-y-4">
+          {isLoading && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">{t("Buscando notícias...")}</span>
+            </div>
+          )}
+
+          {error && !isLoading && (
+            <p className="text-center text-destructive py-4">{error}</p>
+          )}
+
+          {!isLoading && !error && (
+            <div className="flex flex-wrap items-center gap-2 justify-end">
+              <span className="text-sm text-muted-foreground mr-auto">
+                {t("{selected}/{total} selecionadas", {
+                  selected: String(selectedIds.length),
+                  total: String(newsItems.length),
+                })}
+              </span>
+              <Button variant="outline" size="sm" onClick={handleSelectAll} className="h-9">
+                <CheckSquare className="w-4 h-4 mr-1" />
+                {t("Todas")}
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleDeselectAll} className="h-9">
+                <Square className="w-4 h-4 mr-1" />
+                {t("Nenhuma")}
+              </Button>
+            </div>
+          )}
+
+          {!isLoading && !error && (
+            <div className="max-h-[420px] overflow-y-auto space-y-2">
+              {sortedNews.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  {t("Nenhuma notícia encontrada")}
+                </p>
+              ) : (
+                sortedNews.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                      selectedIds.includes(item.id)
+                        ? "bg-primary/5 border-primary"
+                        : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => handleToggle(item.id)}
+                  >
+                    <Checkbox
+                      checked={selectedIds.includes(item.id)}
+                      onCheckedChange={() => handleToggle(item.id)}
+                      className="mt-1"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium leading-snug">
+                        {cleanTitle(item.title, item.source)}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {formatDate(item.published_at)}
+                        {item.source && <span> • {item.source}</span>}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div className="rounded-xl border bg-card">
@@ -218,7 +303,7 @@ export function NewsGrid({
 
             {!isLoading && !error && (
               <div className="space-y-2">
-                <div className="hidden md:grid grid-cols-[40px_2fr_1fr_1fr_2fr_36px] gap-3 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                <div className="hidden md:grid grid-cols-[40px_3fr_1fr_1fr_36px] gap-3 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   <div />
                   <button
                     type="button"
@@ -244,7 +329,6 @@ export function NewsGrid({
                     {t("Data")}
                     <ArrowUpDown className="w-3 h-3" />
                   </button>
-                  <div>{t("Resumo")}</div>
                   <div />
                 </div>
 
@@ -257,7 +341,7 @@ export function NewsGrid({
                     sortedNews.map((item) => (
                       <div
                         key={item.id}
-                        className={`grid grid-cols-1 gap-2 p-3 rounded-lg border cursor-pointer transition-colors md:grid-cols-[40px_2fr_1fr_1fr_2fr_36px] md:gap-3 md:items-start ${
+                        className={`grid grid-cols-1 gap-2 p-3 rounded-lg border cursor-pointer transition-colors md:grid-cols-[40px_3fr_1fr_1fr_36px] md:gap-3 md:items-start ${
                           selectedIds.includes(item.id)
                             ? "bg-primary/5 border-primary"
                             : "hover:bg-muted/50"
@@ -270,16 +354,13 @@ export function NewsGrid({
                           className="mt-1"
                         />
                         <div className="text-sm font-medium leading-snug">
-                          {item.title}
+                          {cleanTitle(item.title, item.source)}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {item.source || "-"}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {formatDate(item.published_at)}
-                        </div>
-                        <div className="text-xs text-muted-foreground line-clamp-2">
-                          {item.summary || "-"}
                         </div>
                         {item.link ? (
                           <a
@@ -306,4 +387,3 @@ export function NewsGrid({
     </Collapsible>
   );
 }
-
