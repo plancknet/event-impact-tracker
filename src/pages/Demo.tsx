@@ -337,9 +337,6 @@ export default function Demo() {
                 🎬 E isso foi só o começo!
               </h2>
               <p className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed">
-                Em poucos passos você criou um vídeo completo — <span className="text-quiz-foreground font-medium">rápido, prático e 100% auxiliado por IA</span>.
-              </p>
-              <p className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed">
                 Com o <span className="text-quiz-purple font-semibold">ThinkAndTalk</span> você terá total controle. Você pode criar seu próprio texto ou editar o conteúdo gerado pela IA. No teleprompter você poderá personalizar velocidade, fonte, cor de fundo e muito mais.
               </p>
             </div>
