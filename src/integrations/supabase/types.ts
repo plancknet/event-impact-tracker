@@ -86,6 +86,72 @@ export type Database = {
         }
         Relationships: []
       }
+      demo_sessions: {
+        Row: {
+          checkout_button_1_at: string | null
+          checkout_button_2_at: string | null
+          created_at: string
+          id: string
+          name_captured_at: string | null
+          news_count: number | null
+          news_selected_at: string | null
+          restart_at: string | null
+          sales_page_viewed_at: string | null
+          script_generated_at: string | null
+          session_started_at: string
+          teleprompter_completed_at: string | null
+          teleprompter_started_at: string | null
+          tone: string | null
+          tone_selected_at: string | null
+          topic: string | null
+          topic_captured_at: string | null
+          updated_at: string
+          user_name: string | null
+        }
+        Insert: {
+          checkout_button_1_at?: string | null
+          checkout_button_2_at?: string | null
+          created_at?: string
+          id?: string
+          name_captured_at?: string | null
+          news_count?: number | null
+          news_selected_at?: string | null
+          restart_at?: string | null
+          sales_page_viewed_at?: string | null
+          script_generated_at?: string | null
+          session_started_at?: string
+          teleprompter_completed_at?: string | null
+          teleprompter_started_at?: string | null
+          tone?: string | null
+          tone_selected_at?: string | null
+          topic?: string | null
+          topic_captured_at?: string | null
+          updated_at?: string
+          user_name?: string | null
+        }
+        Update: {
+          checkout_button_1_at?: string | null
+          checkout_button_2_at?: string | null
+          created_at?: string
+          id?: string
+          name_captured_at?: string | null
+          news_count?: number | null
+          news_selected_at?: string | null
+          restart_at?: string | null
+          sales_page_viewed_at?: string | null
+          script_generated_at?: string | null
+          session_started_at?: string
+          teleprompter_completed_at?: string | null
+          teleprompter_started_at?: string | null
+          tone?: string | null
+          tone_selected_at?: string | null
+          topic?: string | null
+          topic_captured_at?: string | null
+          updated_at?: string
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       lastlink_events: {
         Row: {
           buyer_email: string
@@ -417,6 +483,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin_email: { Args: { _email: string }; Returns: boolean }
+      update_demo_session: {
+        Args: { _data: Json; _session_id: string }
+        Returns: undefined
+      }
       update_quiz_response: {
         Args: { _data: Json; _quiz_id: string }
         Returns: undefined
