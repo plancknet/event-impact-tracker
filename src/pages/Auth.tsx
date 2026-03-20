@@ -189,12 +189,7 @@ export default function Auth() {
       <main className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 py-12 md:grid-cols-[1.2fr_1fr] md:py-16">
         <section className="space-y-6">
           <h1 className="text-4xl font-semibold leading-tight text-blue-700 md:text-5xl">
-            {t("Crie ")}
-            <span className="text-emerald-500">{t("Roteiros")}</span>
-            {t(" para ")}
-            <span className="text-emerald-500">{t("Vídeos")}</span>
-            {t(" em segundos, usando ")}
-            <span className="text-emerald-500">{t("IA")}</span>.
+            Teste 123
           </h1>
           <p className="text-base text-slate-600 md:text-lg">
             {t(
